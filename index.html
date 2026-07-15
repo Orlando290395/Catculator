@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; script-src 'self'" />
+  <title>Catculator</title>
+  <meta name="description" content="La calculadora con temática de gatos 🐱" />
+
+  <!-- PWA: renderer.js mantiene theme-color al día con el tema activo -->
+  <meta name="theme-color" content="#67e8f9" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Catculator" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-paw">🐾</span>
+        <h1>Catculator</h1>
+      </div>
+      <div class="topbar-actions">
+        <button id="btn-sound" class="icon-btn" title="Sonido">🔊</button>
+        <button id="btn-theme" class="icon-btn" title="Cambiar color">🎨</button>
+      </div>
+    </header>
+
+    <!-- Selector de temas -->
+    <div id="theme-panel" class="theme-panel hidden">
+      <p class="theme-title">Tema de color 🎨</p>
+      <div class="theme-grid">
+        <button class="theme-swatch" data-theme="cian">
+          <span class="dot dot-cian"></span>Cian
+        </button>
+        <button class="theme-swatch" data-theme="rosa">
+          <span class="dot dot-rosa"></span>Rosa
+        </button>
+        <button class="theme-swatch" data-theme="menta">
+          <span class="dot dot-menta"></span>Menta
+        </button>
+        <button class="theme-swatch" data-theme="lavanda">
+          <span class="dot dot-lavanda"></span>Lavanda
+        </button>
+        <button class="theme-swatch" data-theme="atigrado">
+          <span class="dot dot-atigrado"></span>Atigrado
+        </button>
+        <button class="theme-swatch" data-theme="noche">
+          <span class="dot dot-noche"></span>Noche
+        </button>
+      </div>
+      <p class="theme-title sub">Tu pelaje 🐱</p>
+      <div class="theme-grid">
+        <button class="fur-swatch" data-fur="carbon">
+          <span class="dot dot-carbon"></span>Carbón
+        </button>
+        <button class="fur-swatch" data-fur="naranja">
+          <span class="dot dot-naranja"></span>Naranja
+        </button>
+        <button class="fur-swatch" data-fur="gris">
+          <span class="dot dot-gris"></span>Gris
+        </button>
+        <button class="fur-swatch" data-fur="negro">
+          <span class="dot dot-negro"></span>Negro
+        </button>
+        <button class="fur-swatch" data-fur="blanco">
+          <span class="dot dot-blanco"></span>Blanco
+        </button>
+      </div>
+    </div>
+
+    <!-- Escena del gato -->
+    <div class="cat-scene">
+      <div id="speech" class="speech hidden"><span id="speech-text"></span></div>
+
+      <svg id="cat" viewBox="0 0 220 150" aria-hidden="true">
+        <!-- Cola -->
+        <path id="tail" d="M195,148 Q215,120 200,95 Q190,80 197,68"
+              fill="none" stroke="var(--fur)" stroke-width="14" stroke-linecap="round"/>
+
+        <g id="cat-head">
+          <!-- Orejas -->
+          <g id="ear-left" class="ear">
+            <polygon points="55,58 68,8 96,42" fill="var(--fur)"/>
+            <polygon points="63,50 71,22 87,42" fill="var(--ear-inner)"/>
+          </g>
+          <g id="ear-right" class="ear">
+            <polygon points="165,58 152,8 124,42" fill="var(--fur)"/>
+            <polygon points="157,50 149,22 133,42" fill="var(--ear-inner)"/>
+          </g>
+
+          <!-- Cabeza -->
+          <ellipse cx="110" cy="85" rx="62" ry="52" fill="var(--fur)"/>
+
+          <!-- Ojos -->
+          <g id="eye-left" class="eye">
+            <ellipse class="eye-ball" cx="86" cy="78" rx="14" ry="16" fill="var(--eye-color)"/>
+            <ellipse class="pupil" cx="86" cy="78" rx="5.5" ry="10" fill="#16151a"/>
+            <circle class="glint" cx="90" cy="72" r="2.6" fill="#ffffff"/>
+          </g>
+          <g id="eye-right" class="eye">
+            <ellipse class="eye-ball" cx="134" cy="78" rx="14" ry="16" fill="var(--eye-color)"/>
+            <ellipse class="pupil" cx="134" cy="78" rx="5.5" ry="10" fill="#16151a"/>
+            <circle class="glint" cx="138" cy="72" r="2.6" fill="#ffffff"/>
+          </g>
+
+          <!-- Cejas enojadas (ocultas por defecto) -->
+          <g id="angry-brows" class="hidden-part">
+            <line x1="72" y1="58" x2="98" y2="68" stroke="var(--fur-line)" stroke-width="5" stroke-linecap="round"/>
+            <line x1="148" y1="58" x2="122" y2="68" stroke="var(--fur-line)" stroke-width="5" stroke-linecap="round"/>
+          </g>
+
+          <!-- Nariz y boca -->
+          <polygon points="104,96 116,96 110,104" fill="var(--nose-color)"/>
+          <path id="mouth" d="M100,110 Q105,115 110,110 Q115,115 120,110"
+                fill="none" stroke="var(--fur-line)" stroke-width="3" stroke-linecap="round"/>
+
+          <!-- Zzz para dormir -->
+          <g id="zzz" class="hidden-part">
+            <text x="168" y="40" font-size="20" fill="var(--fur-line)" font-weight="bold">z</text>
+            <text x="180" y="28" font-size="14" fill="var(--fur-line)" font-weight="bold">z</text>
+            <text x="190" y="18" font-size="10" fill="var(--fur-line)" font-weight="bold">z</text>
+          </g>
+
+          <!-- Bigotes -->
+          <g stroke="var(--whisker)" stroke-width="2" stroke-linecap="round" opacity="0.9">
+            <line x1="58" y1="92" x2="26" y2="86"/>
+            <line x1="58" y1="100" x2="24" y2="100"/>
+            <line x1="58" y1="108" x2="28" y2="114"/>
+            <line x1="162" y1="92" x2="194" y2="86"/>
+            <line x1="162" y1="100" x2="196" y2="100"/>
+            <line x1="162" y1="108" x2="192" y2="114"/>
+          </g>
+        </g>
+
+        <!-- Patitas colgando sobre la pantalla -->
+        <g id="paws">
+          <g class="paw">
+            <rect x="66" y="126" width="30" height="26" rx="13" fill="var(--fur)"/>
+            <line x1="76" y1="138" x2="76" y2="150" stroke="var(--fur-line)" stroke-width="2"/>
+            <line x1="86" y1="138" x2="86" y2="150" stroke="var(--fur-line)" stroke-width="2"/>
+          </g>
+          <g class="paw">
+            <rect x="124" y="126" width="30" height="26" rx="13" fill="var(--fur)"/>
+            <line x1="134" y1="138" x2="134" y2="150" stroke="var(--fur-line)" stroke-width="2"/>
+            <line x1="144" y1="138" x2="144" y2="150" stroke="var(--fur-line)" stroke-width="2"/>
+          </g>
+        </g>
+      </svg>
+    </div>
+
+    <!-- Pantalla -->
+    <div class="display">
+      <div id="expression" class="expression">&nbsp;</div>
+      <div id="result" class="result">0</div>
+    </div>
+
+    <!-- Controles -->
+    <div class="calc-controls">
+      <button id="btn-mode" class="ctrl-btn" title="Cambiar modo">🔬 Científica</button>
+      <button id="btn-angle" class="ctrl-btn" title="Grados / Radianes">DEG</button>
+      <span id="mem-chip" class="mem-chip" title="Memoria activa">M</span>
+    </div>
+
+    <div class="pad-wrap">
+      <!-- Teclado científico -->
+      <div id="sci-pad" class="sci-pad hidden">
+        <button class="skey mem" data-action="mc">MC</button>
+        <button class="skey mem" data-action="mr">MR</button>
+        <button class="skey mem" data-action="m+">M+</button>
+        <button class="skey mem" data-action="m-">M−</button>
+        <button class="skey mem" data-action="ms">MS</button>
+
+        <button id="btn-2nd" class="skey">2nd</button>
+        <button class="skey fn" data-k="sin(" data-k2="asin(" data-label="sin" data-label2="sin⁻¹">sin</button>
+        <button class="skey fn" data-k="cos(" data-k2="acos(" data-label="cos" data-label2="cos⁻¹">cos</button>
+        <button class="skey fn" data-k="tan(" data-k2="atan(" data-label="tan" data-label2="tan⁻¹">tan</button>
+        <button class="skey fn" data-k="π" data-label="π">π</button>
+
+        <button class="skey fn" data-k="^" data-label="xʸ">xʸ</button>
+        <button class="skey fn" data-k="ln(" data-k2="e^(" data-label="ln" data-label2="eˣ">ln</button>
+        <button class="skey fn" data-k="log(" data-k2="10^(" data-label="log" data-label2="10ˣ">log</button>
+        <button class="skey fn" data-k="sqrt(" data-k2="cbrt(" data-label="√" data-label2="∛">√</button>
+        <button class="skey fn" data-k="e" data-label="e">e</button>
+
+        <button class="skey fn" data-k="^2" data-k2="^3" data-label="x²" data-label2="x³">x²</button>
+        <button class="skey fn" data-k="(" data-label="(">(</button>
+        <button class="skey fn" data-k=")" data-label=")">)</button>
+        <button class="skey fn" data-k="^(-1)" data-label="1/x">1/x</button>
+        <button class="skey fn" data-k="!" data-label="n!">n!</button>
+
+        <button class="skey fn" data-k="abs(" data-label="|x|">|x|</button>
+        <button class="skey fn" data-k="*10^" data-label="EXP">EXP</button>
+        <button class="skey fn" data-k="mod" data-label="mod">mod</button>
+        <button class="skey fn" data-k="%" data-label="%">%</button>
+        <button class="skey fn" data-k="ans" data-label="Ans">Ans</button>
+      </div>
+
+      <!-- Teclado básico -->
+      <div class="keypad">
+        <button class="key key-fn" data-action="clear">C</button>
+        <button class="key key-fn" data-action="back">⌫</button>
+        <button class="key key-fn" data-k="%">%</button>
+        <button class="key key-op" data-k="/">÷</button>
+
+        <button class="key" data-k="7">7</button>
+        <button class="key" data-k="8">8</button>
+        <button class="key" data-k="9">9</button>
+        <button class="key key-op" data-k="*">×</button>
+
+        <button class="key" data-k="4">4</button>
+        <button class="key" data-k="5">5</button>
+        <button class="key" data-k="6">6</button>
+        <button class="key key-op" data-k="-">−</button>
+
+        <button class="key" data-k="1">1</button>
+        <button class="key" data-k="2">2</button>
+        <button class="key" data-k="3">3</button>
+        <button class="key key-op" data-k="+">+</button>
+
+        <button class="key" data-action="negate">±</button>
+        <button class="key" data-k="0">0</button>
+        <button class="key" data-k=".">.</button>
+        <button class="key key-eq" data-action="equals">=</button>
+      </div>
+    </div>
+
+    <footer class="footer">Hecho con 🐾 y mucho ronroneo</footer>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+node_modules/
+
+# Salidas de compilación (se regeneran: npm run dist / npm run pwa)
+dist/
+pwa-dist/
+
+# Basura del sistema
+Thumbs.db
+desktop.ini
+.DS_Store

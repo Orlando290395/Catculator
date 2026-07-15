@@ -1,0 +1,50 @@
+{
+  "name": "catculator",
+  "productName": "Catculator",
+  "version": "1.0.0",
+  "description": "La calculadora con temática de gatos 🐱",
+  "author": "Orlando",
+  "license": "MIT",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "icon": "node build-icon.js",
+    "dist": "electron-builder --win",
+    "pwa": "node build-pwa.js"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.orlando.catculator",
+    "productName": "Catculator",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "index.html",
+      "style.css",
+      "renderer.js",
+      "manifest.json",
+      "sw.js",
+      "icons/**",
+      "icon.ico",
+      "icon.png"
+    ],
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ],
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Catculator"
+    }
+  }
+}
