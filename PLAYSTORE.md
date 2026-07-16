@@ -11,7 +11,7 @@ El material gráfico sale de `npm run icon` y `npm run capturas` (carpeta `tiend
 | ID de la aplicación | `com.catculator.app` — **permanente, no se puede cambiar tras publicar** |
 | Categoría | Herramientas |
 | Tipo | Aplicación (no juego) |
-| Gratuita/de pago | Gratuita, sin compras dentro de la app, sin anuncios |
+| Gratuita/de pago | **De pago: 1 USD.** Sin compras dentro de la app, sin anuncios |
 | Política de privacidad | https://orlando290395.github.io/Catculator/privacidad.html |
 | Correo de contacto | orlando-egs@outlook.es (queda público en la ficha) |
 | versionCode actual | `1` — **hay que subirlo a mano en `android/app/build.gradle` en cada subida** |
@@ -56,13 +56,18 @@ PERSONALÍZALA
 • Sonidos gatunos sintetizados — clics, maullidos, ronroneos y bufidos — que puedes apagar
 • Se acuerda de cómo la dejaste
 
-SIN LETRA CHICA
-• Sin anuncios
-• Sin compras dentro de la app
+PAGAS UNA VEZ Y YA
+Catculator cuesta lo que cuesta un café de máquina, una sola vez. A cambio:
+• Sin anuncios. Nunca. Ni ahora ni en la próxima actualización
+• Sin compras dentro de la app ni funciones bloqueadas — la tienes completa
+• Sin suscripciones
 • Sin cuentas ni registro
 • Sin permisos: ni cámara, ni contactos, ni ubicación, ni almacenamiento
 • Sin internet — funciona completa en modo avión
 • Sin recoger un solo dato tuyo
+
+Las calculadoras gratis se pagan con tus datos o con anuncios a pantalla completa
+entre una suma y otra. Esta se paga una vez, con un dólar, y se acabó.
 
 Pesa menos de 3 MB. Prueba a escribir 9, 42 o 3.14 y mira qué hace el gato.
 
@@ -107,9 +112,28 @@ cualquiera, pero declararla como *dirigida a niños* te complica la aprobación 
 ## Checklist de publicación
 
 1. **Cuenta de desarrollador** — 25 USD, pago único, en https://play.google.com/console/signup.
-   Cuenta personal: te van a pedir verificar identidad con documento oficial. Tarda de horas a
-   algunos días. **Empieza por aquí, es lo que bloquea todo lo demás.**
-2. **Crear la app** en la consola: nombre `Catculator`, idioma español, app gratuita.
+   Elige cuenta **personal**: la de organización exige un número D-U-N-S y empresa registrada.
+   Te van a pedir verificar identidad con documento oficial. Tarda de horas a algunos días.
+   **Empieza por aquí, es lo que bloquea todo lo demás.**
+
+   > En ese formulario está el campo **"Nombre del desarrollador"**: es el texto público que sale
+   > bajo el nombre de la app en la ficha — el "creador" que ve todo el mundo. **Pon `Catculator`**,
+   > no tu nombre. No tiene que ser tu nombre legal. Cambiarlo después es un trámite.
+2. **Crear la app** en la consola: nombre `Catculator`, idioma español, **app de pago**.
+
+   > **El precio es una puerta de un solo sentido.** Una app publicada como gratuita no se puede
+   > pasar nunca a de pago; al revés sí. Hay que fijar el precio ANTES de la primera publicación.
+   >
+   > De pago implica además: perfil de comerciante en Google Payments (datos fiscales y cuenta
+   > bancaria), **dirección legal completa visible en la ficha**, y que Costa Rica esté en la lista
+   > de países admitidos para comerciantes — verificar antes de nada.
+   >
+   > Cuentas: Google se queda el 15%, quedan ~0,85 USD por venta, y el pago no se libera hasta el
+   > umbral mínimo (~100 USD, verificar para CR) — más de 100 ventas antes del primer cobro.
+   >
+   > Pendiente de verificar: si los testers de la prueba cerrada tendrán que pagar el 1 USD o basta
+   > con agregarlos en *License testing*. Comprobarlo ANTES de mandarles el enlace de opt-in: si les
+   > sale pantalla de cobro se caen del programa y el reloj de 14 días se reinicia.
 3. **Ficha principal** — pegar título, descripciones y subir de `tienda/`:
    - Icono 512×512 → `tienda/icono-512.png`
    - Gráfico destacado 1024×500 → `tienda/grafico-destacado-1024x500.png`
