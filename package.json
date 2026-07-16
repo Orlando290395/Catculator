@@ -3,7 +3,7 @@
   "productName": "Catculator",
   "version": "1.0.0",
   "description": "La calculadora con temática de gatos 🐱",
-  "author": "Orlando",
+  "author": "Catculator",
   "license": "MIT",
   "main": "main.js",
   "scripts": {
@@ -19,7 +19,7 @@
     "electron-builder": "^25.1.8"
   },
   "build": {
-    "appId": "com.orlando.catculator",
+    "appId": "com.catculator.app",
     "productName": "Catculator",
     "directories": {
       "output": "dist"

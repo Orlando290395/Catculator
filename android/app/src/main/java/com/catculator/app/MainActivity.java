@@ -1,4 +1,4 @@
-package com.orlando.catculator;
+package com.catculator.app;
 
 import com.getcapacitor.BridgeActivity;
 

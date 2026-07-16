@@ -14,10 +14,10 @@ if (hayFirma) {
 }
 
 android {
-    namespace = "com.orlando.catculator"
+    namespace = "com.catculator.app"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.orlando.catculator"
+        applicationId "com.catculator.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

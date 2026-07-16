@@ -46,9 +46,11 @@ splash de Android, y el material de tienda. Cambiar el gato en un sitio los actu
 destacado 1024x500 y cinco capturas 1080x1920 (9:16) con temas distintos, sacadas de la app real.
 La carpeta no se versiona: se regenera con esos dos comandos.
 
-Falta por hacer a mano: poner un correo real en `privacidad.html` (ahora tiene un marcador),
-publicarlo — GitHub Pages ya lo sirve en `/Catculator/privacidad.html` — y en Play Console la cuenta
-de desarrollador (25 USD) más la prueba cerrada obligatoria con testers durante 14 días.
+**[PLAYSTORE.md](PLAYSTORE.md) tiene el resto**: la ficha lista para pegar, las respuestas de los
+formularios de seguridad de datos y clasificación, y el checklist de publicación.
+
+Falta por hacer fuera del repo: la cuenta de desarrollador de Play Console (25 USD, con
+verificación de identidad) y la prueba cerrada obligatoria con 12 testers durante 14 días seguidos.
 
 ## Escritorio
 
@@ -100,9 +102,11 @@ La clave vive **fuera del repositorio** — este repo es público — en `../Cat
 con la variable `CATCULATOR_KEYSTORE` se puede apuntar a otra ruta. Sin esos archivos el proyecto
 compila igual, solo que los release salen sin firmar.
 
-> **Esa clave es irreemplazable.** Si se pierde el `.jks` o su contraseña, Catculator no se puede
-> volver a actualizar en Play Store nunca más, ni con la misma cuenta. Google no los recupera.
-> Respáldalos en un gestor de contraseñas y en un disco aparte.
+> **Respalda el `.jks` y su contraseña** en un gestor de contraseñas y en un disco aparte.
+> Al subir la app a Play Store con Play App Signing (obligatorio en apps nuevas), este `.jks` queda
+> como *clave de subida*: si se pierde, Google la puede reiniciar, pero es un trámite de días
+> durante los cuales no puedes publicar actualizaciones. La *clave de firma* —esa sí
+> irrecuperable— la genera y custodia Google.
 
 ```bash
 npm run pwa && npx cap sync android
