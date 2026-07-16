@@ -30,13 +30,25 @@ Node, solo `localStorage`. Por eso el mismo código sirve para las tres.
 ```bash
 npm install        # instalar dependencias
 npm start          # ejecutar en modo desarrollo (Electron)
-npm run icon       # regenerar todos los iconos (escritorio y móvil)
+npm run icon       # regenerar iconos, splash y material de tienda
 npm run pwa        # armar pwa-dist/ — solo los archivos de la versión web
+npm run capturas   # capturas 1080x1920 para Play Store (tienda/capturas/)
 npm run dist       # crear instalador de Windows (carpeta dist/)
 ```
 
-`build-icon.js` dibuja el gato por código y genera tanto `icon.ico`/`icon.png` (escritorio) como
-`icons/` (192, 512, maskable y apple-touch para móvil). No hay dependencias ni archivos fuente.
+`build-icon.js` dibuja el gato por código —sin dependencias ni archivos fuente— y de ahí sale todo:
+`icon.ico`/`icon.png` (escritorio), `icons/` (PWA: 192, 512, maskable, apple-touch), los mipmaps y
+splash de Android, y el material de tienda. Cambiar el gato en un sitio los actualiza todos.
+
+## Play Store
+
+`npm run icon` y `npm run capturas` dejan en `tienda/` lo que pide la ficha: icono 512, gráfico
+destacado 1024x500 y cinco capturas 1080x1920 (9:16) con temas distintos, sacadas de la app real.
+La carpeta no se versiona: se regenera con esos dos comandos.
+
+Falta por hacer a mano: poner un correo real en `privacidad.html` (ahora tiene un marcador),
+publicarlo — GitHub Pages ya lo sirve en `/Catculator/privacidad.html` — y en Play Console la cuenta
+de desarrollador (25 USD) más la prueba cerrada obligatoria con testers durante 14 días.
 
 ## Escritorio
 

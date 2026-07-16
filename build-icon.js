@@ -178,6 +178,95 @@ function render(size, opts = {}) {
   return rgba;
 }
 
+/* Splash: lienzo rectangular de fondo cian con el gato centrado. La escena mide
+   256x256, asi que se mapea a un cuadrado centrado que ocupa el 45% del lado corto. */
+function renderSplash(w, h) {
+  const rgba = Buffer.alloc(w * h * 4);
+  const lado = Math.min(w, h) * 0.45;
+  const x0 = (w - lado) / 2, y0 = (h - lado) / 2;
+  const SS = 3;
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      let r = 0, g = 0, b = 0;
+      for (let sy = 0; sy < SS; sy++) {
+        for (let sx = 0; sx < SS; sx++) {
+          const px = x + (sx + 0.5) / SS, py = y + (sy + 0.5) / SS;
+          const c = scene((px - x0) / lado * 256, (py - y0) / lado * 256, { noBg: true });
+          const a = c[3] / 255;
+          // el gato va compuesto sobre el cian, no sobre transparencia
+          r += c[0] * a + C.bg[0] * (1 - a);
+          g += c[1] * a + C.bg[1] * (1 - a);
+          b += c[2] * a + C.bg[2] * (1 - a);
+        }
+      }
+      const n = SS * SS, i = (y * w + x) * 4;
+      rgba[i] = Math.round(r / n);
+      rgba[i + 1] = Math.round(g / n);
+      rgba[i + 2] = Math.round(b / n);
+      rgba[i + 3] = 255;
+    }
+  }
+  return rgba;
+}
+
+/* Grafico destacado de Play Store: 1024x500, degradado cian con el gato y huellitas.
+   Coordenadas en pixeles reales, no en el espacio 256 de la escena. */
+function huella(x, y, cx, cy, r, giro) {
+  const dx = x - cx, dy = y - cy;
+  const c = Math.cos(giro), s = Math.sin(giro);
+  const u = dx * c + dy * s, v = -dx * s + dy * c;   // rotar al marco de la huella
+  if (u * u / (r * r) + v * v / (r * 1.15) ** 2 <= 1) return true;   // almohadilla
+  for (const [tu, tv, tr] of [[-1.15, -1.5, 0.42], [-0.42, -1.9, 0.44],
+                              [0.42, -1.9, 0.44], [1.15, -1.5, 0.42]]) {
+    const du = u - tu * r, dv = v - tv * r;
+    if (du * du + dv * dv <= (tr * r) ** 2) return true;             // deditos
+  }
+  return false;
+}
+
+function renderBanner(w, h) {
+  const rgba = Buffer.alloc(w * h * 4);
+  const lado = h * 0.78;
+  const x0 = (w - lado) / 2, y0 = (h - lado) / 2;
+  const HUELLAS = [
+    [0.10, 0.22, 26, -0.4], [0.17, 0.52, 20, -0.2], [0.08, 0.78, 23, -0.6],
+    [0.90, 0.25, 24, 0.4], [0.83, 0.58, 19, 0.25], [0.93, 0.80, 22, 0.5]
+  ];
+  const SS = 3;
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      let r = 0, g = 0, b = 0;
+      for (let sy = 0; sy < SS; sy++) {
+        for (let sx = 0; sx < SS; sx++) {
+          const px = x + (sx + 0.5) / SS, py = y + (sy + 0.5) / SS;
+
+          // degradado diagonal, del cian oscuro al claro
+          const t = Math.min(1, Math.max(0, (px / w) * 0.6 + (py / h) * 0.4));
+          let cr = 0xae + (0xd8 - 0xae) * t;
+          let cg = 0xf0 + (0xf9 - 0xf0) * t;
+          let cb = 0xfa + (0xff - 0xfa) * t;
+
+          for (const [hx, hy, hr, giro] of HUELLAS) {
+            if (huella(px, py, hx * w, hy * h, hr, giro)) { cr *= 0.88; cg *= 0.93; cb *= 0.97; }
+          }
+
+          const c = scene((px - x0) / lado * 256, (py - y0) / lado * 256, { noBg: true });
+          const a = c[3] / 255;
+          r += c[0] * a + cr * (1 - a);
+          g += c[1] * a + cg * (1 - a);
+          b += c[2] * a + cb * (1 - a);
+        }
+      }
+      const n = SS * SS, i = (y * w + x) * 4;
+      rgba[i] = Math.round(r / n); rgba[i + 1] = Math.round(g / n);
+      rgba[i + 2] = Math.round(b / n); rgba[i + 3] = 255;
+    }
+  }
+  return rgba;
+}
+
 // ---------- ICO (entradas PNG) ----------
 function buildICO(pngs) {
   const header = Buffer.alloc(6);
@@ -232,6 +321,30 @@ if (fs.existsSync(path.join(__dirname, ANDROID_RES))) {
     write(`${dir}/ic_launcher_foreground.png`, Math.round(108 * d), { noBg: true, catScale: 0.64 });
   }
   console.log('  + mipmaps de Android (5 densidades x 3 variantes)');
+
+  /* Splash para Android 11 y anteriores (en 12+ manda windowSplashScreen* de styles.xml).
+     Los tamaños son los que trae el proyecto de Capacitor. */
+  const splashes = [
+    ['drawable', 480, 320],
+    ['drawable-port-mdpi', 320, 480], ['drawable-land-mdpi', 480, 320],
+    ['drawable-port-hdpi', 480, 800], ['drawable-land-hdpi', 800, 480],
+    ['drawable-port-xhdpi', 720, 1280], ['drawable-land-xhdpi', 1280, 720],
+    ['drawable-port-xxhdpi', 960, 1600], ['drawable-land-xxhdpi', 1600, 960],
+    ['drawable-port-xxxhdpi', 1280, 1920], ['drawable-land-xxxhdpi', 1920, 1280]
+  ];
+  for (const [carpeta, w, h] of splashes) {
+    const dest = path.join(__dirname, ANDROID_RES, carpeta, 'splash.png');
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.writeFileSync(dest, encodePNG(renderSplash(w, h), w, h));
+  }
+  console.log('  + ' + splashes.length + ' splash con el gato sobre cian');
 }
+
+// Material para la ficha de Play Store
+write('tienda/icono-512.png', 512, { bleed: true, catScale: 0.86 });
+const BANNER = path.join(__dirname, 'tienda/grafico-destacado-1024x500.png');
+fs.mkdirSync(path.dirname(BANNER), { recursive: true });
+fs.writeFileSync(BANNER, encodePNG(renderBanner(1024, 500), 1024, 500));
+console.log('  + material de Play Store (icono 512 y grafico destacado)');
 
 console.log('Iconos generados 🐱');

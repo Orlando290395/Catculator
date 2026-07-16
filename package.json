@@ -10,7 +10,8 @@
     "start": "electron .",
     "icon": "node build-icon.js",
     "dist": "electron-builder --win",
-    "pwa": "node build-pwa.js"
+    "pwa": "node build-pwa.js",
+    "capturas": "electron build-capturas.js"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.4.2",

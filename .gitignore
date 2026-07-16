@@ -1,8 +1,9 @@
 node_modules/
 
-# Salidas de compilación (se regeneran: npm run dist / npm run pwa / gradlew)
+# Salidas de compilación (se regeneran: npm run dist / pwa / icon / capturas / gradlew)
 dist/
 pwa-dist/
+tienda/
 *.apk
 *.aab
 
