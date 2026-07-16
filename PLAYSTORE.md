@@ -136,8 +136,10 @@ cualquiera, pero declararla como *dirigida a niños* te complica la aprobación 
    > se fija como precio base y Google lo convierte por país: al ponerlo, revisar qué muestra para
    > Estados Unidos y cuadrarlo en 0,99–1,00 USD (el mínimo de Play ronda los 0,99 USD).
    >
-   > Cuentas: Google se queda el 15%, quedan ~0,85 USD por venta, y el pago no se libera hasta el
-   > umbral mínimo (~100 USD, verificar para CR) — más de 100 ventas antes del primer cobro.
+   > Cuentas: la comisión estándar es 30%. Para el 15% (~0,85 USD por venta) hay que **inscribirse
+   > en el programa de cargos del servicio** en el perfil de pagos: crear el grupo de cuentas,
+   > declarar que no hay otras cuentas asociadas y aceptar los términos.
+   > El umbral de pago es USD 1.00 y se liquida mensual — una sola venta ya se paga.
    >
    > Pendiente de verificar: si los testers de la prueba cerrada tendrán que pagar el 1 USD o basta
    > con agregarlos en *License testing*. Comprobarlo ANTES de mandarles el enlace de opt-in: si les
