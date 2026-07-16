@@ -119,14 +119,22 @@ cualquiera, pero declararla como *dirigida a niños* te complica la aprobación 
    > En ese formulario está el campo **"Nombre del desarrollador"**: es el texto público que sale
    > bajo el nombre de la app en la ficha — el "creador" que ve todo el mundo. **Pon `Catculator`**,
    > no tu nombre. No tiene que ser tu nombre legal. Cambiarlo después es un trámite.
-2. **Crear la app** en la consola: nombre `Catculator`, idioma español, **app de pago**.
+2. **Perfil de pagos (comerciante)** — en Play Console, en cuanto la cuenta esté aprobada.
+   **Tiene su propia verificación, aparte de la de identidad**: datos fiscales (incluida la
+   información fiscal de EE. UU., normalmente el W-8BEN para no residentes) y cuenta bancaria en
+   colones. **Arrancarlo de inmediato**: es otro reloj que corre solo y sin él no se puede cobrar.
+
+3. **Crear la app** en la consola: nombre `Catculator`, idioma español, **app de pago**.
 
    > **El precio es una puerta de un solo sentido.** Una app publicada como gratuita no se puede
    > pasar nunca a de pago; al revés sí. Hay que fijar el precio ANTES de la primera publicación.
    >
    > De pago implica además: perfil de comerciante en Google Payments (datos fiscales y cuenta
-   > bancaria), **dirección legal completa visible en la ficha**, y que Costa Rica esté en la lista
-   > de países admitidos para comerciantes — verificar antes de nada.
+   > bancaria) y **dirección legal completa visible en la ficha**.
+   >
+   > Costa Rica sí admite registro de comercio; la moneda de cobro es **CRC (colones)**. El precio
+   > se fija como precio base y Google lo convierte por país: al ponerlo, revisar qué muestra para
+   > Estados Unidos y cuadrarlo en 0,99–1,00 USD (el mínimo de Play ronda los 0,99 USD).
    >
    > Cuentas: Google se queda el 15%, quedan ~0,85 USD por venta, y el pago no se libera hasta el
    > umbral mínimo (~100 USD, verificar para CR) — más de 100 ventas antes del primer cobro.
@@ -134,24 +142,26 @@ cualquiera, pero declararla como *dirigida a niños* te complica la aprobación 
    > Pendiente de verificar: si los testers de la prueba cerrada tendrán que pagar el 1 USD o basta
    > con agregarlos en *License testing*. Comprobarlo ANTES de mandarles el enlace de opt-in: si les
    > sale pantalla de cobro se caen del programa y el reloj de 14 días se reinicia.
-3. **Ficha principal** — pegar título, descripciones y subir de `tienda/`:
+4. **Fijar el precio antes de publicar** — 1 USD. Revisar la conversión que propone Google para
+   cada país, empezando por Estados Unidos.
+5. **Ficha principal** — pegar título, descripciones y subir de `tienda/`:
    - Icono 512×512 → `tienda/icono-512.png`
    - Gráfico destacado 1024×500 → `tienda/grafico-destacado-1024x500.png`
    - Capturas de teléfono (mínimo 2, hay 5) → `tienda/capturas/`
-4. **Publicar la política de privacidad**: `git push` y GitHub Pages la sirve en
-   `/Catculator/privacidad.html`. Verifica que abra antes de pegar la URL en la consola.
-5. **Rellenar los formularios** de arriba: seguridad de datos, clasificación, público objetivo,
+6. **Publicar la política de privacidad**: hecho — ya está viva en
+   https://orlando290395.github.io/Catculator/privacidad.html
+7. **Rellenar los formularios** de arriba: seguridad de datos, clasificación, público objetivo,
    más anuncios (**no tiene**) y app de noticias (**no**).
-6. **Prueba cerrada obligatoria** — para cuentas personales nuevas:
+8. **Prueba cerrada obligatoria** — para cuentas personales nuevas:
    - Mínimo **12 testers** que se queden **14 días seguidos** optados. Si alguien se sale, el
      contador se reinicia. Junta 14–15 personas por si acaso.
    - Los testers se agregan por correo (el de su cuenta de Google) o con una lista de Google Groups.
    - Sube `Catculator-1.0-release.aab` a la pista de prueba cerrada y pásales el enlace de opt-in.
    - **Este es el paso largo. Arráncalo en cuanto tengas la cuenta**, y mientras corren los 14 días
      dejas lista la ficha.
-7. **Solicitar acceso a producción** — se habilita al cumplir los 14 días. Google revisa; suele
+9. **Solicitar acceso a producción** — se habilita al cumplir los 14 días. Google revisa; suele
    tardar de días a un par de semanas en la primera app.
-8. **Publicar.**
+10. **Publicar.**
 
 ### Al subir el AAB
 
