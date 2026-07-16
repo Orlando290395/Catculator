@@ -1,5 +1,18 @@
 apply plugin: 'com.android.application'
 
+/* Credenciales de firma. Viven FUERA del repositorio (que es publico) en
+   Apps/Catculator-claves/. Sin ese archivo el proyecto sigue compilando: solo
+   quedan sin firmar los release. Con CATCULATOR_KEYSTORE se apunta a otra ruta. */
+def keystorePropsFile = rootProject.file(
+    System.getenv('CATCULATOR_KEYSTORE') ?: '../../Catculator-claves/keystore.properties')
+def keystoreProps = new Properties()
+def hayFirma = keystorePropsFile.exists()
+if (hayFirma) {
+    keystorePropsFile.withInputStream { keystoreProps.load(it) }
+} else {
+    logger.lifecycle("Sin keystore.properties: los release saldran sin firmar.")
+}
+
 android {
     namespace = "com.orlando.catculator"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,8 +29,21 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (hayFirma) {
+                storeFile file(keystoreProps['storeFile'])
+                storePassword keystoreProps['storePassword']
+                keyAlias keystoreProps['keyAlias']
+                keyPassword keystoreProps['keyPassword']
+            }
+        }
+    }
     buildTypes {
         release {
+            if (hayFirma) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

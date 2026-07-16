@@ -6,6 +6,12 @@ pwa-dist/
 *.apk
 *.aab
 
+# Claves de firma. NUNCA deben entrar al repo: es publico.
+# El .jks y su contrasena viven fuera del proyecto, en ../Catculator-claves/
+*.jks
+*.keystore
+keystore.properties
+
 # Basura del sistema
 Thumbs.db
 desktop.ini

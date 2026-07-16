@@ -73,5 +73,26 @@ npx cap sync android         # 2. copiarlos al proyecto Android
 cd android && ./gradlew assembleDebug   # 3. APK de pruebas
 ```
 
-El APK sale en `android/app/build/outputs/apk/debug/`. Para Play Store se necesita un AAB firmado
-(`bundleRelease`) y una clave de firma propia.
+El APK sale en `android/app/build/outputs/apk/debug/`. Sirve para probar, pero va firmado con la
+clave de depuración: Play Store lo rechaza, y quien lo instale no podrá actualizarlo luego con una
+versión de release (la firma no coincide y hay que desinstalar).
+
+### Firma y release
+
+La clave vive **fuera del repositorio** — este repo es público — en `../Catculator-claves/`:
+`catculator.jks` y `keystore.properties` con su contraseña. `app/build.gradle` la busca sola ahí;
+con la variable `CATCULATOR_KEYSTORE` se puede apuntar a otra ruta. Sin esos archivos el proyecto
+compila igual, solo que los release salen sin firmar.
+
+> **Esa clave es irreemplazable.** Si se pierde el `.jks` o su contraseña, Catculator no se puede
+> volver a actualizar en Play Store nunca más, ni con la misma cuenta. Google no los recupera.
+> Respáldalos en un gestor de contraseñas y en un disco aparte.
+
+```bash
+npm run pwa && npx cap sync android
+cd android
+./gradlew assembleRelease   # APK firmado, para repartir a mano
+./gradlew bundleRelease     # AAB firmado, el que pide Play Store
+```
+
+Salen en `android/app/build/outputs/` (`apk/release/` y `bundle/release/`).
