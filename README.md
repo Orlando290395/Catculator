@@ -54,6 +54,10 @@ de desarrollador (25 USD) más la prueba cerrada obligatoria con testers durante
 
 `npm run dist` genera `dist/Catculator Setup 1.0.0.exe` — instalador NSIS con acceso directo en escritorio y menú inicio.
 
+Ojo: la carpeta instalada por el instalador **no** es este proyecto. Se llama igual y es fácil
+confundirlas y borrar la buena. El proyecto es `Apps/Catculator`; la app instalada va donde la
+mandes en el instalador.
+
 ## PWA
 
 Publicada con GitHub Pages desde la raíz de `main`: basta un `git push` y en ~1 minuto está arriba.
