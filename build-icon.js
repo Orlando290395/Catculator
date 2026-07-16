@@ -92,16 +92,21 @@ const C = {
   whisk: [0xe8, 0xe8, 0xee, 255]
 };
 
-/* bleed: fondo cuadrado a sangre (Android recorta la forma él mismo; iOS aplica su
-   propio redondeo y pinta de negro cualquier zona transparente).
-   catScale: encoge al gato para que quepa en la zona segura de los iconos maskable. */
+/* Formas de fondo:
+     (nada)  cuadrado redondeado — icono clásico
+     bleed   cuadrado a sangre (Android recorta él mismo; iOS pinta de negro lo transparente)
+     round   círculo — ic_launcher_round de Android
+     noBg    sin fondo: el gato solo, para el icono adaptativo (el fondo lo pone Android)
+   catScale encoge al gato para que quepa en la zona segura de cada formato. */
 function scene(u, v, opts = {}) {
-  const { bleed = false, catScale = 1 } = opts;
+  const { bleed = false, round = false, noBg = false, catScale = 1 } = opts;
 
   let color = null;
-  if (bleed) color = C.bg;
-  else if (inRoundedRect(u, v, 256, 56)) color = C.bg;
-  else return [0, 0, 0, 0];
+  if (!noBg) {
+    if (bleed) color = C.bg;
+    else if (round) { if (!inEllipse(u, v, 128, 128, 128, 128)) return [0, 0, 0, 0]; color = C.bg; }
+    else { if (!inRoundedRect(u, v, 256, 56)) return [0, 0, 0, 0]; color = C.bg; }
+  }
 
   if (catScale !== 1) {
     u = (u - 128) / catScale + 128;
@@ -137,7 +142,7 @@ function scene(u, v, opts = {}) {
     if (nearSegment(u, v, x1, y1, x2, y2, 2.4)) color = C.whisk;
   }
 
-  return color;
+  return color || [0, 0, 0, 0]; // con noBg, fuera del gato no hay nada
 }
 
 // ---------- Render con supermuestreo 3x3 ----------
@@ -194,10 +199,10 @@ function buildICO(pngs) {
   return Buffer.concat([header, ...entries, ...pngs.map(p => p.data)]);
 }
 
-fs.mkdirSync(path.join(__dirname, 'icons'), { recursive: true });
-
 function write(name, size, opts) {
-  fs.writeFileSync(path.join(__dirname, name), encodePNG(render(size, opts), size, size));
+  const dest = path.join(__dirname, name);
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  fs.writeFileSync(dest, encodePNG(render(size, opts), size, size));
   return name;
 }
 
@@ -207,10 +212,26 @@ const pngs = sizes.map(size => ({ size, data: encodePNG(render(size), size, size
 fs.writeFileSync(path.join(__dirname, 'icon.png'), pngs[0].data);
 fs.writeFileSync(path.join(__dirname, 'icon.ico'), buildICO(pngs));
 
-// Móvil (PWA / Play Store)
+// PWA
 write('icons/icon-192.png', 192);
 write('icons/icon-512.png', 512);
 write('icons/icon-maskable-512.png', 512, { bleed: true, catScale: 0.72 });
 write('icons/apple-touch-icon.png', 180, { bleed: true, catScale: 0.86 });
 
-console.log('Iconos de escritorio y móvil generados 🐱');
+// Android (Capacitor), solo si el proyecto nativo ya existe
+const ANDROID_RES = 'android/app/src/main/res';
+if (fs.existsSync(path.join(__dirname, ANDROID_RES))) {
+  const densidades = { mdpi: 1, hdpi: 1.5, xhdpi: 2, xxhdpi: 3, xxxhdpi: 4 };
+  for (const [dpi, d] of Object.entries(densidades)) {
+    const dir = `${ANDROID_RES}/mipmap-${dpi}`;
+    write(`${dir}/ic_launcher.png`, Math.round(48 * d));
+    write(`${dir}/ic_launcher_round.png`, Math.round(48 * d), { round: true, catScale: 0.82 });
+    /* Icono adaptativo: el lienzo mide 108dp pero la zona segura es solo el círculo
+       central de 72dp — fuera de ahí cada launcher recorta con su propia forma, así que
+       el gato entero (orejas incluidas) tiene que caber dentro de ese círculo. */
+    write(`${dir}/ic_launcher_foreground.png`, Math.round(108 * d), { noBg: true, catScale: 0.64 });
+  }
+  console.log('  + mipmaps de Android (5 densidades x 3 variantes)');
+}
+
+console.log('Iconos generados 🐱');

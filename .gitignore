@@ -1,8 +1,10 @@
 node_modules/
 
-# Salidas de compilación (se regeneran: npm run dist / npm run pwa)
+# Salidas de compilación (se regeneran: npm run dist / npm run pwa / gradlew)
 dist/
 pwa-dist/
+*.apk
+*.aab
 
 # Basura del sistema
 Thumbs.db

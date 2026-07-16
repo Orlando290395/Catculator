@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Cian de Catculator: es el fondo del icono adaptativo, detras del gato. -->
+    <color name="ic_launcher_background">#67e8f9</color>
+</resources>

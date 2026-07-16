@@ -1,6 +1,13 @@
 # Catculator 🐱🧮
 
-La calculadora con temática de gatos. App de escritorio para Windows hecha con Electron.
+La calculadora con temática de gatos. Corre en tres sitios con el mismo código:
+
+- **Escritorio** (Windows) — Electron, instalador NSIS.
+- **Web / celular** — PWA instalable, funciona sin conexión: <https://orlando290395.github.io/Catculator/>
+- **Android** — APK / AAB vía Capacitor.
+
+Todo el UI (`index.html`, `style.css`, `renderer.js`) es web pura: no usa nada de Electron ni de
+Node, solo `localStorage`. Por eso el mismo código sirve para las tres.
 
 ## Características
 
@@ -22,11 +29,49 @@ La calculadora con temática de gatos. App de escritorio para Windows hecha con 
 
 ```bash
 npm install        # instalar dependencias
-npm start          # ejecutar en modo desarrollo
-npm run icon       # regenerar icon.png / icon.ico
+npm start          # ejecutar en modo desarrollo (Electron)
+npm run icon       # regenerar todos los iconos (escritorio y móvil)
+npm run pwa        # armar pwa-dist/ — solo los archivos de la versión web
 npm run dist       # crear instalador de Windows (carpeta dist/)
 ```
 
-## Instalador
+`build-icon.js` dibuja el gato por código y genera tanto `icon.ico`/`icon.png` (escritorio) como
+`icons/` (192, 512, maskable y apple-touch para móvil). No hay dependencias ni archivos fuente.
+
+## Escritorio
 
 `npm run dist` genera `dist/Catculator Setup 1.0.0.exe` — instalador NSIS con acceso directo en escritorio y menú inicio.
+
+## PWA
+
+Publicada con GitHub Pages desde la raíz de `main`: basta un `git push` y en ~1 minuto está arriba.
+Todas las rutas son relativas, así que funciona igual en la subcarpeta `/Catculator/` que en la raíz
+de un dominio.
+
+> **Al cambiar el código, sube la versión del caché en `sw.js`** (`catculator-v1` → `v2`). Si no, los
+> celulares que ya la tengan instalada seguirán sirviendo la versión vieja desde el caché.
+
+Para publicarla en otro hosting (Netlify, etc.), `npm run pwa` deja en `pwa-dist/` solo lo necesario
+(~77 KB). Nunca subas la carpeta del proyecto entera: lleva `node_modules` con Electron dentro.
+
+## Android
+
+Requiere **JDK 21** (Capacitor 8 compila con `source release 21`; con el 17 falla con
+`invalid source release: 21`) y el SDK de Android con la plataforma 36. En esta máquina:
+
+| | |
+|---|---|
+| `JAVA_HOME` | `%LOCALAPPDATA%\Java\jdk-21.0.11+10` |
+| `ANDROID_HOME` | `%LOCALAPPDATA%\Android\Sdk` |
+
+`capacitor.config.ts` apunta a `pwa-dist/` como `webDir`, así que **hay que correr `npm run pwa`
+antes de cada `npx cap sync`** o Capacitor empaquetará una versión vieja.
+
+```bash
+npm run pwa                  # 1. armar los archivos web
+npx cap sync android         # 2. copiarlos al proyecto Android
+cd android && ./gradlew assembleDebug   # 3. APK de pruebas
+```
+
+El APK sale en `android/app/build/outputs/apk/debug/`. Para Play Store se necesita un AAB firmado
+(`bundleRelease`) y una clave de firma propia.
