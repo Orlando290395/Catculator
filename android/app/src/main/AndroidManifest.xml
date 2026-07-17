@@ -35,7 +35,7 @@
         </provider>
     </application>
 
-    <!-- Permissions -->
-
-    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Sin permisos: la app es 100% local. Capacitor traia INTERNET de fabrica
+         pero no lo usa (el WebView sirve los assets sin red), y la ficha de Play
+         y privacidad.html prometen "sin permisos" literalmente. -->
 </manifest>
