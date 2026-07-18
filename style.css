@@ -247,6 +247,8 @@ body {
   padding: 14px;
   box-shadow: 0 10px 30px var(--shadow);
   animation: pop-in 0.22s ease;
+  max-height: min(72vh, 560px);
+  overflow-y: auto;
 }
 
 :root[data-theme="noche"] .theme-panel { color: #e2f8fd; }
@@ -272,7 +274,8 @@ body {
 }
 
 .theme-swatch,
-.fur-swatch {
+.fur-swatch,
+.outfit-swatch {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -288,9 +291,31 @@ body {
 }
 
 .theme-swatch:hover,
-.fur-swatch:hover { background: rgba(127, 127, 127, 0.12); }
+.fur-swatch:hover,
+.outfit-swatch:hover { background: rgba(127, 127, 127, 0.12); }
 .theme-swatch.active,
-.fur-swatch.active { border-color: var(--accent); }
+.fur-swatch.active,
+.outfit-swatch.active { border-color: var(--accent); }
+
+.mini {
+  width: 18px;
+  font-size: 15px;
+  text-align: center;
+  display: inline-block;
+}
+
+/* ---------- Atuendos del gato ---------- */
+.outfit { display: none; }
+:root[data-outfit="ninja"] #outfit-ninja,
+:root[data-outfit="ninja"] #outfit-ninja-paws,
+:root[data-outfit="futbol"] #outfit-futbol,
+:root[data-outfit="futbol"] #outfit-futbol-ball,
+:root[data-outfit="pirata"] #outfit-pirata,
+:root[data-outfit="pirata"] #outfit-pirata-paws,
+:root[data-outfit="mago"] #outfit-mago,
+:root[data-outfit="mago"] #outfit-mago-paws,
+:root[data-outfit="capucha"] #outfit-capucha,
+:root[data-outfit="capucha"] #outfit-capucha-extra { display: block; }
 
 .dot {
   width: 18px;

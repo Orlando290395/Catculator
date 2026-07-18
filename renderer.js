@@ -413,7 +413,9 @@ function enterError(kind) {
     'Ni con nueve vidas resuelvo eso 😿',
     '¡Error gatuno! Revisa la operación 🐾'
   ]), 3800);
-  playHiss();
+  playGrowl();
+  // Dividir entre cero es lo imperdonable: gruñe y encima bufa
+  if (kind === 'div0') setTimeout(playHiss, 450);
 }
 
 // ---------- Burbuja de diálogo ----------
@@ -569,24 +571,57 @@ function playClick() {
 function playMeow() {
   if (!soundOn) return;
   const ac = ctx();
-  const osc = ac.createOscillator();
-  const gain = ac.createGain();
-  osc.type = 'sawtooth';
   const t = ac.currentTime;
-  osc.frequency.setValueAtTime(520, t);
-  osc.frequency.linearRampToValueAtTime(880, t + 0.12);
-  osc.frequency.linearRampToValueAtTime(640, t + 0.28);
-  osc.frequency.linearRampToValueAtTime(430, t + 0.42);
+  // Cada maullido sale un poco distinto: tono y duración aleatorios
+  const p = 0.9 + Math.random() * 0.25;
+  const dur = 0.5 + Math.random() * 0.15;
+
+  const osc = ac.createOscillator();
+  osc.type = 'sawtooth';
+  // Contorno "mi-a-u": sube rápido, meseta y cae
+  osc.frequency.setValueAtTime(340 * p, t);
+  osc.frequency.linearRampToValueAtTime(760 * p, t + dur * 0.22);
+  osc.frequency.setValueAtTime(760 * p, t + dur * 0.5);
+  osc.frequency.linearRampToValueAtTime(300 * p, t + dur);
+
+  // Vibrato suave en la meseta
+  const vib = ac.createOscillator();
+  const vibGain = ac.createGain();
+  vib.type = 'sine';
+  vib.frequency.value = 6.5;
+  vibGain.gain.value = 12;
+  vib.connect(vibGain).connect(osc.frequency);
+
+  // Dos formantes en paralelo que barren de "iii" a "aau" — la "boca" del gato
+  const f1 = ac.createBiquadFilter();
+  f1.type = 'bandpass'; f1.Q.value = 5;
+  f1.frequency.setValueAtTime(1000, t);
+  f1.frequency.linearRampToValueAtTime(650, t + dur);
+  const f2 = ac.createBiquadFilter();
+  f2.type = 'bandpass'; f2.Q.value = 7;
+  f2.frequency.setValueAtTime(2400, t);
+  f2.frequency.linearRampToValueAtTime(950, t + dur);
+  // Y un poco de cuerpo grave directo
+  const f0 = ac.createBiquadFilter();
+  f0.type = 'lowpass';
+  f0.frequency.value = 500;
+
+  const gain = ac.createGain();
   gain.gain.setValueAtTime(0.0001, t);
-  gain.gain.exponentialRampToValueAtTime(0.14, t + 0.06);
-  gain.gain.setValueAtTime(0.14, t + 0.3);
-  gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
-  const filter = ac.createBiquadFilter();
-  filter.type = 'lowpass';
-  filter.frequency.value = 1800;
-  osc.connect(filter).connect(gain).connect(ac.destination);
-  osc.start(t);
-  osc.stop(t + 0.5);
+  gain.gain.exponentialRampToValueAtTime(0.16, t + 0.05);
+  gain.gain.setValueAtTime(0.16, t + dur * 0.6);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+
+  const g1 = ac.createGain(); g1.gain.value = 0.7;
+  const g2 = ac.createGain(); g2.gain.value = 0.4;
+  const g0 = ac.createGain(); g0.gain.value = 0.25;
+  osc.connect(f1).connect(g1).connect(gain);
+  osc.connect(f2).connect(g2).connect(gain);
+  osc.connect(f0).connect(g0).connect(gain);
+  gain.connect(ac.destination);
+
+  osc.start(t); vib.start(t);
+  osc.stop(t + dur + 0.05); vib.stop(t + dur + 0.05);
 }
 
 function playPurr() {
@@ -634,6 +669,55 @@ function playHiss() {
   gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.4);
   noise.connect(filter).connect(gain).connect(ac.destination);
   noise.start(t);
+}
+
+function playGrowl() {
+  if (!soundOn) return;
+  const ac = ctx();
+  const t = ac.currentTime;
+  const dur = 0.65;
+
+  // Base grave que desciende — la amenaza
+  const osc = ac.createOscillator();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(110, t);
+  osc.frequency.linearRampToValueAtTime(70, t + dur);
+
+  // Aspereza: tremolo rápido sobre el volumen
+  const trem = ac.createOscillator();
+  const tremGain = ac.createGain();
+  trem.type = 'sine';
+  trem.frequency.value = 28;
+  tremGain.gain.value = 0.05;
+
+  const filter = ac.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = 380;
+
+  const gain = ac.createGain();
+  gain.gain.setValueAtTime(0.0001, t);
+  gain.gain.exponentialRampToValueAtTime(0.13, t + 0.08);
+  gain.gain.setValueAtTime(0.13, t + dur * 0.7);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  trem.connect(tremGain).connect(gain.gain);
+
+  // Rugosidad: ruido grave por debajo
+  const bufferSize = ac.sampleRate * dur;
+  const buffer = ac.createBuffer(1, bufferSize, ac.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+  const noise = ac.createBufferSource();
+  noise.buffer = buffer;
+  const nFilter = ac.createBiquadFilter();
+  nFilter.type = 'lowpass';
+  nFilter.frequency.value = 220;
+  const nGain = ac.createGain();
+  nGain.gain.value = 0.35;
+  noise.connect(nFilter).connect(nGain).connect(gain);
+
+  osc.connect(filter).connect(gain).connect(ac.destination);
+  osc.start(t); trem.start(t); noise.start(t);
+  osc.stop(t + dur); trem.stop(t + dur);
 }
 
 // ---------- Botón de sonido ----------
@@ -728,6 +812,36 @@ document.querySelectorAll('.fur-swatch').forEach(btn => {
 
 applyFur(localStorage.getItem('catculator-fur') || 'carbon');
 
+// ---------- Atuendos del gato ----------
+const OUTFIT_NAMES = {
+  ninguno: 'Al natural, como buen gato 🐱',
+  ninja: '¡Ninja! Silencioso como patita en alfombra 🥷',
+  futbol: '¡GOOOL! Bueno, primero las cuentas ⚽',
+  pirata: '¡Arrr! El terror de los siete sofás 🏴‍☠️',
+  mago: '¡Abracadabra! Tus errores desaparecen 🧙',
+  capucha: 'Nada es verdadero... todo es calculable 🤍'
+};
+
+function applyOutfit(outfit) {
+  document.documentElement.setAttribute('data-outfit', outfit);
+  localStorage.setItem('catculator-outfit', outfit);
+  document.querySelectorAll('.outfit-swatch').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.outfit === outfit);
+  });
+}
+
+document.querySelectorAll('.outfit-swatch').forEach(btn => {
+  btn.addEventListener('click', () => {
+    applyOutfit(btn.dataset.outfit);
+    say(OUTFIT_NAMES[btn.dataset.outfit], 2400);
+    setMood('happy', 2000);
+    playMeow();
+    themePanel.classList.add('hidden');
+  });
+});
+
+applyOutfit(localStorage.getItem('catculator-outfit') || 'ninguno');
+
 // ---------- Modo básica / científica ----------
 const btnMode = document.getElementById('btn-mode');
 const sciPad = document.getElementById('sci-pad');
@@ -816,15 +930,25 @@ document.addEventListener('keydown', (e) => {
 // ---------- Clic en el gato ----------
 elCat.addEventListener('click', () => {
   wakeUp();
-  playMeow();
   setMood('happy', 2000);
-  say(randomFrom([
-    '¡Miau! 😺',
-    '¡Prrrr! Me gustan las caricias',
-    '¿Me trajiste atún? 🐟',
-    '¡Cuidado con mis bigotes!',
-    'Soy la mejor CATculadora del mundo 🐾'
-  ]), 2400);
+  // A veces maúlla, a veces ronronea — con frase a juego
+  if (Math.random() < 0.45) {
+    playPurr();
+    say(randomFrom([
+      'Prrrrrr... 😌',
+      '*ronroneo feliz*',
+      'Prrrr... sigue, humano 🐾',
+      '*motor de ronroneos encendido*'
+    ]), 2400);
+  } else {
+    playMeow();
+    say(randomFrom([
+      '¡Miau! 😺',
+      '¿Me trajiste atún? 🐟',
+      '¡Cuidado con mis bigotes!',
+      'Soy la mejor CATculadora del mundo 🐾'
+    ]), 2400);
+  }
 });
 
 // ---------- Saludo inicial ----------
