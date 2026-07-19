@@ -832,6 +832,7 @@ document.addEventListener('click', (e) => {
     if (!panel.classList.contains('hidden') &&
         !panel.contains(e.target) && e.target !== btn) {
       panel.classList.add('hidden');
+      btn.classList.remove('active');
     }
   }
 });
@@ -944,12 +945,18 @@ const btnConv = document.getElementById('btn-conv');
 const btnQuiz = document.getElementById('btn-quiz');
 
 function panelPairs() {
-  return [[themePanel, btnTheme], [historyPanel, btnHistory], [convPanel, btnConv]];
+  return [
+    [themePanel, btnTheme], [historyPanel, btnHistory],
+    [convPanel, btnConv], [notesPanel, btnNotes]
+  ];
 }
 
 function closePanels(except) {
-  for (const [panel] of panelPairs()) {
-    if (panel !== except) panel.classList.add('hidden');
+  for (const [panel, btn] of panelPairs()) {
+    if (panel !== except) {
+      panel.classList.add('hidden');
+      btn.classList.remove('active');
+    }
   }
 }
 
@@ -1183,6 +1190,58 @@ btnConv.addEventListener('click', (e) => {
 
 convSetCategory('longitud');
 
+// ---------- Bloc de notas ----------
+const notesPanel = document.getElementById('notes-panel');
+const btnNotes = document.getElementById('btn-notes');
+const notesText = document.getElementById('notes-text');
+
+notesText.value = localStorage.getItem('catculator-notes') || '';
+
+notesText.addEventListener('input', () => {
+  localStorage.setItem('catculator-notes', notesText.value);
+});
+
+btnNotes.addEventListener('click', (e) => {
+  e.stopPropagation();
+  playClick();
+  wakeUp();
+  const opening = notesPanel.classList.contains('hidden');
+  closePanels(notesPanel);
+  notesPanel.classList.toggle('hidden');
+  btnNotes.classList.toggle('active', opening);
+  if (opening) {
+    say(randomFrom([
+      'Apunta tú, que yo no tengo pulgares 📝',
+      'Tu bloc de notas gatuno 🐾',
+      'Ideas frescas como el atún 📝'
+    ]), 2400);
+    notesText.focus();
+  }
+});
+
+// Inserta el número en pantalla donde esté el cursor del bloc
+document.getElementById('btn-notes-insert').addEventListener('click', () => {
+  if (errorState) return;
+  playClick();
+  const num = elResult.textContent.replace(/,/g, '');
+  const before = notesText.value.slice(0, notesText.selectionStart);
+  const after = notesText.value.slice(notesText.selectionEnd);
+  const sep = before && !/[\s\n]$/.test(before) ? ' ' : '';
+  notesText.value = before + sep + num + after;
+  const pos = (before + sep + num).length;
+  notesText.setSelectionRange(pos, pos);
+  notesText.focus();
+  localStorage.setItem('catculator-notes', notesText.value);
+});
+
+document.getElementById('btn-notes-clear').addEventListener('click', () => {
+  playClick();
+  notesText.value = '';
+  localStorage.removeItem('catculator-notes');
+  notesText.focus();
+  say('Bloc limpio como mis bigotes ✨', 2000);
+});
+
 // ---------- Modo aprendiz: el gato pregunta ----------
 function newQuiz() {
   // Sube de nivel cada 5 aciertos seguidos
@@ -1325,6 +1384,9 @@ function flashKey(selector) {
 }
 
 document.addEventListener('keydown', (e) => {
+  // Escribiendo en el bloc de notas o el conversor, las teclas son suyas
+  const tag = e.target.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
   const k = e.key;
   if (/^[0-9]$/.test(k)) { playClick(); pushToken(k); flashKey(`.key[data-k="${k}"]`); }
   else if (k === '.' || k === ',') { playClick(); pushToken('.'); flashKey('.key[data-k="."]'); }

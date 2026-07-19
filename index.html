@@ -121,6 +121,17 @@
       <button id="btn-conv-use" class="panel-action">Usar en la calculadora 🐾</button>
     </div>
 
+    <!-- Bloc de notas -->
+    <div id="notes-panel" class="side-panel hidden">
+      <p class="theme-title">Bloc de notas 📝</p>
+      <textarea id="notes-text" class="notes-textarea"
+        placeholder="Apunta aquí tus cuentas, listas o ideas... se guardan solas 🐾"></textarea>
+      <div class="notes-row">
+        <button id="btn-notes-insert" class="panel-action">➕ Resultado</button>
+        <button id="btn-notes-clear" class="panel-action secondary">🧽 Borrar</button>
+      </div>
+    </div>
+
     <!-- Escena del gato -->
     <div class="cat-scene">
       <div id="speech" class="speech hidden"><span id="speech-text"></span></div>
@@ -365,6 +376,7 @@
     <!-- Controles -->
     <div class="calc-controls">
       <button id="btn-mode" class="ctrl-btn" title="Cambiar modo">🔬 Científica</button>
+      <button id="btn-notes" class="ctrl-btn" title="Bloc de notas">📝 Notas</button>
       <button id="btn-angle" class="ctrl-btn" title="Grados / Radianes">DEG</button>
       <span id="mem-chip" class="mem-chip" title="Memoria activa">M</span>
     </div>
