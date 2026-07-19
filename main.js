@@ -27,7 +27,15 @@ function createWindow() {
           console.log('TEST RESULT:', JSON.stringify(result));
           await new Promise(r => setTimeout(r, 600));
         }
-        const img = await win.webContents.capturePage();
+        // Si la ventana quedó tapada no se pinta y la captura sale vacía:
+        // traerla al frente y reintentar hasta que haya píxeles.
+        win.show();
+        win.moveTop();
+        let img = await win.webContents.capturePage();
+        for (let i = 0; i < 4 && img.isEmpty(); i++) {
+          await new Promise(r => setTimeout(r, 500));
+          img = await win.webContents.capturePage();
+        }
         require('fs').writeFileSync(process.env.CATCULATOR_SHOT, img.toPNG());
         app.quit();
       }, 1800);

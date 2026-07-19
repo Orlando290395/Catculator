@@ -11,6 +11,13 @@ let justEvaluated = false;
 let errorState = false;
 let ansFrac = null;         // {n, d} si el resultado tiene fracción exacta
 let fracMode = false;       // mostrar el resultado como fracción
+let quizMode = false;       // modo aprendiz: el gato pregunta
+let quiz = null;            // pregunta actual {text, answer}
+let racha = 0;              // aciertos seguidos en el quiz
+let mejorRacha = parseInt(localStorage.getItem('catculator-racha') || '0', 10);
+let history = [];           // historial de cálculos {e, r, v}
+try { history = JSON.parse(localStorage.getItem('catculator-history')) || []; }
+catch (e) { history = []; }
 
 const elResult = document.getElementById('result');
 const elExpr = document.getElementById('expression');
@@ -72,6 +79,16 @@ function toFraction(x) {
 
 function formatFraction(f) {
   return groupInt(String(f.n)) + '/' + groupInt(String(f.d));
+}
+
+// Convierte un número en la lista de teclas que lo escribirían
+// (para reutilizar valores del historial o del conversor).
+function numberToTokens(v) {
+  let s = String(roundNice(v));
+  if (s.includes('e')) {
+    s = v.toFixed(12).replace(/0+$/, '').replace(/\.$/, '');
+  }
+  return s.split('');
 }
 
 // ---------- Motor de expresiones ----------
@@ -275,11 +292,18 @@ function fitResult() {
 }
 
 function updateDisplay(popAnim = false) {
-  elFrac.classList.toggle('hidden', !(justEvaluated && ansFrac && !errorState));
+  elFrac.classList.toggle('hidden', !(justEvaluated && ansFrac && !errorState && !quizMode));
   elFrac.classList.toggle('active', fracMode);
   if (errorState) {
     elResult.textContent = '¡Miau!';
     elExpr.textContent = ' ';
+    fitResult();
+    return;
+  }
+  if (quizMode) {
+    elExpr.textContent = '🎓 ' + (quiz ? quiz.text + ' = ?' : '') +
+      (racha > 0 ? '  ·  🔥' + racha : '');
+    elResult.textContent = tokens.length ? prettify(rawExpr()) : '?';
     fitResult();
     return;
   }
@@ -342,6 +366,7 @@ function clearAll(silent) {
 function equals() {
   if (errorState) return;
   wakeUp();
+  if (quizMode) { checkQuiz(); return; }
   const raw = rawExpr();
   if (!raw) { updateDisplay(true); return; }
   let v;
@@ -352,6 +377,7 @@ function equals() {
   ansFrac = toFraction(v);
   fracMode = false;
   justEvaluated = true;
+  addHistory(raw, v);
   updateDisplay(true);
   celebrate(v);
 }
@@ -797,13 +823,16 @@ function applyTheme(theme) {
 
 btnTheme.addEventListener('click', (e) => {
   e.stopPropagation();
+  closePanels(themePanel);
   themePanel.classList.toggle('hidden');
 });
 
 document.addEventListener('click', (e) => {
-  if (!themePanel.classList.contains('hidden') &&
-      !themePanel.contains(e.target) && e.target !== btnTheme) {
-    themePanel.classList.add('hidden');
+  for (const [panel, btn] of panelPairs()) {
+    if (!panel.classList.contains('hidden') &&
+        !panel.contains(e.target) && e.target !== btn) {
+      panel.classList.add('hidden');
+    }
   }
 });
 
@@ -906,6 +935,338 @@ document.getElementById('btn-angle').addEventListener('click', () => {
 });
 setAngle(angleMode);
 updateMemChip();
+
+// ---------- Paneles laterales ----------
+const historyPanel = document.getElementById('history-panel');
+const convPanel = document.getElementById('conv-panel');
+const btnHistory = document.getElementById('btn-history');
+const btnConv = document.getElementById('btn-conv');
+const btnQuiz = document.getElementById('btn-quiz');
+
+function panelPairs() {
+  return [[themePanel, btnTheme], [historyPanel, btnHistory], [convPanel, btnConv]];
+}
+
+function closePanels(except) {
+  for (const [panel] of panelPairs()) {
+    if (panel !== except) panel.classList.add('hidden');
+  }
+}
+
+// ---------- Copiar resultado ----------
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.className = 'copy-helper';
+  document.body.appendChild(ta);
+  ta.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch (e) {}
+  ta.remove();
+  return ok;
+}
+
+elResult.addEventListener('click', () => {
+  if (errorState || quizMode) return;
+  wakeUp();
+  const text = elResult.textContent.replace(/,/g, '');
+  const done = () => {
+    playClick();
+    setMood('happy', 1600);
+    say('¡Copiado en mis patitas! 📋', 2000);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(() => { if (fallbackCopy(text)) done(); });
+  } else if (fallbackCopy(text)) {
+    done();
+  }
+});
+
+// ---------- Historial ----------
+const historyList = document.getElementById('history-list');
+
+function addHistory(exprRaw, result) {
+  history.unshift({ e: prettify(exprRaw), r: formatNumber(result), v: result });
+  if (history.length > 40) history.length = 40;
+  localStorage.setItem('catculator-history', JSON.stringify(history));
+}
+
+function renderHistory() {
+  historyList.textContent = '';
+  if (!history.length) {
+    const p = document.createElement('p');
+    p.className = 'history-empty';
+    p.textContent = 'Aún no hay cuentas... ¡a calcular! 🐾';
+    historyList.appendChild(p);
+    return;
+  }
+  for (const item of history) {
+    const btn = document.createElement('button');
+    btn.className = 'history-item';
+    btn.title = 'Usar este resultado';
+    const ex = document.createElement('span');
+    ex.className = 'history-expr';
+    ex.textContent = item.e + ' =';
+    const rs = document.createElement('span');
+    rs.className = 'history-res';
+    rs.textContent = item.r;
+    btn.append(ex, rs);
+    btn.addEventListener('click', () => {
+      playClick();
+      if (errorState) clearAll(true);
+      if (quizMode) return;
+      justEvaluated = false;
+      tokens = numberToTokens(item.v);
+      closePanels();
+      updateDisplay(true);
+      say('Recuperado del baúl de cuentas 🕘', 2000);
+    });
+    historyList.appendChild(btn);
+  }
+}
+
+btnHistory.addEventListener('click', (e) => {
+  e.stopPropagation();
+  playClick();
+  wakeUp();
+  closePanels(historyPanel);
+  renderHistory();
+  historyPanel.classList.toggle('hidden');
+});
+
+document.getElementById('btn-history-clear').addEventListener('click', () => {
+  playClick();
+  history = [];
+  localStorage.removeItem('catculator-history');
+  renderHistory();
+  say('Historial borradito, como platito de atún 🧽', 2200);
+});
+
+// ---------- Conversor de unidades ----------
+// Factores hacia la unidad base de cada categoría; temperatura va aparte
+// porque no es un simple factor (tiene desplazamiento).
+const CONV = {
+  longitud: {
+    label: '📏 Longitud',
+    units: {
+      'mm': 0.001, 'cm': 0.01, 'm': 1, 'km': 1000,
+      'pulgadas': 0.0254, 'pies': 0.3048, 'yardas': 0.9144, 'millas': 1609.344
+    },
+    def: ['cm', 'pulgadas']
+  },
+  peso: {
+    label: '⚖️ Peso',
+    units: {
+      'mg': 1e-6, 'g': 0.001, 'kg': 1,
+      'libras': 0.45359237, 'onzas': 0.028349523125, 'toneladas': 1000
+    },
+    def: ['kg', 'libras']
+  },
+  temperatura: {
+    label: '🌡️ Temperatura',
+    units: { '°C': 1, '°F': 1, 'K': 1 },
+    def: ['°C', '°F']
+  },
+  volumen: {
+    label: '🧪 Volumen',
+    units: {
+      'ml': 0.001, 'litros': 1, 'tazas': 0.24,
+      'galones (US)': 3.785411784, 'onzas líquidas': 0.0295735295625
+    },
+    def: ['litros', 'galones (US)']
+  },
+  velocidad: {
+    label: '🚀 Velocidad',
+    units: { 'm/s': 1, 'km/h': 1 / 3.6, 'mph': 0.44704, 'nudos': 0.514444 },
+    def: ['km/h', 'mph']
+  }
+};
+
+const convCat = document.getElementById('conv-cat');
+const convValue = document.getElementById('conv-value');
+const convFrom = document.getElementById('conv-from');
+const convTo = document.getElementById('conv-to');
+const convResult = document.getElementById('conv-result');
+let lastConv = null;
+
+function fillSelect(sel, values, chosen) {
+  sel.textContent = '';
+  for (const v of values) {
+    const opt = document.createElement('option');
+    opt.value = v;
+    opt.textContent = v;
+    if (v === chosen) opt.selected = true;
+    sel.appendChild(opt);
+  }
+}
+
+for (const key of Object.keys(CONV)) {
+  const opt = document.createElement('option');
+  opt.value = key;
+  opt.textContent = CONV[key].label;
+  convCat.appendChild(opt);
+}
+
+function convSetCategory(key) {
+  const cat = CONV[key];
+  fillSelect(convFrom, Object.keys(cat.units), cat.def[0]);
+  fillSelect(convTo, Object.keys(cat.units), cat.def[1]);
+  convCompute();
+}
+
+function convertTemp(v, from, to) {
+  let c;
+  if (from === '°C') c = v;
+  else if (from === '°F') c = (v - 32) * 5 / 9;
+  else c = v - 273.15;
+  if (to === '°C') return c;
+  if (to === '°F') return c * 9 / 5 + 32;
+  return c + 273.15;
+}
+
+function convCompute() {
+  const v = parseFloat(convValue.value);
+  if (!isFinite(v)) {
+    convResult.textContent = '—';
+    lastConv = null;
+    return;
+  }
+  const key = convCat.value;
+  const from = convFrom.value, to = convTo.value;
+  let r;
+  if (key === 'temperatura') r = convertTemp(v, from, to);
+  else r = v * CONV[key].units[from] / CONV[key].units[to];
+  lastConv = roundNice(r);
+  const shown = isFinite(lastConv) ? parseFloat(lastConv.toPrecision(8)) : lastConv;
+  convResult.textContent = formatNumber(v) + ' ' + from + ' = ' + formatNumber(shown) + ' ' + to;
+}
+
+convCat.addEventListener('change', () => convSetCategory(convCat.value));
+convValue.addEventListener('input', convCompute);
+convFrom.addEventListener('change', convCompute);
+convTo.addEventListener('change', convCompute);
+
+document.getElementById('conv-swap').addEventListener('click', () => {
+  playClick();
+  const a = convFrom.value;
+  convFrom.value = convTo.value;
+  convTo.value = a;
+  convCompute();
+});
+
+document.getElementById('btn-conv-use').addEventListener('click', () => {
+  if (lastConv === null || !isFinite(lastConv)) return;
+  playClick();
+  if (errorState) clearAll(true);
+  if (quizMode) return;
+  justEvaluated = false;
+  tokens = numberToTokens(lastConv);
+  closePanels();
+  updateDisplay(true);
+  setMood('happy', 1800);
+  say('¡Convertido y en pantalla! ⇄', 2200);
+});
+
+btnConv.addEventListener('click', (e) => {
+  e.stopPropagation();
+  playClick();
+  wakeUp();
+  closePanels(convPanel);
+  if (convPanel.classList.contains('hidden')) {
+    const v = currentValue();
+    if (isFinite(v) && Math.abs(v) < 1e12) convValue.value = String(roundNice(v));
+    convCompute();
+  }
+  convPanel.classList.toggle('hidden');
+});
+
+convSetCategory('longitud');
+
+// ---------- Modo aprendiz: el gato pregunta ----------
+function newQuiz() {
+  // Sube de nivel cada 5 aciertos seguidos
+  const lvl = Math.min(3, Math.floor(racha / 5));
+  const R = n => Math.floor(Math.random() * n);
+  const kind = randomFrom(['suma', 'resta', 'tabla', 'div']);
+  let a, b, answer, text;
+  if (kind === 'suma') {
+    const m = 10 + lvl * 30;
+    a = R(m) + 1; b = R(m) + 1;
+    answer = a + b; text = a + ' + ' + b;
+  } else if (kind === 'resta') {
+    const m = 10 + lvl * 30;
+    a = R(m) + 5; b = R(a) + 1;
+    answer = a - b; text = a + ' − ' + b;
+  } else if (kind === 'tabla') {
+    a = R(9 + lvl) + 2; b = R(9) + 2;
+    answer = a * b; text = a + ' × ' + b;
+  } else {
+    b = R(9) + 2; answer = R(9 + lvl) + 2;
+    a = b * answer;
+    text = a + ' ÷ ' + b;
+  }
+  quiz = { text, answer };
+  updateDisplay();
+}
+
+function checkQuiz() {
+  const raw = rawExpr();
+  if (!raw) return;
+  let v;
+  try { v = evaluate(raw); }
+  catch (e) {
+    tokens = [];
+    updateDisplay();
+    say('Eso no parece un número 🙀', 2200);
+    return;
+  }
+  tokens = [];
+  if (v === quiz.answer) {
+    racha++;
+    playPurr();
+    spawnPawPrints();
+    setMood('happy', 2000);
+    let frase = randomFrom([
+      '¡Correcto! 😺', '¡Purrfecto! 🐾', '¡Genio gatuno! 🎓', '¡Esa patita sabe! ✏️'
+    ]) + ' 🔥' + racha;
+    if (racha > mejorRacha) {
+      mejorRacha = racha;
+      localStorage.setItem('catculator-racha', String(mejorRacha));
+      if (racha >= 3) frase = '¡Récord nuevo! 🔥' + racha + ' seguidas 🏆';
+    }
+    say(frase, 2400);
+    newQuiz();
+  } else {
+    playGrowl();
+    setMood('angry', 2600);
+    say('Mmm no... ' + quiz.text + ' = ' + quiz.answer + ' 😿', 3200);
+    racha = 0;
+    newQuiz();
+  }
+}
+
+btnQuiz.addEventListener('click', () => {
+  playClick();
+  wakeUp();
+  quizMode = !quizMode;
+  btnQuiz.classList.toggle('active', quizMode);
+  closePanels();
+  tokens = [];
+  errorState = false;
+  justEvaluated = false;
+  if (quizMode) {
+    racha = 0;
+    setMood('happy', 2200);
+    say('¡Modo aprendiz! Resuelve mi cuenta 🎓' +
+      (mejorRacha ? ' Récord: ' + mejorRacha + ' 🔥' : ''), 3200);
+    newQuiz();
+  } else {
+    quiz = null;
+    say('Fin de la clase. ¡Miau-tástico! 🎓', 2400);
+    updateDisplay();
+  }
+});
 
 // ---------- Botón fracción ↔ decimal ----------
 elFrac.addEventListener('click', () => {

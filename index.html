@@ -28,6 +28,9 @@
         <h1>Catculator</h1>
       </div>
       <div class="topbar-actions">
+        <button id="btn-history" class="icon-btn" title="Historial">🕘</button>
+        <button id="btn-conv" class="icon-btn" title="Conversor de unidades">⇄</button>
+        <button id="btn-quiz" class="icon-btn" title="Modo aprendiz">🎓</button>
         <button id="btn-sound" class="icon-btn" title="Sonido">🔊</button>
         <button id="btn-theme" class="icon-btn" title="Cambiar color">🎨</button>
       </div>
@@ -95,6 +98,27 @@
           <span class="mini">🤍</span>Encapuchado
         </button>
       </div>
+    </div>
+
+    <!-- Historial de operaciones -->
+    <div id="history-panel" class="side-panel hidden">
+      <p class="theme-title">Historial 🕘</p>
+      <div id="history-list" class="history-list"></div>
+      <button id="btn-history-clear" class="panel-action">Borrar historial 🧽</button>
+    </div>
+
+    <!-- Conversor de unidades -->
+    <div id="conv-panel" class="side-panel hidden">
+      <p class="theme-title">Conversor de unidades ⇄</p>
+      <select id="conv-cat" class="conv-select"></select>
+      <input id="conv-value" class="conv-input" type="number" step="any" inputmode="decimal" placeholder="Número a convertir" />
+      <div class="conv-row">
+        <select id="conv-from" class="conv-select"></select>
+        <button id="conv-swap" class="conv-swap" title="Intercambiar">⇄</button>
+        <select id="conv-to" class="conv-select"></select>
+      </div>
+      <div id="conv-result" class="conv-result">—</div>
+      <button id="btn-conv-use" class="panel-action">Usar en la calculadora 🐾</button>
     </div>
 
     <!-- Escena del gato -->
@@ -335,7 +359,7 @@
     <div class="display">
       <button id="btn-frac" class="frac-chip hidden" title="Ver como fracción / decimal">¼</button>
       <div id="expression" class="expression">&nbsp;</div>
-      <div id="result" class="result">0</div>
+      <div id="result" class="result" title="Tocar para copiar">0</div>
     </div>
 
     <!-- Controles -->
