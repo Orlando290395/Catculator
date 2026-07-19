@@ -9,6 +9,8 @@ let angleMode = localStorage.getItem('catculator-angle') || 'deg';
 let inv = false;            // modo 2nd (funciones inversas)
 let justEvaluated = false;
 let errorState = false;
+let ansFrac = null;         // {n, d} si el resultado tiene fracción exacta
+let fracMode = false;       // mostrar el resultado como fracción
 
 const elResult = document.getElementById('result');
 const elExpr = document.getElementById('expression');
@@ -16,6 +18,7 @@ const elCat = document.getElementById('cat');
 const elMouth = document.getElementById('mouth');
 const elSpeech = document.getElementById('speech');
 const elSpeechText = document.getElementById('speech-text');
+const elFrac = document.getElementById('btn-frac');
 
 // ---------- Formato de números ----------
 function roundNice(n) {
@@ -40,6 +43,35 @@ function formatNumber(n) {
   if (s.includes('e')) return s;
   const [intPart, decPart] = s.split('.');
   return decPart !== undefined ? groupInt(intPart) + '.' + decPart : groupInt(intPart);
+}
+
+// ---------- Fracciones ----------
+// Convierte un decimal en fracción exacta y simplificada usando fracciones
+// continuas. Devuelve {n, d} solo si la fracción reproduce el número con
+// precisión y el denominador es razonable; para π, √2 y compañía devuelve
+// null en vez de inventar una fracción monstruosa.
+function toFraction(x) {
+  if (!isFinite(x) || Number.isInteger(x)) return null;
+  const sign = x < 0 ? -1 : 1;
+  const ax = Math.abs(x);
+  if (ax >= 1e9) return null;
+  let h1 = 1, h0 = 0, k1 = 0, k0 = 1, b = ax;
+  for (let i = 0; i < 40; i++) {
+    const a = Math.floor(b);
+    const h2 = a * h1 + h0, k2 = a * k1 + k0;
+    if (k2 > 10000) break;
+    h0 = h1; h1 = h2; k0 = k1; k1 = k2;
+    const rest = b - a;
+    if (rest < 1e-12) break;
+    b = 1 / rest;
+  }
+  if (k1 < 2) return null;
+  if (Math.abs(ax - h1 / k1) > ax * 1e-9 + 1e-12) return null;
+  return { n: sign * h1, d: k1 };
+}
+
+function formatFraction(f) {
+  return groupInt(String(f.n)) + '/' + groupInt(String(f.d));
 }
 
 // ---------- Motor de expresiones ----------
@@ -243,6 +275,8 @@ function fitResult() {
 }
 
 function updateDisplay(popAnim = false) {
+  elFrac.classList.toggle('hidden', !(justEvaluated && ansFrac && !errorState));
+  elFrac.classList.toggle('active', fracMode);
   if (errorState) {
     elResult.textContent = '¡Miau!';
     elExpr.textContent = ' ';
@@ -251,7 +285,7 @@ function updateDisplay(popAnim = false) {
   }
   if (justEvaluated) {
     elExpr.textContent = prettify(lastExprRaw) + ' =';
-    elResult.textContent = formatNumber(ans);
+    elResult.textContent = (fracMode && ansFrac) ? formatFraction(ansFrac) : formatNumber(ans);
   } else {
     const raw = rawExpr();
     elResult.textContent = raw ? prettify(raw) : '0';
@@ -315,6 +349,8 @@ function equals() {
   catch (e) { enterError(e.message); return; }
   lastExprRaw = raw;
   ans = v;
+  ansFrac = toFraction(v);
+  fracMode = false;
   justEvaluated = true;
   updateDisplay(true);
   celebrate(v);
@@ -870,6 +906,23 @@ document.getElementById('btn-angle').addEventListener('click', () => {
 });
 setAngle(angleMode);
 updateMemChip();
+
+// ---------- Botón fracción ↔ decimal ----------
+elFrac.addEventListener('click', () => {
+  if (!ansFrac || !justEvaluated) return;
+  playClick();
+  wakeUp();
+  fracMode = !fracMode;
+  updateDisplay(true);
+  if (fracMode) {
+    setMood('happy', 2000);
+    say(randomFrom([
+      '¡En fracción y simplificada! 🐾',
+      'Partido en pedacitos, como mi atún 🐟',
+      '¡Fracción purrfecta! 😺'
+    ]), 2400);
+  }
+});
 
 // ---------- PWA ----------
 // Ausente en Electron (file://) y en navegadores sin HTTPS: la app funciona igual sin él.
