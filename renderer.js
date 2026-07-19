@@ -335,8 +335,9 @@ function pushToken(tok) {
   if (errorState) clearAll(true);
   wakeUp();
   if (justEvaluated) {
+    // Si sigue operando, arrastra el resultado como número visible (no "Ans")
     const continues = /^(\+|-|\*|\/|\^|!|%|mod|\^2|\^3|\^\(-1\))/.test(tok);
-    tokens = continues ? ['ans'] : [];
+    tokens = continues ? numberToTokens(ans) : [];
     justEvaluated = false;
   }
   tokens.push(tok);
@@ -386,7 +387,7 @@ function equals() {
 function toggleSign() {
   if (errorState) return;
   wakeUp();
-  if (justEvaluated) { tokens = ['(', '-', 'ans', ')']; justEvaluated = false; updateDisplay(); return; }
+  if (justEvaluated) { tokens = numberToTokens(-ans); justEvaluated = false; updateDisplay(); return; }
   let e = tokens.length - 1;
   while (e >= 0 && /^[0-9.]$/.test(tokens[e])) e--;
   const s = e + 1;
