@@ -132,6 +132,45 @@
       </div>
     </div>
 
+    <!-- Modo compras -->
+    <div id="shop-panel" class="side-panel hidden">
+      <p class="theme-title">Modo compras 🛒</p>
+      <input id="shop-price" class="conv-input" type="number" step="any" inputmode="decimal" placeholder="Precio" />
+      <div class="shop-row">
+        <span class="shop-name">Descuento</span>
+        <input id="shop-desc" class="shop-pct" type="number" step="any" inputmode="decimal" value="10" /><span class="shop-unit">%</span>
+        <button id="shop-desc-res" class="shop-res" title="Usar en la calculadora">—</button>
+      </div>
+      <div class="shop-row">
+        <span class="shop-name">IVA</span>
+        <input id="shop-iva" class="shop-pct" type="number" step="any" inputmode="decimal" value="13" /><span class="shop-unit">%</span>
+        <button id="shop-iva-res" class="shop-res" title="Usar en la calculadora">—</button>
+      </div>
+      <div class="shop-row">
+        <span class="shop-name">Propina</span>
+        <input id="shop-tip" class="shop-pct" type="number" step="any" inputmode="decimal" value="10" /><span class="shop-unit">%</span>
+        <button id="shop-tip-res" class="shop-res" title="Usar en la calculadora">—</button>
+      </div>
+      <div class="shop-row">
+        <span class="shop-name">Entre</span>
+        <input id="shop-split" class="shop-pct" type="number" min="1" step="1" inputmode="numeric" value="2" /><span class="shop-unit">👥</span>
+        <button id="shop-split-res" class="shop-res" title="Usar en la calculadora">—</button>
+      </div>
+      <p class="theme-title sub">Colones ↔ Dólares 💱</p>
+      <div class="shop-row">
+        <span class="shop-name">Tasa ₡/$</span>
+        <input id="shop-rate" class="shop-pct wide" type="number" step="any" inputmode="decimal" value="520" />
+      </div>
+      <div class="shop-row">
+        <span class="shop-name">Si es ₡</span>
+        <button id="shop-tousd-res" class="shop-res" title="Usar en la calculadora">—</button>
+      </div>
+      <div class="shop-row">
+        <span class="shop-name">Si es $</span>
+        <button id="shop-tocrc-res" class="shop-res" title="Usar en la calculadora">—</button>
+      </div>
+    </div>
+
     <!-- Escena del gato -->
     <div class="cat-scene">
       <div id="speech" class="speech hidden"><span id="speech-text"></span></div>
@@ -377,6 +416,7 @@
     <div class="calc-controls">
       <button id="btn-mode" class="ctrl-btn" title="Cambiar modo">🔬 Científica</button>
       <button id="btn-notes" class="ctrl-btn" title="Bloc de notas">📝 Notas</button>
+      <button id="btn-shop" class="ctrl-btn" title="Modo compras">🛒 Compras</button>
       <button id="btn-angle" class="ctrl-btn" title="Grados / Radianes">DEG</button>
       <span id="mem-chip" class="mem-chip" title="Memoria activa">M</span>
     </div>

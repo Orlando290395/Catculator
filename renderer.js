@@ -948,7 +948,7 @@ const btnQuiz = document.getElementById('btn-quiz');
 function panelPairs() {
   return [
     [themePanel, btnTheme], [historyPanel, btnHistory],
-    [convPanel, btnConv], [notesPanel, btnNotes]
+    [convPanel, btnConv], [notesPanel, btnNotes], [shopPanel, btnShop]
   ];
 }
 
@@ -1190,6 +1190,114 @@ btnConv.addEventListener('click', (e) => {
 });
 
 convSetCategory('longitud');
+
+// ---------- Modo compras ----------
+const shopPanel = document.getElementById('shop-panel');
+const btnShop = document.getElementById('btn-shop');
+const shopPrice = document.getElementById('shop-price');
+const shopIn = {
+  desc: document.getElementById('shop-desc'),
+  iva: document.getElementById('shop-iva'),
+  tip: document.getElementById('shop-tip'),
+  split: document.getElementById('shop-split'),
+  rate: document.getElementById('shop-rate')
+};
+const shopOut = {
+  desc: document.getElementById('shop-desc-res'),
+  iva: document.getElementById('shop-iva-res'),
+  tip: document.getElementById('shop-tip-res'),
+  split: document.getElementById('shop-split-res'),
+  tousd: document.getElementById('shop-tousd-res'),
+  tocrc: document.getElementById('shop-tocrc-res')
+};
+
+// Los porcentajes, personas y tasa quedan guardados entre sesiones
+try {
+  const saved = JSON.parse(localStorage.getItem('catculator-shop')) || {};
+  for (const k of Object.keys(shopIn)) if (saved[k] !== undefined) shopIn[k].value = saved[k];
+} catch (e) {}
+
+function shopCompute() {
+  const ajustes = {};
+  for (const k of Object.keys(shopIn)) ajustes[k] = shopIn[k].value;
+  localStorage.setItem('catculator-shop', JSON.stringify(ajustes));
+
+  const p = parseFloat(shopPrice.value);
+  const val = k => parseFloat(shopIn[k].value);
+  const nice = n => Math.round(n * 100) / 100; // plata: 2 decimales
+  const set = (el, txt, v) => {
+    if (txt === null) { el.textContent = '—'; el.dataset.v = ''; }
+    else { el.textContent = txt; el.dataset.v = String(nice(v)); }
+  };
+  if (!isFinite(p)) {
+    for (const el of Object.values(shopOut)) set(el, null);
+    return;
+  }
+  const d = val('desc');
+  if (isFinite(d)) {
+    const pagas = nice(p * (1 - d / 100));
+    set(shopOut.desc, formatNumber(pagas) + '  (−' + formatNumber(nice(p - pagas)) + ')', pagas);
+  } else set(shopOut.desc, null);
+
+  const iva = val('iva');
+  if (isFinite(iva)) { const t = nice(p * (1 + iva / 100)); set(shopOut.iva, formatNumber(t), t); }
+  else set(shopOut.iva, null);
+
+  const tip = val('tip');
+  if (isFinite(tip)) { const t = nice(p * (1 + tip / 100)); set(shopOut.tip, formatNumber(t), t); }
+  else set(shopOut.tip, null);
+
+  const n = val('split');
+  if (isFinite(n) && n >= 1) { const c = nice(p / Math.round(n)); set(shopOut.split, formatNumber(c) + ' c/u', c); }
+  else set(shopOut.split, null);
+
+  const r = val('rate');
+  if (isFinite(r) && r > 0) {
+    const usd = nice(p / r), crc = nice(p * r);
+    set(shopOut.tousd, '$ ' + formatNumber(usd), usd);
+    set(shopOut.tocrc, '₡ ' + formatNumber(crc), crc);
+  } else { set(shopOut.tousd, null); set(shopOut.tocrc, null); }
+}
+
+shopPrice.addEventListener('input', shopCompute);
+for (const el of Object.values(shopIn)) el.addEventListener('input', shopCompute);
+
+for (const el of Object.values(shopOut)) {
+  el.addEventListener('click', () => {
+    const v = parseFloat(el.dataset.v);
+    if (!isFinite(v) || quizMode) return;
+    playClick();
+    if (errorState) clearAll(true);
+    justEvaluated = false;
+    tokens = numberToTokens(v);
+    closePanels();
+    updateDisplay(true);
+    setMood('happy', 1800);
+    say('¡Cuentas claras, atún espeso! 🛒', 2200);
+  });
+}
+
+btnShop.addEventListener('click', (e) => {
+  e.stopPropagation();
+  playClick();
+  wakeUp();
+  const opening = shopPanel.classList.contains('hidden');
+  closePanels(shopPanel);
+  shopPanel.classList.toggle('hidden');
+  btnShop.classList.toggle('active', opening);
+  if (opening) {
+    const v = currentValue();
+    if (isFinite(v) && v > 0 && Math.abs(v) < 1e12) shopPrice.value = String(roundNice(v));
+    shopCompute();
+    say(randomFrom([
+      '¡A cuidar las monedas! 🛒',
+      'Ni un colón de más, humano 🪙',
+      'Yo cazo ratones, tú cazas ofertas 🛒'
+    ]), 2400);
+  }
+});
+
+shopCompute();
 
 // ---------- Bloc de notas ----------
 const notesPanel = document.getElementById('notes-panel');

@@ -556,6 +556,52 @@ body {
   overflow-wrap: break-word;
 }
 
+/* ---------- Modo compras ---------- */
+.shop-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.shop-name {
+  flex: 0 0 72px;
+  opacity: 0.75;
+}
+.shop-unit { opacity: 0.6; font-size: 12px; }
+.shop-pct {
+  width: 54px;
+  border: 2px solid rgba(127, 127, 127, 0.25);
+  border-radius: 8px;
+  padding: 4px 6px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--display-bg);
+  color: var(--text);
+  text-align: center;
+}
+.shop-pct.wide { width: 84px; }
+.shop-res {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  border-radius: 8px;
+  background: rgba(127, 127, 127, 0.14);
+  color: inherit;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 5px 8px;
+  cursor: pointer;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.shop-res:hover { background: var(--accent); color: #fff; }
+
 /* ---------- Bloc de notas ---------- */
 .notes-textarea {
   width: 100%;
@@ -657,6 +703,7 @@ body {
 /* ---------- Controles ---------- */
 .calc-controls {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   padding: 10px 2px 2px;
