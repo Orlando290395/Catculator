@@ -1,0 +1,39 @@
+# Empaquetado para Microsoft Store (.appx).
+# Va aparte del "build" de package.json (que hace el instalador NSIS normal):
+# se usa con  npm run dist:store  y deja el paquete en microsoft-store/dist/.
+#
+# Los tres valores RELLENAR salen de Partner Center, tras reservar el nombre:
+#   Apps and games → Catculator → Product management → Product identity
+#     Package/Identity/Name      → identityName
+#     Package/Identity/Publisher → publisher (el CN=... completo)
+#     Package/Properties/PublisherDisplayName → publisherDisplayName
+appId: com.catculator.app
+productName: Catculator
+directories:
+  output: microsoft-store/dist
+  buildResources: microsoft-store/build
+files:
+  - main.js
+  - index.html
+  - style.css
+  - renderer.js
+  - manifest.json
+  - sw.js
+  - icons/**
+  - icon.ico
+  - icon.png
+win:
+  icon: icon.ico
+  target:
+    - target: appx
+      arch:
+        - x64
+appx:
+  identityName: RELLENAR.DesdePartnerCenter
+  publisher: CN=RELLENAR-GUID-DE-PARTNER-CENTER
+  publisherDisplayName: RELLENAR
+  displayName: Catculator
+  backgroundColor: '#67e8f9'
+  languages:
+    - es-419
+    - en-US

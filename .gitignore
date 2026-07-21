@@ -4,6 +4,7 @@ node_modules/
 dist/
 pwa-dist/
 tienda/
+microsoft-store/build/appx/
 *.apk
 *.aab
 

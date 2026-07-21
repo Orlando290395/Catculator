@@ -295,6 +295,11 @@ function write(name, size, opts) {
   return name;
 }
 
+// Ejecutado directo genera todo; requerido como módulo solo presta sus funciones
+// (las usa microsoft-store/build-iconos.js para los logos de la tienda).
+module.exports = { render, renderSplash, renderBanner, encodePNG };
+if (require.main === module) {
+
 // Escritorio (Electron)
 const sizes = [256, 64, 48, 32, 16];
 const pngs = sizes.map(size => ({ size, data: encodePNG(render(size), size, size) }));
@@ -348,3 +353,5 @@ fs.writeFileSync(BANNER, encodePNG(renderBanner(1024, 500), 1024, 500));
 console.log('  + material de Play Store (icono 512 y grafico destacado)');
 
 console.log('Iconos generados 🐱');
+
+}
