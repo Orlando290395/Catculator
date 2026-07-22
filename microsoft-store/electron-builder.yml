@@ -29,10 +29,11 @@ win:
       arch:
         - x64
 appx:
-  identityName: RELLENAR.DesdePartnerCenter
-  publisher: CN=RELLENAR-GUID-DE-PARTNER-CENTER
-  publisherDisplayName: RELLENAR
-  displayName: Catculator
+  identityName: Catculator.CatculatorCalculadoraGato
+  publisher: CN=0B859D0A-1792-4BC9-9158-C6A1FEFD1394
+  publisherDisplayName: Catculator
+  # Debe coincidir con un nombre reservado en Partner Center
+  displayName: 'Catculator: Calculadora Gato'
   backgroundColor: '#67e8f9'
   languages:
     - es-419
