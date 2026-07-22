@@ -6,6 +6,7 @@ pwa-dist/
 tienda/
 microsoft-store/build/appx/
 microsoft-store/capturas/
+microsoft-store/logos-ficha/
 *.apk
 *.aab
 

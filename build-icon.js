@@ -179,10 +179,11 @@ function render(size, opts = {}) {
 }
 
 /* Splash: lienzo rectangular de fondo cian con el gato centrado. La escena mide
-   256x256, asi que se mapea a un cuadrado centrado que ocupa el 45% del lado corto. */
-function renderSplash(w, h) {
+   256x256, asi que se mapea a un cuadrado centrado que ocupa una fraccion del
+   lado corto (45% por defecto; el poster de Microsoft Store usa mas). */
+function renderSplash(w, h, escala = 0.45) {
   const rgba = Buffer.alloc(w * h * 4);
-  const lado = Math.min(w, h) * 0.45;
+  const lado = Math.min(w, h) * escala;
   const x0 = (w - lado) / 2, y0 = (h - lado) / 2;
   const SS = 3;
 
