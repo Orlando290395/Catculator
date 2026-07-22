@@ -33,8 +33,9 @@ Play Store (android/, PLAYSTORE.md) y el instalador normal de Windows
    Sale en `microsoft-store/dist/Catculator 1.0.0.appx`. NO se firma aquí:
    la tienda lo firma sola al certificarlo.
 5. **Crear la sumisión.** En Partner Center: Packages → arrastrar el `.appx`;
-   llenar precio (o gratis), clasificación de edad, descripción y capturas
-   (mínimo 1366×768 para escritorio; NO sirven las de celular de tienda/).
+   llenar precio (o gratis), clasificación de edad, descripción y capturas.
+   Las capturas de escritorio (1366×768, las de celular de tienda/ NO sirven)
+   se generan con `npm run capturas:store` y quedan en `microsoft-store/capturas/`.
    La política de privacidad es la misma de siempre:
    https://orlando290395.github.io/Catculator/privacidad.html
 6. **Enviar a certificación.** Suele tardar 2-3 días. Aprobada, la app queda en

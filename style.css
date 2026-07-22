@@ -167,6 +167,7 @@ body {
 }
 
 #app {
+  position: relative; /* ancla de los paneles: pegados a la app, no a la ventana */
   height: 100vh;
   height: 100dvh; /* en el móvil 100vh no descuenta la barra del navegador */
   max-width: 460px;
@@ -470,6 +471,13 @@ body {
 }
 :root[data-theme="noche"] .side-panel { color: #e2f8fd; }
 .side-panel.hidden { display: none; }
+
+/* En pantallas anchas (escritorio) los paneles se abren al costado de la app,
+   sin tapar al gato ni a la pantalla; en angostas caen encima, como siempre. */
+@media (min-width: 1140px) {
+  .theme-panel,
+  .side-panel { right: auto; left: calc(100% + 14px); }
+}
 
 .history-list { display: flex; flex-direction: column; gap: 4px; }
 

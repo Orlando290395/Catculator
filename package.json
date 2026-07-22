@@ -13,7 +13,8 @@
     "dist:store": "electron-builder --config microsoft-store/electron-builder.yml",
     "icon:store": "node microsoft-store/build-iconos.js",
     "pwa": "node build-pwa.js",
-    "capturas": "electron build-capturas.js"
+    "capturas": "electron build-capturas.js",
+    "capturas:store": "electron microsoft-store/build-capturas.js"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.4.2",

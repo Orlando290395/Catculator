@@ -5,6 +5,7 @@ dist/
 pwa-dist/
 tienda/
 microsoft-store/build/appx/
+microsoft-store/capturas/
 *.apk
 *.aab
 

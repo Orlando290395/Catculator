@@ -41,6 +41,11 @@ async function run() {
     webPreferences: { contextIsolation: true, nodeIntegration: false, zoomFactor: 1 }
   });
 
+  // Sin esto se sirven archivos viejos: los guarda tanto la caché http de
+  // Electron como el service worker de la propia app (cache-first por diseño).
+  await win.webContents.session.clearCache();
+  await win.webContents.session.clearStorageData();
+
   for (const t of TOMAS) {
     // fijar preferencias antes de que arranque renderer.js
     await win.loadURL(`http://localhost:${PORT}/`);
