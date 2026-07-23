@@ -1205,6 +1205,7 @@ const shopIn = {
 const shopOut = {
   desc: document.getElementById('shop-desc-res'),
   iva: document.getElementById('shop-iva-res'),
+  noiva: document.getElementById('shop-noiva-res'),
   tip: document.getElementById('shop-tip-res'),
   split: document.getElementById('shop-split-res'),
   tousd: document.getElementById('shop-tousd-res'),
@@ -1242,6 +1243,13 @@ function shopCompute() {
   const iva = val('iva');
   if (isFinite(iva)) { const t = nice(p * (1 + iva / 100)); set(shopOut.iva, formatNumber(t), t); }
   else set(shopOut.iva, null);
+
+  // Desglose: el precio ya trae el IVA incluido; saca cuánto costaba antes (base)
+  // y de paso cuánto de ese precio es impuesto.
+  if (isFinite(iva) && (1 + iva / 100) > 0) {
+    const base = nice(p / (1 + iva / 100));
+    set(shopOut.noiva, formatNumber(base) + '  (IVA ' + formatNumber(nice(p - base)) + ')', base);
+  } else set(shopOut.noiva, null);
 
   const tip = val('tip');
   if (isFinite(tip)) { const t = nice(p * (1 + tip / 100)); set(shopOut.tip, formatNumber(t), t); }
