@@ -2,7 +2,7 @@
 
 La calculadora con temática de gatos. Corre en tres sitios con el mismo código:
 
-- **Escritorio** (Windows) — Electron, instalador NSIS.
+- **Escritorio** (Windows) — Electron, instalador NSIS; también en la [Microsoft Store](https://apps.microsoft.com/detail/9N1WS45CC661).
 - **Web / celular** — PWA instalable, funciona sin conexión: <https://orlando290395.github.io/Catculator/>
 - **Android** — APK / AAB vía Capacitor.
 
@@ -51,6 +51,14 @@ formularios de seguridad de datos y clasificación, y el checklist de publicaci�
 
 Falta por hacer fuera del repo: la cuenta de desarrollador de Play Console (25 USD, con
 verificación de identidad) y la prueba cerrada obligatoria con 12 testers durante 14 días seguidos.
+
+## Microsoft Store
+
+**Publicada desde el 24-jul-2026** (paquete `.appx` vía electron-builder). Enlace para compartir:
+<https://apps.microsoft.com/detail/9N1WS45CC661> (Store ID `9N1WS45CC661`).
+
+Todo lo específico de esta tienda —config del paquete, generación de logos y capturas, y el camino
+completo de publicación y actualizaciones— vive en [microsoft-store/](microsoft-store/README.md).
 
 ## Escritorio
 

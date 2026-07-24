@@ -4,6 +4,13 @@ Todo lo específico de la tienda de Microsoft vive en esta carpeta. El flujo de
 Play Store (android/, PLAYSTORE.md) y el instalador normal de Windows
 (`npm run dist`) no se tocan.
 
+## Ficha publicada (desde el 24-jul-2026)
+
+- **Store ID:** `9N1WS45CC661`
+- **Enlace web (para compartir):** https://apps.microsoft.com/detail/9N1WS45CC661
+- **Vínculo profundo (abre en la app de la Store):** `ms-windows-store://pdp/?productid=9N1WS45CC661`
+- **Package Family Name (PFN):** `Catculator.CatculatorCalculadoraGato_swyf96djy3fj2`
+
 ## Qué hay aquí
 
 | Archivo | Para qué |
@@ -39,7 +46,7 @@ Play Store (android/, PLAYSTORE.md) y el instalador normal de Windows
    La política de privacidad es la misma de siempre:
    https://orlando290395.github.io/Catculator/privacidad.html
 6. **Enviar a certificación.** Suele tardar 2-3 días. Aprobada, la app queda en
-   la tienda con URL microsoft.com/store/apps/<ID>.
+   la tienda (ver "Ficha publicada" arriba para el enlace real).
 
 ## Actualizaciones después de publicada
 
