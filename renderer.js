@@ -1199,18 +1199,156 @@ const shopIn = {
   desc: document.getElementById('shop-desc'),
   iva: document.getElementById('shop-iva'),
   tip: document.getElementById('shop-tip'),
-  split: document.getElementById('shop-split'),
-  rate: document.getElementById('shop-rate')
+  split: document.getElementById('shop-split')
 };
 const shopOut = {
   desc: document.getElementById('shop-desc-res'),
   iva: document.getElementById('shop-iva-res'),
   noiva: document.getElementById('shop-noiva-res'),
   tip: document.getElementById('shop-tip-res'),
-  split: document.getElementById('shop-split-res'),
-  tousd: document.getElementById('shop-tousd-res'),
-  tocrc: document.getElementById('shop-tocrc-res')
+  split: document.getElementById('shop-split-res')
 };
+
+// ---------- Divisas del Modo compras ----------
+// Cada tasa es "cuántas unidades de esa moneda vale 1 USD". La app no toca la
+// red, así que son valores aproximados que el usuario mantiene al día a mano.
+const CURRENCIES = [
+  { code: 'CRC', name: 'Colón',            flag: '🇨🇷', sym: '₡',   rate: 510 },
+  { code: 'USD', name: 'Dólar',            flag: '🇺🇸', sym: '$',   rate: 1 },
+  { code: 'EUR', name: 'Euro',             flag: '🇪🇺', sym: '€',   rate: 0.92 },
+  { code: 'MXN', name: 'Peso mexicano',    flag: '🇲🇽', sym: 'MX$', rate: 18 },
+  { code: 'CAD', name: 'Dólar canadiense', flag: '🇨🇦', sym: 'C$',  rate: 1.38 },
+  { code: 'BRL', name: 'Real brasileño',   flag: '🇧🇷', sym: 'R$',  rate: 5.5 },
+  { code: 'ARS', name: 'Peso argentino',   flag: '🇦🇷', sym: 'AR$', rate: 1010 },
+  { code: 'COP', name: 'Peso colombiano',  flag: '🇨🇴', sym: 'CO$', rate: 4000 },
+  { code: 'CLP', name: 'Peso chileno',     flag: '🇨🇱', sym: 'CL$', rate: 950 },
+  { code: 'PEN', name: 'Sol peruano',      flag: '🇵🇪', sym: 'S/',  rate: 3.7 },
+  { code: 'GTQ', name: 'Quetzal',          flag: '🇬🇹', sym: 'Q',   rate: 7.7 }
+];
+try {
+  const savedRates = JSON.parse(localStorage.getItem('catculator-rates')) || {};
+  for (const c of CURRENCIES) {
+    const r = parseFloat(savedRates[c.code]);
+    if (isFinite(r) && r > 0) c.rate = r;
+  }
+} catch (e) {}
+function saveRates() {
+  const o = {};
+  for (const c of CURRENCIES) o[c.code] = c.rate;
+  localStorage.setItem('catculator-rates', JSON.stringify(o));
+}
+const rateOf = code => { const c = CURRENCIES.find(x => x.code === code); return c ? c.rate : NaN; };
+
+const shopFromSel = document.getElementById('shop-from');
+const shopToSel = document.getElementById('shop-to');
+const shopConvRes = document.getElementById('shop-conv-res');
+const shopSwap = document.getElementById('shop-swap');
+const shopRateFields = document.getElementById('shop-rate-fields');
+const shopConvAmount = document.getElementById('shop-conv-amount');
+
+function fillCurrencySelect(sel) {
+  for (const c of CURRENCIES) {
+    const opt = document.createElement('option');
+    opt.value = c.code;
+    opt.textContent = c.flag + ' ' + c.code + ' · ' + c.name;
+    sel.appendChild(opt);
+  }
+}
+fillCurrencySelect(shopFromSel);
+fillCurrencySelect(shopToSel);
+shopFromSel.value = localStorage.getItem('catculator-shop-from') || 'CRC';
+if (!shopFromSel.value) shopFromSel.value = 'CRC';
+shopToSel.value = localStorage.getItem('catculator-shop-to') || 'USD';
+if (!shopToSel.value) shopToSel.value = 'USD';
+shopFromSel.addEventListener('change', () => {
+  localStorage.setItem('catculator-shop-from', shopFromSel.value);
+  renderRateFields();
+  renderConv();
+});
+shopToSel.addEventListener('change', () => {
+  localStorage.setItem('catculator-shop-to', shopToSel.value);
+  renderRateFields();
+  renderConv();
+});
+shopSwap.addEventListener('click', () => {
+  playClick();
+  const a = shopFromSel.value;
+  shopFromSel.value = shopToSel.value;
+  shopToSel.value = a;
+  localStorage.setItem('catculator-shop-from', shopFromSel.value);
+  localStorage.setItem('catculator-shop-to', shopToSel.value);
+  renderRateFields();
+  renderConv();
+});
+shopConvRes.addEventListener('click', () => useShopValue(parseFloat(shopConvRes.dataset.v)));
+shopConvAmount.addEventListener('input', renderConv);
+
+// Coloca un valor de un resultado del panel en la calculadora
+function useShopValue(v) {
+  if (!isFinite(v) || quizMode) return;
+  playClick();
+  if (errorState) clearAll(true);
+  justEvaluated = false;
+  tokens = numberToTokens(v);
+  closePanels();
+  updateDisplay(true);
+  setMood('happy', 1800);
+  say('¡Cuentas claras, atún espeso! 🛒', 2200);
+}
+
+// Conversión única: convierte el MONTO propio del conversor de "desde" a "hacia"
+function renderConv() {
+  const p = parseFloat(shopConvAmount.value);
+  const rateF = rateOf(shopFromSel.value);
+  const rateT = rateOf(shopToSel.value);
+  const toCur = CURRENCIES.find(x => x.code === shopToSel.value);
+  const nice = n => Math.round(n * 100) / 100;
+  if (!isFinite(p) || !isFinite(rateF) || rateF <= 0 || !isFinite(rateT) || rateT <= 0) {
+    shopConvRes.textContent = '—';
+    shopConvRes.dataset.v = '';
+    return;
+  }
+  const amt = nice(p * rateT / rateF);
+  shopConvRes.textContent = (toCur ? toCur.sym + ' ' : '') + formatNumber(amt);
+  shopConvRes.dataset.v = String(amt);
+}
+
+// Campo de tasa SOLO para la(s) divisa(s) en uso (relativa al dólar, "1 $ = X").
+// Se edita a mano porque la app no toca internet. El dólar es la base, no se muestra.
+function renderRateFields() {
+  shopRateFields.innerHTML = '';
+  const codes = [];
+  for (const code of [shopFromSel.value, shopToSel.value]) {
+    if (code !== 'USD' && codes.indexOf(code) === -1) codes.push(code);
+  }
+  for (const code of codes) {
+    const c = CURRENCIES.find(x => x.code === code);
+    if (!c) continue;
+    const row = document.createElement('div');
+    row.className = 'shop-rate-row';
+    const label = document.createElement('span');
+    label.className = 'shop-rate-label';
+    label.textContent = '1 $ =';
+    const inp = document.createElement('input');
+    inp.className = 'shop-pct wide';
+    inp.type = 'number';
+    inp.step = 'any';
+    inp.inputMode = 'decimal';
+    inp.value = String(c.rate);
+    inp.addEventListener('input', () => {
+      const v = parseFloat(inp.value);
+      if (isFinite(v) && v > 0) { c.rate = v; saveRates(); renderConv(); }
+    });
+    const codeSpan = document.createElement('span');
+    codeSpan.className = 'shop-rate-code';
+    codeSpan.textContent = c.flag + ' ' + c.code;
+    row.appendChild(label);
+    row.appendChild(inp);
+    row.appendChild(codeSpan);
+    shopRateFields.appendChild(row);
+  }
+}
+renderRateFields();
 
 // Los porcentajes, personas y tasa quedan guardados entre sesiones
 try {
@@ -1258,31 +1396,13 @@ function shopCompute() {
   const n = val('split');
   if (isFinite(n) && n >= 1) { const c = nice(p / Math.round(n)); set(shopOut.split, formatNumber(c) + ' c/u', c); }
   else set(shopOut.split, null);
-
-  const r = val('rate');
-  if (isFinite(r) && r > 0) {
-    const usd = nice(p / r), crc = nice(p * r);
-    set(shopOut.tousd, '$ ' + formatNumber(usd), usd);
-    set(shopOut.tocrc, '₡ ' + formatNumber(crc), crc);
-  } else { set(shopOut.tousd, null); set(shopOut.tocrc, null); }
 }
 
 shopPrice.addEventListener('input', shopCompute);
 for (const el of Object.values(shopIn)) el.addEventListener('input', shopCompute);
 
 for (const el of Object.values(shopOut)) {
-  el.addEventListener('click', () => {
-    const v = parseFloat(el.dataset.v);
-    if (!isFinite(v) || quizMode) return;
-    playClick();
-    if (errorState) clearAll(true);
-    justEvaluated = false;
-    tokens = numberToTokens(v);
-    closePanels();
-    updateDisplay(true);
-    setMood('happy', 1800);
-    say('¡Cuentas claras, atún espeso! 🛒', 2200);
-  });
+  el.addEventListener('click', () => useShopValue(parseFloat(el.dataset.v)));
 }
 
 btnShop.addEventListener('click', (e) => {
@@ -1295,8 +1415,12 @@ btnShop.addEventListener('click', (e) => {
   btnShop.classList.toggle('active', opening);
   if (opening) {
     const v = currentValue();
-    if (isFinite(v) && v > 0 && Math.abs(v) < 1e12) shopPrice.value = String(roundNice(v));
+    if (isFinite(v) && v > 0 && Math.abs(v) < 1e12) {
+      shopPrice.value = String(roundNice(v));
+      shopConvAmount.value = String(roundNice(v));
+    }
     shopCompute();
+    renderConv();
     say(randomFrom([
       '¡A cuidar las monedas! 🛒',
       'Ni un colón de más, humano 🪙',
@@ -1306,6 +1430,7 @@ btnShop.addEventListener('click', (e) => {
 });
 
 shopCompute();
+renderConv();
 
 // ---------- Bloc de notas ----------
 const notesPanel = document.getElementById('notes-panel');

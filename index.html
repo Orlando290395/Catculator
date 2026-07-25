@@ -160,19 +160,16 @@
         <input id="shop-split" class="shop-pct" type="number" min="1" step="1" inputmode="numeric" value="2" /><span class="shop-unit">👥</span>
         <button id="shop-split-res" class="shop-res" title="Usar en la calculadora">—</button>
       </div>
-      <p class="theme-title sub">Colones ↔ Dólares 💱</p>
-      <div class="shop-row">
-        <span class="shop-name">Tasa ₡/$</span>
-        <input id="shop-rate" class="shop-pct wide" type="number" step="any" inputmode="decimal" value="520" />
+      <p class="theme-title sub">Convertir divisa 💱</p>
+      <input id="shop-conv-amount" class="conv-input" type="number" step="any" inputmode="decimal" placeholder="Monto a convertir" />
+      <div id="shop-rate-fields" class="shop-rate-fields"></div>
+      <div class="conv-row shop-conv-row">
+        <select id="shop-from" class="conv-select" title="Moneda del precio"></select>
+        <button id="shop-swap" class="conv-swap" type="button" title="Intercambiar monedas">⇄</button>
+        <select id="shop-to" class="conv-select" title="Convertir a"></select>
       </div>
-      <div class="shop-row">
-        <span class="shop-name">Si es ₡</span>
-        <button id="shop-tousd-res" class="shop-res" title="Usar en la calculadora">—</button>
-      </div>
-      <div class="shop-row">
-        <span class="shop-name">Si es $</span>
-        <button id="shop-tocrc-res" class="shop-res" title="Usar en la calculadora">—</button>
-      </div>
+      <button id="shop-conv-res" class="shop-res shop-conv-res" title="Usar en la calculadora">—</button>
+      <p class="shop-note">Escribe la tasa que conozcas (1 $ = ⋯). La app funciona sin internet, así que la actualizas tú. Toca el resultado para usarlo.</p>
     </div>
 
     <!-- Escena del gato -->

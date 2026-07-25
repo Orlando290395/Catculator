@@ -16,6 +16,10 @@ microsoft-store/logos-ficha/
 *.keystore
 keystore.properties
 
+# Lanzador local de escritorio (rutas de esta maquina; no va al repo publico)
+Abrir Catculator.lnk
+catculator-lanzador.vbs
+
 # Basura del sistema
 Thumbs.db
 desktop.ini
