@@ -318,6 +318,10 @@ body {
 :root[data-outfit="capucha"] #outfit-capucha,
 :root[data-outfit="capucha"] #outfit-capucha-extra { display: block; }
 
+/* El pirata cambia SOLO la patita izquierda por la pata de palo (la derecha
+   sigue siendo patita normal); si no, la pata de palo quedaría encima de ella */
+:root[data-outfit="pirata"] #paws .paw:nth-child(1) { display: none; }
+
 .dot {
   width: 18px;
   height: 18px;
@@ -386,12 +390,8 @@ body {
 
 .eye { transition: transform 0.1s linear; }
 
-#cat.blinking .eye-ball,
-#cat.blinking .pupil,
-#cat.blinking .glint,
-#cat.mood-sleep .eye-ball,
-#cat.mood-sleep .pupil,
-#cat.mood-sleep .glint {
+#cat.blinking .eye-part,
+#cat.mood-sleep .eye-part {
   transform: scaleY(0.06);
   transform-origin: center;
   transform-box: fill-box;
