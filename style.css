@@ -187,6 +187,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;                        /* que el nombre no quede pegado a los botones */
   padding: 2px 4px;
 }
 
@@ -236,6 +237,26 @@ body {
 
 .icon-btn:hover { transform: scale(1.08); }
 .icon-btn:active { transform: scale(0.94); }
+
+/* En teléfono la barra de arriba no cabía: cinco botones de 40 px más el nombre
+   suman 407 px y el celular más común mide 360, así que el botón de personalizar
+   (🎨) quedaba fuera de pantalla y la página se arrastraba de lado. Aquí se
+   aprieta todo. El corte es 415 px: por debajo están los celulares (320, 360,
+   393, 412 dp) y por encima la ventana del escritorio (440), que siempre cupo. */
+@media (max-width: 415px) {
+  .brand { gap: 6px; }
+  .brand-paw { font-size: 19px; }
+  .brand h1 { font-size: 18px; letter-spacing: 0.2px; }
+  .topbar-actions { gap: 5px; }
+  .icon-btn { width: 34px; height: 34px; font-size: 16px; border-radius: 10px; }
+}
+
+@media (max-width: 350px) {
+  .brand-paw { font-size: 16px; }
+  .brand h1 { font-size: 16px; }
+  .topbar-actions { gap: 4px; }
+  .icon-btn { width: 31px; height: 31px; font-size: 15px; }
+}
 
 /* ---------- Panel de temas ---------- */
 .theme-panel {
