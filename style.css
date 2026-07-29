@@ -258,6 +258,17 @@ body {
   .icon-btn { width: 31px; height: 31px; font-size: 15px; }
 }
 
+/* Quien pidió "reducir movimiento" en su sistema no quiere la patita moviéndose
+   sola, ni los paneles saltando, ni las huellas volando. Se apaga todo: las
+   animaciones no llevan información, solo adorno. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* ---------- Panel de temas ---------- */
 .theme-panel {
   position: absolute;

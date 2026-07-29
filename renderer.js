@@ -441,6 +441,8 @@ function toggle2nd() {
   document.getElementById('btn-2nd').classList.toggle('active', inv);
   document.querySelectorAll('.skey.fn').forEach(btn => {
     if (btn.dataset.label2) btn.textContent = inv ? btn.dataset.label2 : btn.dataset.label;
+    // el nombre hablado cambia con la tecla: sin → arcoseno
+    if (btn.dataset.aria2) btn.setAttribute('aria-label', inv ? btn.dataset.aria2 : btn.dataset.aria);
   });
 }
 
@@ -787,6 +789,7 @@ function playGrowl() {
 const btnSound = document.getElementById('btn-sound');
 function refreshSoundBtn() {
   btnSound.textContent = soundOn ? '🔊' : '🔇';
+  btnSound.setAttribute('aria-pressed', String(soundOn)); // el emoji no lo dice solo
 }
 btnSound.addEventListener('click', () => {
   soundOn = !soundOn;
@@ -809,9 +812,11 @@ const THEME_NAMES = {
   noche: 'Modo gato nocturno 🌙'
 };
 
-function applyTheme(theme) {
+/* guardar=false es para el tema que se elige solo (el del sistema): así la app
+   sigue al sistema hasta que el humano toque un color, y desde ahí manda él. */
+function applyTheme(theme, guardar = true) {
   document.documentElement.setAttribute('data-theme', theme);
-  localStorage.setItem('catculator-theme', theme);
+  if (guardar) localStorage.setItem('catculator-theme', theme);
   document.querySelectorAll('.theme-swatch').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.theme === theme);
   });
@@ -848,7 +853,17 @@ document.querySelectorAll('.theme-swatch').forEach(btn => {
   });
 });
 
-applyTheme(localStorage.getItem('catculator-theme') || 'cian');
+// Primera vez: si el sistema está en oscuro, se abre en Noche en vez de deslumbrar
+const temaGuardado = localStorage.getItem('catculator-theme');
+const mqOscuro = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+applyTheme(temaGuardado || (mqOscuro && mqOscuro.matches ? 'noche' : 'cian'), !!temaGuardado);
+
+// Mientras no haya elegido tema, la app acompaña los cambios del sistema
+if (!temaGuardado && mqOscuro && mqOscuro.addEventListener) {
+  mqOscuro.addEventListener('change', e => {
+    if (!localStorage.getItem('catculator-theme')) applyTheme(e.matches ? 'noche' : 'cian', false);
+  });
+}
 
 // ---------- Pelaje del gato ----------
 const FUR_NAMES = {
@@ -1335,6 +1350,7 @@ function renderRateFields() {
     inp.step = 'any';
     inp.inputMode = 'decimal';
     inp.value = String(c.rate);
+    inp.setAttribute('aria-label', 'Cuántos ' + c.name + ' vale un dólar');
     inp.addEventListener('input', () => {
       const v = parseFloat(inp.value);
       if (isFinite(v) && v > 0) { c.rate = v; saveRates(); renderConv(); }
@@ -1552,6 +1568,7 @@ btnQuiz.addEventListener('click', () => {
   wakeUp();
   quizMode = !quizMode;
   btnQuiz.classList.toggle('active', quizMode);
+  btnQuiz.setAttribute('aria-pressed', String(quizMode));
   closePanels();
   tokens = [];
   errorState = false;
@@ -1668,6 +1685,31 @@ elCat.addEventListener('click', () => {
     ]), 2400);
   }
 });
+
+/* ---------- Estados para lectores de pantalla ----------
+   Los paneles se abren y se cierran desde muchos lados: su botón, un clic
+   afuera, elegir un color, entrar al modo aprendiz, el botón atrás. En vez de
+   perseguir cada camino (y olvidar uno) se vigila la clase .hidden del panel:
+   el estado sale del mismo lugar del que sale lo que se ve. */
+for (const [panel, btn] of panelPairs()) {
+  const reflejar = () => btn.setAttribute('aria-expanded', String(!panel.classList.contains('hidden')));
+  new MutationObserver(reflejar).observe(panel, { attributes: true, attributeFilter: ['class'] });
+  reflejar();
+}
+
+/* ---------- Botón físico "atrás" de Android ----------
+   Sin esto, "atrás" cerraba la app aunque hubiera un panel abierto. Ojo: apenas
+   se registra el escuchador, Capacitor deja de salir por su cuenta, así que
+   todos los caminos tienen que terminar en algo — incluido exitApp(). */
+const capApp = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+if (capApp) {
+  capApp.addListener('backButton', () => {
+    const hayPanelAbierto = panelPairs().some(([panel]) => !panel.classList.contains('hidden'));
+    if (hayPanelAbierto) { closePanels(); return; }
+    if (quizMode) { btnQuiz.click(); return; }   // salir del modo aprendiz
+    capApp.exitApp();
+  });
+}
 
 // ---------- Saludo inicial ----------
 setTimeout(() => {

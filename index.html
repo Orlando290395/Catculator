@@ -28,11 +28,11 @@
         <h1>Catculator</h1>
       </div>
       <div class="topbar-actions">
-        <button id="btn-history" class="icon-btn" title="Historial">🕘</button>
-        <button id="btn-conv" class="icon-btn" title="Conversor de unidades">⇄</button>
-        <button id="btn-quiz" class="icon-btn" title="Modo aprendiz">🎓</button>
-        <button id="btn-sound" class="icon-btn" title="Sonido">🔊</button>
-        <button id="btn-theme" class="icon-btn" title="Cambiar color">🎨</button>
+        <button id="btn-history" class="icon-btn" title="Historial" aria-label="Historial">🕘</button>
+        <button id="btn-conv" class="icon-btn" title="Conversor de unidades" aria-label="Conversor de unidades">⇄</button>
+        <button id="btn-quiz" class="icon-btn" title="Modo aprendiz" aria-label="Modo aprendiz">🎓</button>
+        <button id="btn-sound" class="icon-btn" title="Sonido" aria-label="Sonido">🔊</button>
+        <button id="btn-theme" class="icon-btn" title="Cambiar color" aria-label="Personalizar color, pelaje y atuendo">🎨</button>
       </div>
     </header>
 
@@ -110,12 +110,12 @@
     <!-- Conversor de unidades -->
     <div id="conv-panel" class="side-panel hidden">
       <p class="theme-title">Conversor de unidades ⇄</p>
-      <select id="conv-cat" class="conv-select"></select>
-      <input id="conv-value" class="conv-input" type="number" step="any" inputmode="decimal" placeholder="Número a convertir" />
+      <select id="conv-cat" class="conv-select" aria-label="Tipo de unidad"></select>
+      <input id="conv-value" class="conv-input" aria-label="Número a convertir" type="number" step="any" inputmode="decimal" placeholder="Número a convertir" />
       <div class="conv-row">
-        <select id="conv-from" class="conv-select"></select>
-        <button id="conv-swap" class="conv-swap" title="Intercambiar">⇄</button>
-        <select id="conv-to" class="conv-select"></select>
+        <select id="conv-from" class="conv-select" aria-label="Unidad de origen"></select>
+        <button id="conv-swap" class="conv-swap" title="Intercambiar" aria-label="Intercambiar unidades">⇄</button>
+        <select id="conv-to" class="conv-select" aria-label="Unidad de destino"></select>
       </div>
       <div id="conv-result" class="conv-result">—</div>
       <button id="btn-conv-use" class="panel-action">Usar en la calculadora 🐾</button>
@@ -124,7 +124,7 @@
     <!-- Bloc de notas -->
     <div id="notes-panel" class="side-panel hidden">
       <p class="theme-title">Bloc de notas 📝</p>
-      <textarea id="notes-text" class="notes-textarea"
+      <textarea id="notes-text" class="notes-textarea" aria-label="Bloc de notas"
         placeholder="Apunta aquí tus cuentas, listas o ideas... se guardan solas 🐾"></textarea>
       <div class="notes-row">
         <button id="btn-notes-insert" class="panel-action">➕ Resultado</button>
@@ -135,40 +135,40 @@
     <!-- Modo compras -->
     <div id="shop-panel" class="side-panel hidden">
       <p class="theme-title">Modo compras 🛒</p>
-      <input id="shop-price" class="conv-input" type="number" step="any" inputmode="decimal" placeholder="Precio" />
+      <input id="shop-price" class="conv-input" aria-label="Precio" type="number" step="any" inputmode="decimal" placeholder="Precio" />
       <div class="shop-row">
-        <span class="shop-name">Descuento</span>
-        <input id="shop-desc" class="shop-pct" type="number" step="any" inputmode="decimal" value="10" /><span class="shop-unit">%</span>
-        <button id="shop-desc-res" class="shop-res" title="Usar en la calculadora">—</button>
+        <span class="shop-name" id="lbl-desc">Descuento</span>
+        <input id="shop-desc" class="shop-pct" aria-label="Descuento en por ciento" type="number" step="any" inputmode="decimal" value="10" /><span class="shop-unit">%</span>
+        <button id="shop-desc-res" class="shop-res" title="Usar en la calculadora" aria-labelledby="lbl-desc shop-desc-res">—</button>
       </div>
       <div class="shop-row">
-        <span class="shop-name">IVA</span>
-        <input id="shop-iva" class="shop-pct" type="number" step="any" inputmode="decimal" value="13" /><span class="shop-unit">%</span>
-        <button id="shop-iva-res" class="shop-res" title="Usar en la calculadora">—</button>
+        <span class="shop-name" id="lbl-iva">IVA</span>
+        <input id="shop-iva" class="shop-pct" aria-label="IVA en por ciento" type="number" step="any" inputmode="decimal" value="13" /><span class="shop-unit">%</span>
+        <button id="shop-iva-res" class="shop-res" title="Usar en la calculadora" aria-labelledby="lbl-iva shop-iva-res">—</button>
       </div>
       <div class="shop-row">
-        <span class="shop-name">Sin IVA</span>
-        <button id="shop-noiva-res" class="shop-res" title="Usar en la calculadora">—</button>
+        <span class="shop-name" id="lbl-noiva">Sin IVA</span>
+        <button id="shop-noiva-res" class="shop-res" title="Usar en la calculadora" aria-labelledby="lbl-noiva shop-noiva-res">—</button>
       </div>
       <div class="shop-row">
-        <span class="shop-name">Propina</span>
-        <input id="shop-tip" class="shop-pct" type="number" step="any" inputmode="decimal" value="10" /><span class="shop-unit">%</span>
-        <button id="shop-tip-res" class="shop-res" title="Usar en la calculadora">—</button>
+        <span class="shop-name" id="lbl-tip">Propina</span>
+        <input id="shop-tip" class="shop-pct" aria-label="Propina en por ciento" type="number" step="any" inputmode="decimal" value="10" /><span class="shop-unit">%</span>
+        <button id="shop-tip-res" class="shop-res" title="Usar en la calculadora" aria-labelledby="lbl-tip shop-tip-res">—</button>
       </div>
       <div class="shop-row">
-        <span class="shop-name">Entre</span>
-        <input id="shop-split" class="shop-pct" type="number" min="1" step="1" inputmode="numeric" value="2" /><span class="shop-unit">👥</span>
-        <button id="shop-split-res" class="shop-res" title="Usar en la calculadora">—</button>
+        <span class="shop-name" id="lbl-split">Entre</span>
+        <input id="shop-split" class="shop-pct" aria-label="Entre cuántas personas" type="number" min="1" step="1" inputmode="numeric" value="2" /><span class="shop-unit">👥</span>
+        <button id="shop-split-res" class="shop-res" title="Usar en la calculadora" aria-labelledby="lbl-split shop-split-res">—</button>
       </div>
-      <p class="theme-title sub">Convertir divisa 💱</p>
-      <input id="shop-conv-amount" class="conv-input" type="number" step="any" inputmode="decimal" placeholder="Monto a convertir" />
+      <p class="theme-title sub" id="lbl-divisa">Convertir divisa 💱</p>
+      <input id="shop-conv-amount" class="conv-input" aria-label="Monto a convertir" type="number" step="any" inputmode="decimal" placeholder="Monto a convertir" />
       <div id="shop-rate-fields" class="shop-rate-fields"></div>
       <div class="conv-row shop-conv-row">
-        <select id="shop-from" class="conv-select" title="Moneda del precio"></select>
-        <button id="shop-swap" class="conv-swap" type="button" title="Intercambiar monedas">⇄</button>
-        <select id="shop-to" class="conv-select" title="Convertir a"></select>
+        <select id="shop-from" class="conv-select" aria-label="Moneda del precio" title="Moneda del precio"></select>
+        <button id="shop-swap" class="conv-swap" type="button" title="Intercambiar monedas" aria-label="Intercambiar monedas">⇄</button>
+        <select id="shop-to" class="conv-select" aria-label="Moneda a la que se convierte" title="Convertir a"></select>
       </div>
-      <button id="shop-conv-res" class="shop-res shop-conv-res" title="Usar en la calculadora">—</button>
+      <button id="shop-conv-res" class="shop-res shop-conv-res" title="Usar en la calculadora" aria-labelledby="lbl-divisa shop-conv-res">—</button>
       <p class="shop-note">Escribe la tasa que conozcas (1 $ = ⋯). La app funciona sin internet, así que la actualizas tú. Toca el resultado para usarlo.</p>
     </div>
 
@@ -645,11 +645,12 @@
       </svg>
     </div>
 
-    <!-- Pantalla -->
+    <!-- Pantalla. Las dos líneas son regiones "live" para que el lector de
+         pantalla cante la operación y el resultado cuando cambian. -->
     <div class="display">
-      <button id="btn-frac" class="frac-chip hidden" title="Ver como fracción / decimal">¼</button>
-      <div id="expression" class="expression">&nbsp;</div>
-      <div id="result" class="result" title="Tocar para copiar">0</div>
+      <button id="btn-frac" class="frac-chip hidden" title="Ver como fracción / decimal" aria-label="Ver como fracción o decimal">¼</button>
+      <div id="expression" class="expression" aria-live="polite">&nbsp;</div>
+      <div id="result" class="result" title="Tocar para copiar" role="status" aria-live="polite" aria-atomic="true">0</div>
     </div>
 
     <!-- Controles -->
@@ -664,63 +665,65 @@
     <div class="pad-wrap">
       <!-- Teclado científico -->
       <div id="sci-pad" class="sci-pad hidden">
-        <button class="skey mem" data-action="mc">MC</button>
-        <button class="skey mem" data-action="mr">MR</button>
-        <button class="skey mem" data-action="m+">M+</button>
-        <button class="skey mem" data-action="m-">M−</button>
-        <button class="skey mem" data-action="ms">MS</button>
+        <!-- data-aria / data-aria2: cómo se llama la tecla en voz alta. Las que
+             cambian con 2nd llevan las dos, y toggle2nd las intercambia. -->
+        <button class="skey mem" data-action="mc" aria-label="Memoria: borrar">MC</button>
+        <button class="skey mem" data-action="mr" aria-label="Memoria: recuperar">MR</button>
+        <button class="skey mem" data-action="m+" aria-label="Memoria: sumar">M+</button>
+        <button class="skey mem" data-action="m-" aria-label="Memoria: restar">M−</button>
+        <button class="skey mem" data-action="ms" aria-label="Memoria: guardar">MS</button>
 
-        <button id="btn-2nd" class="skey">2nd</button>
-        <button class="skey fn" data-k="sin(" data-k2="asin(" data-label="sin" data-label2="sin⁻¹">sin</button>
-        <button class="skey fn" data-k="cos(" data-k2="acos(" data-label="cos" data-label2="cos⁻¹">cos</button>
-        <button class="skey fn" data-k="tan(" data-k2="atan(" data-label="tan" data-label2="tan⁻¹">tan</button>
-        <button class="skey fn" data-k="π" data-label="π">π</button>
+        <button id="btn-2nd" class="skey" aria-label="Segunda función">2nd</button>
+        <button class="skey fn" data-k="sin(" data-k2="asin(" data-label="sin" data-label2="sin⁻¹" aria-label="seno" data-aria="seno" data-aria2="arcoseno">sin</button>
+        <button class="skey fn" data-k="cos(" data-k2="acos(" data-label="cos" data-label2="cos⁻¹" aria-label="coseno" data-aria="coseno" data-aria2="arcocoseno">cos</button>
+        <button class="skey fn" data-k="tan(" data-k2="atan(" data-label="tan" data-label2="tan⁻¹" aria-label="tangente" data-aria="tangente" data-aria2="arcotangente">tan</button>
+        <button class="skey fn" data-k="π" data-label="π" aria-label="pi">π</button>
 
-        <button class="skey fn" data-k="^" data-label="xʸ">xʸ</button>
-        <button class="skey fn" data-k="ln(" data-k2="e^(" data-label="ln" data-label2="eˣ">ln</button>
-        <button class="skey fn" data-k="log(" data-k2="10^(" data-label="log" data-label2="10ˣ">log</button>
-        <button class="skey fn" data-k="sqrt(" data-k2="cbrt(" data-label="√" data-label2="∛">√</button>
-        <button class="skey fn" data-k="e" data-label="e">e</button>
+        <button class="skey fn" data-k="^" data-label="xʸ" aria-label="x elevado a y">xʸ</button>
+        <button class="skey fn" data-k="ln(" data-k2="e^(" data-label="ln" data-label2="eˣ" aria-label="logaritmo natural" data-aria="logaritmo natural" data-aria2="e elevado a x">ln</button>
+        <button class="skey fn" data-k="log(" data-k2="10^(" data-label="log" data-label2="10ˣ" aria-label="logaritmo base diez" data-aria="logaritmo base diez" data-aria2="diez elevado a x">log</button>
+        <button class="skey fn" data-k="sqrt(" data-k2="cbrt(" data-label="√" data-label2="∛" aria-label="raíz cuadrada" data-aria="raíz cuadrada" data-aria2="raíz cúbica">√</button>
+        <button class="skey fn" data-k="e" data-label="e" aria-label="número e">e</button>
 
-        <button class="skey fn" data-k="^2" data-k2="^3" data-label="x²" data-label2="x³">x²</button>
-        <button class="skey fn" data-k="(" data-label="(">(</button>
-        <button class="skey fn" data-k=")" data-label=")">)</button>
-        <button class="skey fn" data-k="^(-1)" data-label="1/x">1/x</button>
-        <button class="skey fn" data-k="!" data-label="n!">n!</button>
+        <button class="skey fn" data-k="^2" data-k2="^3" data-label="x²" data-label2="x³" aria-label="x al cuadrado" data-aria="x al cuadrado" data-aria2="x al cubo">x²</button>
+        <button class="skey fn" data-k="(" data-label="(" aria-label="abrir paréntesis">(</button>
+        <button class="skey fn" data-k=")" data-label=")" aria-label="cerrar paréntesis">)</button>
+        <button class="skey fn" data-k="^(-1)" data-label="1/x" aria-label="uno entre x">1/x</button>
+        <button class="skey fn" data-k="!" data-label="n!" aria-label="factorial">n!</button>
 
-        <button class="skey fn" data-k="abs(" data-label="|x|">|x|</button>
-        <button class="skey fn" data-k="*10^" data-label="EXP">EXP</button>
-        <button class="skey fn" data-k="mod" data-label="mod">mod</button>
-        <button class="skey fn" data-k="%" data-label="%">%</button>
-        <button class="skey fn" data-k="ans" data-label="Ans">Ans</button>
+        <button class="skey fn" data-k="abs(" data-label="|x|" aria-label="valor absoluto">|x|</button>
+        <button class="skey fn" data-k="*10^" data-label="EXP" aria-label="exponente">EXP</button>
+        <button class="skey fn" data-k="mod" data-label="mod" aria-label="módulo">mod</button>
+        <button class="skey fn" data-k="%" data-label="%" aria-label="por ciento">%</button>
+        <button class="skey fn" data-k="ans" data-label="Ans" aria-label="respuesta anterior">Ans</button>
       </div>
 
       <!-- Teclado básico -->
       <div class="keypad">
-        <button class="key key-fn" data-action="clear">C</button>
-        <button class="key key-fn" data-action="back">⌫</button>
-        <button class="key key-fn" data-k="%">%</button>
-        <button class="key key-op" data-k="/">÷</button>
+        <button class="key key-fn" data-action="clear" aria-label="Borrar todo">C</button>
+        <button class="key key-fn" data-action="back" aria-label="Borrar lo último">⌫</button>
+        <button class="key key-fn" data-k="%" aria-label="por ciento">%</button>
+        <button class="key key-op" data-k="/" aria-label="dividir">÷</button>
 
         <button class="key" data-k="7">7</button>
         <button class="key" data-k="8">8</button>
         <button class="key" data-k="9">9</button>
-        <button class="key key-op" data-k="*">×</button>
+        <button class="key key-op" data-k="*" aria-label="multiplicar">×</button>
 
         <button class="key" data-k="4">4</button>
         <button class="key" data-k="5">5</button>
         <button class="key" data-k="6">6</button>
-        <button class="key key-op" data-k="-">−</button>
+        <button class="key key-op" data-k="-" aria-label="restar">−</button>
 
         <button class="key" data-k="1">1</button>
         <button class="key" data-k="2">2</button>
         <button class="key" data-k="3">3</button>
-        <button class="key key-op" data-k="+">+</button>
+        <button class="key key-op" data-k="+" aria-label="sumar">+</button>
 
-        <button class="key" data-action="negate">±</button>
+        <button class="key" data-action="negate" aria-label="Cambiar signo">±</button>
         <button class="key" data-k="0">0</button>
-        <button class="key" data-k=".">.</button>
-        <button class="key key-eq" data-action="equals">=</button>
+        <button class="key" data-k="." aria-label="punto decimal">.</button>
+        <button class="key key-eq" data-action="equals" aria-label="igual">=</button>
       </div>
     </div>
 
