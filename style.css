@@ -702,6 +702,11 @@ body {
 .result { cursor: pointer; }
 .copy-helper { position: fixed; left: -9999px; top: 0; }
 
+/* Partes decorativas del gato que no deben robarle el clic al SVG. Vive aquí y
+   no en un style="" porque la CSP de la página no permite estilos en línea: los
+   descartaba en silencio. */
+.sin-raton { pointer-events: none; }
+
 /* ---------- Pantalla ---------- */
 .display {
   position: relative;
@@ -734,6 +739,14 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
   transition: font-size 0.15s ease;
+}
+
+/* El resultado se copia al tocarlo, así que también tiene que poder recibir el
+   foco del teclado y verse cuando lo tiene. */
+.result:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 8px;
 }
 
 .result.small { font-size: 33px; }
@@ -912,4 +925,34 @@ body {
   opacity: 0.65;
   padding: 8px 0 2px;
   color: var(--text);
+}
+
+/* ---------- Pantalla de poca altura ----------
+   Teléfono girado, ventana chica, pantalla dividida. Con 360 px de alto el
+   gato, la pantalla y las pestañas se comían todo y el teclado numérico quedaba
+   fuera de la vista: .pad-wrap tiene su propio scroll, pero con casi cero
+   píxeles de alto no había nada que rodar. Aquí el gato es quien cede — encoge
+   a la mitad y el resto se aprieta a su alrededor.
+
+   Va al final del archivo A PROPÓSITO: son selectores de la misma especificidad
+   que los que corrige (#cat, .display, .result), así que solo ganan si aparecen
+   después. Puesta arriba con las otras media queries no hacía absolutamente
+   nada, que fue justo lo que pasó al primer intento. */
+@media (max-height: 520px) {
+  #app {
+    padding-top: calc(4px + env(safe-area-inset-top));
+    padding-bottom: calc(4px + env(safe-area-inset-bottom));
+  }
+  .topbar { padding: 0 4px; }
+  .icon-btn { width: 30px; height: 30px; font-size: 15px; border-radius: 9px; }
+  #cat { width: 104px; height: 71px; }
+  .cat-scene { margin-bottom: -10px; }
+  .display { padding: 12px 16px 8px; border-radius: 14px; }
+  .expression { min-height: 15px; font-size: 13px; }
+  .result { font-size: 30px; }
+  .result.small { font-size: 24px; }
+  .result.tiny  { font-size: 19px; }
+  .pad-wrap { padding-top: 6px; gap: 7px; }
+  .keypad { grid-template-rows: repeat(5, minmax(38px, 1fr)); gap: 7px; }
+  .footer { display: none; }         /* el pie es adorno; el teclado no */
 }

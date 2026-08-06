@@ -1,11 +1,29 @@
 /* ============ Catculator — lógica científica y vida gatuna ============ */
 
+/* ---------- Almacenamiento a prueba de balas ----------
+   localStorage puede LANZAR, no solo devolver null: WebView con almacenamiento
+   apagado, modo privado de Safari, cuota llena. Como la primera línea del script
+   ya lo toca, una excepción ahí mataba el archivo entero y dejaba la app en
+   blanco. Con este envoltorio, sin almacenamiento la app funciona igual: solo
+   no recuerda nada entre sesiones. */
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* sin espacio o sin permiso */ } },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+  json(k, porDefecto) {
+    try {
+      const v = JSON.parse(this.get(k));
+      return (v && typeof v === 'object') ? v : porDefecto;
+    } catch (e) { return porDefecto; }
+  }
+};
+
 // ---------- Estado de la calculadora ----------
 let tokens = [];            // expresión en construcción (un token por pulsación)
 let ans = 0;                // último resultado
 let lastExprRaw = '';       // expresión evaluada (para la línea superior)
 let memory = 0;             // memoria (MC/MR/M+/M-/MS)
-let angleMode = localStorage.getItem('catculator-angle') || 'deg';
+let angleMode = store.get('catculator-angle') || 'deg';
 let inv = false;            // modo 2nd (funciones inversas)
 let justEvaluated = false;
 let errorState = false;
@@ -14,10 +32,11 @@ let fracMode = false;       // mostrar el resultado como fracción
 let quizMode = false;       // modo aprendiz: el gato pregunta
 let quiz = null;            // pregunta actual {text, answer}
 let racha = 0;              // aciertos seguidos en el quiz
-let mejorRacha = parseInt(localStorage.getItem('catculator-racha') || '0', 10);
-let history = [];           // historial de cálculos {e, r, v}
-try { history = JSON.parse(localStorage.getItem('catculator-history')) || []; }
-catch (e) { history = []; }
+let mejorRacha = parseInt(store.get('catculator-racha') || '0', 10);
+// Un JSON válido que NO sea arreglo (localStorage manoseado, versión vieja del
+// formato) hacía que addHistory reventara en cada '='. Se exige arreglo.
+const histGuardado = store.json('catculator-history', null);
+let history = Array.isArray(histGuardado) ? histGuardado : [];
 
 const elResult = document.getElementById('result');
 const elExpr = document.getElementById('expression');
@@ -28,6 +47,22 @@ const elSpeechText = document.getElementById('speech-text');
 const elFrac = document.getElementById('btn-frac');
 
 // ---------- Formato de números ----------
+/* Los separadores salen del idioma del sistema: en Costa Rica 1.234,5 y en
+   inglés 1,234.5. Se preguntan una sola vez porque no cambian en caliente. */
+const SEP = (() => {
+  try {
+    const partes = new Intl.NumberFormat(undefined).formatToParts(12345.6);
+    const busca = tipo => (partes.find(p => p.type === tipo) || {}).value;
+    return { miles: busca('group') || ',', decimal: busca('decimal') || '.' };
+  } catch (e) { return { miles: ',', decimal: '.' }; }
+})();
+
+/* Deshace el formato bonito y deja un número que entiende JS (y cualquier otra
+   app donde se pegue): sin separador de miles y con punto decimal. */
+function textoANumeroPlano(texto) {
+  return texto.split(SEP.miles).join('').split(SEP.decimal).join('.');
+}
+
 function roundNice(n) {
   if (!isFinite(n)) return n;
   return parseFloat(n.toPrecision(12));
@@ -36,7 +71,7 @@ function roundNice(n) {
 function groupInt(intStr) {
   const neg = intStr.startsWith('-');
   const digits = neg ? intStr.slice(1) : intStr;
-  const grouped = digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const grouped = digits.replace(/\B(?=(\d{3})+(?!\d))/g, SEP.miles);
   return (neg ? '-' : '') + grouped;
 }
 
@@ -44,12 +79,12 @@ function formatNumber(n) {
   if (!isFinite(n)) return '¡Miau!';
   const abs = Math.abs(n);
   if (abs !== 0 && (abs >= 1e12 || abs < 1e-9)) {
-    return n.toExponential(6).replace('e', ' e');
+    return n.toExponential(6).replace('.', SEP.decimal).replace('e', ' e');
   }
   const s = String(roundNice(n));
   if (s.includes('e')) return s;
   const [intPart, decPart] = s.split('.');
-  return decPart !== undefined ? groupInt(intPart) + '.' + decPart : groupInt(intPart);
+  return decPart !== undefined ? groupInt(intPart) + SEP.decimal + decPart : groupInt(intPart);
 }
 
 // ---------- Fracciones ----------
@@ -81,14 +116,25 @@ function formatFraction(f) {
   return groupInt(String(f.n)) + '/' + groupInt(String(f.d));
 }
 
-// Convierte un número en la lista de teclas que lo escribirían
-// (para reutilizar valores del historial o del conversor).
+/* Convierte un número en la lista de teclas que lo escribirían (para reutilizar
+   valores del historial o del conversor).
+
+   Ojo con la notación exponencial: si se cuela una 'e' en la cadena, al partirla
+   en caracteres el tokenizador la lee como el número de Euler y 1e21 terminaba
+   valiendo 23.7 sin avisar. toFixed tampoco salva: desde 1e21 él también
+   devuelve exponencial, así que ahí se expande con BigInt (todo float de ese
+   tamaño ya es entero). Si aun así queda una 'e', se devuelve 0 antes que un
+   número inventado. */
 function numberToTokens(v) {
   let s = String(roundNice(v));
   if (s.includes('e')) {
-    s = v.toFixed(12).replace(/0+$/, '').replace(/\.$/, '');
+    if (Math.abs(v) >= 1e21) {
+      try { s = BigInt(v).toString(); } catch (err) { s = '0'; }
+    } else {
+      s = v.toFixed(12).replace(/0+$/, '').replace(/\.$/, '');
+    }
   }
-  return s.split('');
+  return (s.includes('e') ? '0' : s).split('');
 }
 
 // ---------- Motor de expresiones ----------
@@ -198,6 +244,8 @@ function tokenize(str) {
     res.push(tk);
   }
 
+  expandPercents(res);
+
   // Multiplicación implícita: 2π, 2(3), )(, 2sin(...
   const out = [];
   for (let k = 0; k < res.length; k++) {
@@ -211,6 +259,67 @@ function tokenize(str) {
     out.push(cur);
   }
   return out;
+}
+
+/* Porcentaje como lo espera cualquiera que venga de una calculadora de bolsillo.
+
+   El % suelto es "entre cien" y así lo dejan iOS, Android y Windows... salvo
+   cuando cuelga de una suma o una resta: ahí el porcentaje se toma SOBRE lo que
+   va antes. 50+10% son 55, no 50.1. Multiplicación y división no cambian:
+   200*10% siguen siendo 20.
+
+   Se reescribe el flujo de tokens antes de armar la RPN: el operando marcado con
+   % se cambia por "(lo de la izquierda) * operando / 100". La izquierda se corta
+   en el paréntesis en el que estemos, para que (50+10%) sean 55 y no un
+   paréntesis descuadrado. */
+function expandPercents(toks) {
+  for (let i = 0; i < toks.length; i++) {
+    if (toks[i].t !== 'post' || toks[i].v !== '%') continue;
+
+    // 1. Dónde arranca el operando al que se pega este %
+    let ini = i - 1;
+    if (ini < 0) continue;
+    if (toks[ini].t === 'rp') {
+      let hondo = 0;
+      while (ini >= 0) {
+        if (toks[ini].t === 'rp') hondo++;
+        else if (toks[ini].t === 'lp' && --hondo === 0) break;
+        ini--;
+      }
+      if (ini < 0) continue;
+      if (ini > 0 && toks[ini - 1].t === 'func') ini--;   // sqrt(9)% incluye el sqrt
+    } else if (toks[ini].t !== 'num' && toks[ini].t !== 'const') {
+      continue;
+    }
+    while (ini > 0 && toks[ini - 1].t === 'u') ini--;      // el menos unario va pegado
+
+    // 2. Solo + y − cambian el significado del %
+    const opIdx = ini - 1;
+    if (opIdx < 0) continue;
+    const op = toks[opIdx];
+    if (op.t !== 'op' || (op.v !== '+' && op.v !== '-')) continue;
+
+    // 3. El contexto izquierdo, sin salirse del paréntesis actual
+    let desde = opIdx - 1, hondo = 0;
+    while (desde >= 0) {
+      const t = toks[desde];
+      if (t.t === 'rp') hondo++;
+      else if (t.t === 'lp') { if (hondo === 0) break; hondo--; }
+      desde--;
+    }
+    desde++;
+    if (desde >= opIdx) continue;   // no hay nada a la izquierda sobre qué aplicar
+
+    const nuevo = [
+      { t: 'lp' }, ...toks.slice(desde, opIdx), { t: 'rp' },
+      { t: 'op', v: '*' },
+      ...toks.slice(ini, i),
+      { t: 'op', v: '/' }, { t: 'num', v: 100 }
+    ];
+    toks.splice(ini, i - ini + 1, ...nuevo);
+    i = ini + nuevo.length - 1;
+  }
+  return toks;
 }
 
 function toRPN(toks) {
@@ -276,7 +385,10 @@ function prettify(raw) {
     ['sqrt(', '√('], ['cbrt(', '∛('], ['*10^', '×10^'],
     ['^(-1)', '⁻¹'], ['^2', '²'], ['^3', '³'],
     ['mod', ' mod '], ['ans', 'Ans'], ['mem', 'M'],
-    ['*', '×'], ['/', '÷'], ['-', '−']
+    ['*', '×'], ['/', '÷'], ['-', '−'],
+    // Lo que se teclea guarda el punto por dentro, pero se enseña con el
+    // separador del país: si no, escribías 0.5 y al pulsar = salía 0,5.
+    ['.', SEP.decimal]
   ];
   for (const [a, b] of reps) s = s.split(a).join(b);
   return s;
@@ -383,25 +495,39 @@ function equals() {
   celebrate(v);
 }
 
-// ± : niega el número final (lo envuelve en paréntesis)
+/* ± : niega el número final envolviéndolo en (−…).
+
+   La versión anterior solo sabía ir de ida: buscaba el número final recorriendo
+   dígitos hacia atrás, pero cuando ya estaba negado el último token era ')' y el
+   bucle no avanzaba, así que salía sin hacer nada. Ahora se mira primero si la
+   cola ya tiene forma de (−123) y en ese caso se desenvuelve. */
 function toggleSign() {
   if (errorState) return;
   wakeUp();
   if (justEvaluated) { tokens = numberToTokens(-ans); justEvaluated = false; updateDisplay(); return; }
+
+  const esDigito = t => /^[0-9.]$/.test(t);
+
+  // ¿Ya está negado? Quitarle el envoltorio.
+  if (tokens[tokens.length - 1] === ')') {
+    let i = tokens.length - 2;
+    while (i >= 0 && esDigito(tokens[i])) i--;
+    const hayDigitos = i < tokens.length - 2;
+    if (hayDigitos && i >= 1 && tokens[i] === '-' && tokens[i - 1] === '(') {
+      tokens.splice(tokens.length - 1, 1);   // el ')' del final
+      tokens.splice(i - 1, 2);               // el '(' y el '-'
+      updateDisplay();
+      return;
+    }
+  }
+
+  // Si no, envolver el número que esté al final.
   let e = tokens.length - 1;
-  while (e >= 0 && /^[0-9.]$/.test(tokens[e])) e--;
+  while (e >= 0 && esDigito(tokens[e])) e--;
   const s = e + 1;
-  if (s > tokens.length - 1) return; // no hay número al final
-  if (tokens[s - 1] === '-' && tokens[s - 2] === '(' && tokens[tokens.length - 1] !== ')') {
-    // no envuelto; caer al else
-  }
-  if (s >= 2 && tokens[s - 2] === '(' && tokens[s - 1] === '-' && tokens[tokens.length - 1] === ')') {
-    tokens.splice(tokens.length - 1, 1);
-    tokens.splice(s - 2, 2);
-  } else {
-    tokens.splice(s, 0, '(', '-');
-    tokens.push(')');
-  }
+  if (s > tokens.length - 1) return;         // no hay número al final
+  tokens.splice(s, 0, '(', '-');
+  tokens.push(')');
   updateDisplay();
 }
 
@@ -430,7 +556,7 @@ function updateMemChip() {
 
 function setAngle(mode) {
   angleMode = mode;
-  localStorage.setItem('catculator-angle', mode);
+  store.set('catculator-angle', mode);
   const btn = document.getElementById('btn-angle');
   if (btn) btn.textContent = mode === 'deg' ? 'DEG' : 'RAD';
   updateDisplay();
@@ -559,9 +685,19 @@ const eyes = [
   { el: document.getElementById('eye-right'), cx: 134, cy: 78 }
 ];
 
+/* getBoundingClientRect fuerza al navegador a recalcular el diseño, y aquí se
+   llamaba en CADA movimiento del ratón. Se guarda y solo se tira a la basura
+   cuando el gato pudo haberse movido. */
+let catRect = null;
+const olvidarCatRect = () => { catRect = null; };
+window.addEventListener('resize', olvidarCatRect);
+window.addEventListener('scroll', olvidarCatRect, true);
+if (window.ResizeObserver) new ResizeObserver(olvidarCatRect).observe(elCat);
+
 document.addEventListener('mousemove', (e) => {
   if (elCat.classList.contains('mood-sleep')) return;
-  const rect = elCat.getBoundingClientRect();
+  if (!catRect) catRect = elCat.getBoundingClientRect();
+  const rect = catRect;
   const scale = rect.width / 220;
   for (const eye of eyes) {
     const ex = rect.left + eye.cx * scale;
@@ -610,7 +746,7 @@ function wakeUp() {
 resetIdle();
 
 // ---------- Sonidos (sintetizados, sin archivos) ----------
-let soundOn = localStorage.getItem('catculator-sound') !== 'off';
+let soundOn = store.get('catculator-sound') !== 'off';
 let audioCtx = null;
 
 function ctx() {
@@ -793,7 +929,7 @@ function refreshSoundBtn() {
 }
 btnSound.addEventListener('click', () => {
   soundOn = !soundOn;
-  localStorage.setItem('catculator-sound', soundOn ? 'on' : 'off');
+  store.set('catculator-sound', soundOn ? 'on' : 'off');
   refreshSoundBtn();
   if (soundOn) { playMeow(); say('¡Miau! Sonido activado 🔊', 2000); }
   else say('Modo sigiloso, como buen gato 🤫', 2000);
@@ -816,7 +952,7 @@ const THEME_NAMES = {
    sigue al sistema hasta que el humano toque un color, y desde ahí manda él. */
 function applyTheme(theme, guardar = true) {
   document.documentElement.setAttribute('data-theme', theme);
-  if (guardar) localStorage.setItem('catculator-theme', theme);
+  if (guardar) store.set('catculator-theme', theme);
   document.querySelectorAll('.theme-swatch').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.theme === theme);
   });
@@ -854,14 +990,14 @@ document.querySelectorAll('.theme-swatch').forEach(btn => {
 });
 
 // Primera vez: si el sistema está en oscuro, se abre en Noche en vez de deslumbrar
-const temaGuardado = localStorage.getItem('catculator-theme');
+const temaGuardado = store.get('catculator-theme');
 const mqOscuro = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
 applyTheme(temaGuardado || (mqOscuro && mqOscuro.matches ? 'noche' : 'cian'), !!temaGuardado);
 
 // Mientras no haya elegido tema, la app acompaña los cambios del sistema
 if (!temaGuardado && mqOscuro && mqOscuro.addEventListener) {
   mqOscuro.addEventListener('change', e => {
-    if (!localStorage.getItem('catculator-theme')) applyTheme(e.matches ? 'noche' : 'cian', false);
+    if (!store.get('catculator-theme')) applyTheme(e.matches ? 'noche' : 'cian', false);
   });
 }
 
@@ -876,7 +1012,7 @@ const FUR_NAMES = {
 
 function applyFur(fur) {
   document.documentElement.setAttribute('data-fur', fur);
-  localStorage.setItem('catculator-fur', fur);
+  store.set('catculator-fur', fur);
   document.querySelectorAll('.fur-swatch').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.fur === fur);
   });
@@ -892,7 +1028,7 @@ document.querySelectorAll('.fur-swatch').forEach(btn => {
   });
 });
 
-applyFur(localStorage.getItem('catculator-fur') || 'carbon');
+applyFur(store.get('catculator-fur') || 'carbon');
 
 // ---------- Atuendos del gato ----------
 const OUTFIT_NAMES = {
@@ -906,7 +1042,7 @@ const OUTFIT_NAMES = {
 
 function applyOutfit(outfit) {
   document.documentElement.setAttribute('data-outfit', outfit);
-  localStorage.setItem('catculator-outfit', outfit);
+  store.set('catculator-outfit', outfit);
   document.querySelectorAll('.outfit-swatch').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.outfit === outfit);
   });
@@ -922,7 +1058,7 @@ document.querySelectorAll('.outfit-swatch').forEach(btn => {
   });
 });
 
-applyOutfit(localStorage.getItem('catculator-outfit') || 'ninguno');
+applyOutfit(store.get('catculator-outfit') || 'ninguno');
 
 // ---------- Modo básica / científica ----------
 const btnMode = document.getElementById('btn-mode');
@@ -933,7 +1069,7 @@ function applyMode(mode) {
   document.getElementById('app').classList.toggle('sci-on', sci);
   sciPad.classList.toggle('hidden', !sci);
   btnMode.textContent = sci ? '🐱 Básica' : '🔬 Científica';
-  localStorage.setItem('catculator-mode', mode);
+  store.set('catculator-mode', mode);
 }
 
 btnMode.addEventListener('click', () => {
@@ -942,7 +1078,7 @@ btnMode.addEventListener('click', () => {
   if (now === 'sci') { say('¡Modo científico! 🔬 A ronronear ecuaciones', 2600); setMood('happy', 2000); }
 });
 
-applyMode(localStorage.getItem('catculator-mode') || 'basic');
+applyMode(store.get('catculator-mode') || 'basic');
 
 // ---------- Controles científicos ----------
 document.getElementById('btn-2nd').addEventListener('click', () => { playClick(); toggle2nd(); });
@@ -990,10 +1126,10 @@ function fallbackCopy(text) {
   return ok;
 }
 
-elResult.addEventListener('click', () => {
+function copyResult() {
   if (errorState || quizMode) return;
   wakeUp();
-  const text = elResult.textContent.replace(/,/g, '');
+  const text = textoANumeroPlano(elResult.textContent);
   const done = () => {
     playClick();
     setMood('happy', 1600);
@@ -1004,6 +1140,14 @@ elResult.addEventListener('click', () => {
   } else if (fallbackCopy(text)) {
     done();
   }
+}
+
+elResult.addEventListener('click', copyResult);
+
+// El resultado también se copia con el teclado: es un div, así que hay que
+// darle el papel de botón a mano (el tabindex vive en el HTML).
+elResult.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); copyResult(); }
 });
 
 // ---------- Historial ----------
@@ -1012,7 +1156,7 @@ const historyList = document.getElementById('history-list');
 function addHistory(exprRaw, result) {
   history.unshift({ e: prettify(exprRaw), r: formatNumber(result), v: result });
   if (history.length > 40) history.length = 40;
-  localStorage.setItem('catculator-history', JSON.stringify(history));
+  store.set('catculator-history', JSON.stringify(history));
 }
 
 function renderHistory() {
@@ -1061,7 +1205,7 @@ btnHistory.addEventListener('click', (e) => {
 document.getElementById('btn-history-clear').addEventListener('click', () => {
   playClick();
   history = [];
-  localStorage.removeItem('catculator-history');
+  store.del('catculator-history');
   renderHistory();
   say('Historial borradito, como platito de atún 🧽', 2200);
 });
@@ -1240,17 +1384,15 @@ const CURRENCIES = [
   { code: 'PEN', name: 'Sol peruano',      flag: '🇵🇪', sym: 'S/',  rate: 3.7 },
   { code: 'GTQ', name: 'Quetzal',          flag: '🇬🇹', sym: 'Q',   rate: 7.7 }
 ];
-try {
-  const savedRates = JSON.parse(localStorage.getItem('catculator-rates')) || {};
-  for (const c of CURRENCIES) {
-    const r = parseFloat(savedRates[c.code]);
-    if (isFinite(r) && r > 0) c.rate = r;
-  }
-} catch (e) {}
+const savedRates = store.json('catculator-rates', {});
+for (const c of CURRENCIES) {
+  const r = parseFloat(savedRates[c.code]);
+  if (isFinite(r) && r > 0) c.rate = r;
+}
 function saveRates() {
   const o = {};
   for (const c of CURRENCIES) o[c.code] = c.rate;
-  localStorage.setItem('catculator-rates', JSON.stringify(o));
+  store.set('catculator-rates', JSON.stringify(o));
 }
 const rateOf = code => { const c = CURRENCIES.find(x => x.code === code); return c ? c.rate : NaN; };
 
@@ -1271,17 +1413,17 @@ function fillCurrencySelect(sel) {
 }
 fillCurrencySelect(shopFromSel);
 fillCurrencySelect(shopToSel);
-shopFromSel.value = localStorage.getItem('catculator-shop-from') || 'CRC';
+shopFromSel.value = store.get('catculator-shop-from') || 'CRC';
 if (!shopFromSel.value) shopFromSel.value = 'CRC';
-shopToSel.value = localStorage.getItem('catculator-shop-to') || 'USD';
+shopToSel.value = store.get('catculator-shop-to') || 'USD';
 if (!shopToSel.value) shopToSel.value = 'USD';
 shopFromSel.addEventListener('change', () => {
-  localStorage.setItem('catculator-shop-from', shopFromSel.value);
+  store.set('catculator-shop-from', shopFromSel.value);
   renderRateFields();
   renderConv();
 });
 shopToSel.addEventListener('change', () => {
-  localStorage.setItem('catculator-shop-to', shopToSel.value);
+  store.set('catculator-shop-to', shopToSel.value);
   renderRateFields();
   renderConv();
 });
@@ -1290,8 +1432,8 @@ shopSwap.addEventListener('click', () => {
   const a = shopFromSel.value;
   shopFromSel.value = shopToSel.value;
   shopToSel.value = a;
-  localStorage.setItem('catculator-shop-from', shopFromSel.value);
-  localStorage.setItem('catculator-shop-to', shopToSel.value);
+  store.set('catculator-shop-from', shopFromSel.value);
+  store.set('catculator-shop-to', shopToSel.value);
   renderRateFields();
   renderConv();
 });
@@ -1367,15 +1509,15 @@ function renderRateFields() {
 renderRateFields();
 
 // Los porcentajes, personas y tasa quedan guardados entre sesiones
-try {
-  const saved = JSON.parse(localStorage.getItem('catculator-shop')) || {};
-  for (const k of Object.keys(shopIn)) if (saved[k] !== undefined) shopIn[k].value = saved[k];
-} catch (e) {}
+const shopGuardado = store.json('catculator-shop', {});
+for (const k of Object.keys(shopIn)) {
+  if (shopGuardado[k] !== undefined) shopIn[k].value = shopGuardado[k];
+}
 
 function shopCompute() {
   const ajustes = {};
   for (const k of Object.keys(shopIn)) ajustes[k] = shopIn[k].value;
-  localStorage.setItem('catculator-shop', JSON.stringify(ajustes));
+  store.set('catculator-shop', JSON.stringify(ajustes));
 
   const p = parseFloat(shopPrice.value);
   const val = k => parseFloat(shopIn[k].value);
@@ -1453,10 +1595,10 @@ const notesPanel = document.getElementById('notes-panel');
 const btnNotes = document.getElementById('btn-notes');
 const notesText = document.getElementById('notes-text');
 
-notesText.value = localStorage.getItem('catculator-notes') || '';
+notesText.value = store.get('catculator-notes') || '';
 
 notesText.addEventListener('input', () => {
-  localStorage.setItem('catculator-notes', notesText.value);
+  store.set('catculator-notes', notesText.value);
 });
 
 btnNotes.addEventListener('click', (e) => {
@@ -1481,7 +1623,7 @@ btnNotes.addEventListener('click', (e) => {
 document.getElementById('btn-notes-insert').addEventListener('click', () => {
   if (errorState) return;
   playClick();
-  const num = elResult.textContent.replace(/,/g, '');
+  const num = textoANumeroPlano(elResult.textContent);
   const before = notesText.value.slice(0, notesText.selectionStart);
   const after = notesText.value.slice(notesText.selectionEnd);
   const sep = before && !/[\s\n]$/.test(before) ? ' ' : '';
@@ -1489,13 +1631,13 @@ document.getElementById('btn-notes-insert').addEventListener('click', () => {
   const pos = (before + sep + num).length;
   notesText.setSelectionRange(pos, pos);
   notesText.focus();
-  localStorage.setItem('catculator-notes', notesText.value);
+  store.set('catculator-notes', notesText.value);
 });
 
 document.getElementById('btn-notes-clear').addEventListener('click', () => {
   playClick();
   notesText.value = '';
-  localStorage.removeItem('catculator-notes');
+  store.del('catculator-notes');
   notesText.focus();
   say('Bloc limpio como mis bigotes ✨', 2000);
 });
@@ -1549,7 +1691,7 @@ function checkQuiz() {
     ]) + ' 🔥' + racha;
     if (racha > mejorRacha) {
       mejorRacha = racha;
-      localStorage.setItem('catculator-racha', String(mejorRacha));
+      store.set('catculator-racha', String(mejorRacha));
       if (racha >= 3) frase = '¡Récord nuevo! 🔥' + racha + ' seguidas 🏆';
     }
     say(frase, 2400);
@@ -1603,11 +1745,28 @@ elFrac.addEventListener('click', () => {
   }
 });
 
-// ---------- PWA ----------
-// Ausente en Electron (file://) y en navegadores sin HTTPS: la app funciona igual sin él.
+/* ---------- PWA ----------
+   Ausente en Electron (file://) y en navegadores sin HTTPS: la app funciona
+   igual sin él.
+
+   El caché es "primero lo guardado", así que al publicar una versión nueva el
+   usuario sigue viendo la vieja hasta que vuelva a entrar. En vez de dejarlo
+   adivinando, el gato se lo dice. */
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      reg.addEventListener('updatefound', () => {
+        const entrante = reg.installing;
+        if (!entrante) return;
+        entrante.addEventListener('statechange', () => {
+          // Sin controller es la primera visita: no hay nada viejo que avisar.
+          if (entrante.state === 'installed' && navigator.serviceWorker.controller) {
+            setMood('surprised', 3000);
+            say('¡Hay una versión nueva! Recarga para estrenarla ✨', 6000);
+          }
+        });
+      });
+    }).catch(() => {});
   });
 }
 
@@ -1634,6 +1793,15 @@ document.querySelectorAll('.key, .skey').forEach(btn => {
   });
 });
 
+/* La tecla decimal enseña el separador del país. Por dentro el token sigue
+   siendo '.' siempre; esto es solo lo que se ve y lo que se lee en voz alta.
+   El teclado físico ya acepta las dos. */
+const teclaDecimal = document.querySelector('.key[data-k="."]');
+if (teclaDecimal) {
+  teclaDecimal.textContent = SEP.decimal;
+  teclaDecimal.setAttribute('aria-label', SEP.decimal === ',' ? 'coma decimal' : 'punto decimal');
+}
+
 // ---------- Teclado físico ----------
 function flashKey(selector) {
   const btn = document.querySelector(selector);
@@ -1646,6 +1814,11 @@ document.addEventListener('keydown', (e) => {
   // Escribiendo en el bloc de notas o el conversor, las teclas son suyas
   const tag = e.target.tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+  /* Los atajos del sistema no son teclas de calculadora: sin esto, Ctrl+C
+     borraba la cuenta entera porque abajo la 'c' es "Clear". Se deja pasar
+     Ctrl+Alt porque en los teclados latinoamericanos eso es AltGr y sí escribe
+     caracteres de verdad. */
+  if ((e.ctrlKey || e.metaKey) && !e.altKey) return;
   const k = e.key;
   if (/^[0-9]$/.test(k)) { playClick(); pushToken(k); flashKey(`.key[data-k="${k}"]`); }
   else if (k === '.' || k === ',') { playClick(); pushToken('.'); flashKey('.key[data-k="."]'); }

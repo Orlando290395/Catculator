@@ -19,7 +19,10 @@ function createWindow() {
   Menu.setApplicationMenu(null);
   win.loadFile('index.html');
 
-  if (process.env.CATCULATOR_SHOT) {
+  /* Gancho de desarrollo para capturas y pruebas. Va detrás de isPackaged a
+     propósito: CATCULATOR_TEST se evalúa como código en la página, y eso no
+     tiene por qué viajar dentro del .appx que se vende en la tienda. */
+  if (!app.isPackaged && process.env.CATCULATOR_SHOT) {
     win.webContents.once('did-finish-load', () => {
       setTimeout(async () => {
         if (process.env.CATCULATOR_TEST) {
