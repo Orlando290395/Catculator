@@ -47,15 +47,27 @@ const elSpeechText = document.getElementById('speech-text');
 const elFrac = document.getElementById('btn-frac');
 
 // ---------- Formato de números ----------
-/* Los separadores salen del idioma del sistema: en Costa Rica 1.234,5 y en
-   inglés 1,234.5. Se preguntan una sola vez porque no cambian en caliente. */
-const SEP = (() => {
+/* Los separadores salen del idioma del sistema: 1.234,5 en español de España,
+   1,234.5 en inglés y en español latinoamericano.
+
+   Con una excepción: unos cuantos idiomas —el español de COSTA RICA entre
+   ellos, y el francés— separan los miles con un espacio duro (U+00A0), y en una
+   pantalla de calculadora "1 234 567,89" se lee como tres números pegados en
+   vez de uno. Cuando toca espacio se cambia por el símbolo que no esté haciendo
+   de decimal, que es lo que la gente espera ver ahí. */
+function derivarSeparadores(idioma) {
   try {
-    const partes = new Intl.NumberFormat(undefined).formatToParts(12345.6);
+    const partes = new Intl.NumberFormat(idioma).formatToParts(12345.6);
     const busca = tipo => (partes.find(p => p.type === tipo) || {}).value;
-    return { miles: busca('group') || ',', decimal: busca('decimal') || '.' };
+    const decimal = busca('decimal') || '.';
+    let miles = busca('group') || ',';
+    if (/\s/.test(miles)) miles = decimal === ',' ? '.' : ',';
+    return { miles, decimal };
   } catch (e) { return { miles: ',', decimal: '.' }; }
-})();
+}
+
+// Se pregunta una sola vez: el idioma del sistema no cambia en caliente.
+const SEP = derivarSeparadores(undefined);
 
 /* Deshace el formato bonito y deja un número que entiende JS (y cualquier otra
    app donde se pegue): sin separador de miles y con punto decimal. */

@@ -132,6 +132,37 @@ const GUION_COMPORTAMIENTO = `(() => {
   prueba('formato ida y vuelta',
     parseFloat(textoANumeroPlano(formatNumber(1234567.89))), 1234567.89);
 
+  /* Separadores por idioma. El caso que importa es es-CR: su separador de miles
+     oficial es un espacio duro (U+00A0) y en la pantalla se leería como varios
+     números pegados, así que tiene que salir convertido en punto.
+     Ojo al editar: esto vive dentro de una plantilla, por eso \\\\s y no \\s. */
+  const sep = l => { const s = derivarSeparadores(l); return s.miles + '|' + s.decimal; };
+  prueba('es-CR sin espacios', sep('es-CR'),  '.|,');
+  prueba('fr-FR sin espacios', sep('fr-FR'),  '.|,');
+  prueba('es-419 latino',      sep('es-419'), ',|.');
+  prueba('es-MX latino',       sep('es-MX'),  ',|.');
+  prueba('es-ES europeo',      sep('es-ES'),  '.|,');
+  prueba('en-US inglés',       sep('en-US'),  ',|.');
+  prueba('idioma inventado no rompe', typeof sep('xx-ZZ'), 'string');
+
+  // Ningún idioma puede dar separadores iguales, vacíos o en blanco
+  const idiomas = ['es', 'es-CR', 'es-419', 'es-MX', 'es-ES', 'en-US', 'pt-BR',
+                   'fr-FR', 'de-DE', 'it-IT', 'ru-RU', 'ja-JP', 'zh-CN', 'pl-PL',
+                   'nb-NO', 'cs-CZ', 'hu-HU', 'sv-SE', 'fi-FI', 'uk-UA'];
+  const malos = idiomas.filter(l => {
+    const s = derivarSeparadores(l);
+    return !s.miles || !s.decimal || s.miles === s.decimal || /\\s/.test(s.miles);
+  });
+  prueba('ningún idioma da separadores inválidos', malos.join(','), '');
+
+  // Y en todos ellos el copiado tiene que poder deshacer el formato
+  const rotos = idiomas.filter(l => {
+    const s = derivarSeparadores(l);
+    const texto = '1' + s.miles + '234' + s.decimal + '56';
+    return parseFloat(texto.split(s.miles).join('').split(s.decimal).join('.')) !== 1234.56;
+  });
+  prueba('el copiado se deshace en todos los idiomas', rotos.join(','), '');
+
   return r;
 })()`;
 
