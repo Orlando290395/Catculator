@@ -7,7 +7,9 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..', 'pwa-dist');
-const OUT = path.join(__dirname, 'capturas');
+// Mismo esquema que el generador de Play: 'en' manda la salida a capturas-en/
+const IDIOMA_CAP = process.argv.includes('en') ? 'en' : 'es';
+const OUT = path.join(__dirname, IDIOMA_CAP === 'es' ? 'capturas' : 'capturas-' + IDIOMA_CAP);
 const PORT = 8146;
 const W = 1366, H = 768;
 
@@ -119,6 +121,9 @@ async function run() {
       localStorage.setItem('catculator-outfit', '${t.atuendo}');
       localStorage.setItem('catculator-mode', '${t.modo}');
       localStorage.setItem('catculator-sound', 'on');
+      localStorage.setItem('catculator-idioma', '${IDIOMA_CAP}');
+      localStorage.removeItem('catculator-rates');
+      localStorage.removeItem('catculator-rates-fechas');
       localStorage.removeItem('catculator-history');
       localStorage.removeItem('catculator-shop');
     `);

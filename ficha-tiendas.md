@@ -169,13 +169,16 @@ Las calculadoras gratis se pagan con tus datos o con anuncios a pantalla complet
 
 ## Capturas
 
-| Ficha | Carpeta | Comando |
-|---|---|---|
-| Inglés | `tienda/capturas-en/` | `npm run capturas:en` |
-| Español | `tienda/capturas/` | `npm run capturas` |
+| Tienda | Idioma | Carpeta | Comando |
+|---|---|---|---|
+| Google Play | Inglés | `tienda/capturas-en/` | `npm run capturas:en` |
+| Google Play | Español | `tienda/capturas/` | `npm run capturas` |
+| Microsoft Store | Inglés | `microsoft-store/capturas-en/` | `npm run capturas:store:en` |
+| Microsoft Store | Español | `microsoft-store/capturas/` | `npm run capturas:store` |
 
-Siete PNG de 1080×1920 cada una, sin canal alfa (Play rechaza las capturas con
-transparencia).
+Play: siete PNG de 1080×1920. Microsoft Store: seis de 1366×768 (apaisadas,
+porque la ficha es de escritorio). Ninguna lleva canal alfa — Play rechaza las
+capturas con transparencia.
 
 ## Notas al pegar
 

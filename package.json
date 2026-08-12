@@ -16,7 +16,8 @@
     "pwa": "node build-pwa.js",
     "capturas": "electron build-capturas.js",
     "capturas:en": "electron build-capturas.js en",
-    "capturas:store": "electron microsoft-store/build-capturas.js"
+    "capturas:store": "electron microsoft-store/build-capturas.js",
+    "capturas:store:en": "electron microsoft-store/build-capturas.js en"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.4.2",
