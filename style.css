@@ -968,8 +968,13 @@ body {
   --melena: #a2651f;
   --melena-clara: #c58a33;
   --melena-oscura: #6f3f0e;
+  --hocico: #f2dcb4;
+  --nariz-leon: #7d4a33;
 }
-:root[data-fur="leon"] #especie-leon { display: block; }
+:root[data-fur="leon"] #especie-leon,
+:root[data-fur="leon"] #leon-cara { display: block; }
+/* El león trae su propia nariz, ancha y oscura */
+:root[data-fur="leon"] .nariz { display: none; }
 /* El león trae orejas redondas propias, así que las del gato sobran */
 :root[data-fur="leon"] #ear-left,
 :root[data-fur="leon"] #ear-right { display: none; }
