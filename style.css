@@ -967,6 +967,7 @@ body {
   --ear-inner: #b06a3c;
   --melena: #a2651f;
   --melena-clara: #c58a33;
+  --melena-oscura: #6f3f0e;
 }
 :root[data-fur="leon"] #especie-leon { display: block; }
 /* El león trae orejas redondas propias, así que las del gato sobran */
