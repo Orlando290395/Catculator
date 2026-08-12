@@ -831,8 +831,9 @@ function playClick() {
    Un león con maullido de gato rompe la ilusión igual que le pasaba a la cara.
    Se saca a una función aparte, en vez de mirar el atributo dentro de
    playMeow, para poder probarlo sin tener que escuchar nada. */
+const RUGEN = ['leon', 'tigre'];
 function vozDeLaEspecie() {
-  return document.documentElement.getAttribute('data-fur') === 'leon' ? 'rugido' : 'maullido';
+  return RUGEN.includes(document.documentElement.getAttribute('data-fur')) ? 'rugido' : 'maullido';
 }
 
 /* ---------- El rugido ----------

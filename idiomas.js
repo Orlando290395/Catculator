@@ -61,6 +61,8 @@ const TEXTOS = {
     'pelaje.negro': 'Negro',
     'pelaje.blanco': 'Blanco',
     'pelaje.leon': 'León',
+    'pelaje.tigre': 'Tigre',
+    'especie.titulo': 'Felinos salvajes 🦁',
     'atuendo.titulo': 'Tu atuendo 🎩',
     'atuendo.ninguno': 'Ninguno',
     'atuendo.ninja': 'Ninja',
@@ -238,6 +240,7 @@ const TEXTOS = {
     'say.pelaje.negro': '¡Gato negro, suerte para ti! 🐈‍⬛',
     'say.pelaje.blanco': '¡Blanco como la leche! 🥛',
     'say.pelaje.leon': '¡ROAAAR! Rey de la selva y de las sumas 🦁',
+    'say.pelaje.tigre': '¡GRRRAAA! Rayas para sumar, garras para restar 🐯',
 
     'say.atuendo.ninguno': 'Al natural, como buen gato 🐱',
     'say.atuendo.ninja': '¡Ninja! Silencioso como patita en alfombra 🥷',
@@ -286,6 +289,8 @@ const TEXTOS = {
     'pelaje.negro': 'Black',
     'pelaje.blanco': 'White',
     'pelaje.leon': 'Lion',
+    'pelaje.tigre': 'Tiger',
+    'especie.titulo': 'Wild cats 🦁',
     'atuendo.titulo': 'Your outfit 🎩',
     'atuendo.ninguno': 'None',
     'atuendo.ninja': 'Ninja',
@@ -455,6 +460,7 @@ const TEXTOS = {
     'say.pelaje.negro': 'Black cat, luck for you! 🐈‍⬛',
     'say.pelaje.blanco': 'White as milk! 🥛',
     'say.pelaje.leon': 'ROAAAR! King of the jungle and of sums 🦁',
+    'say.pelaje.tigre': 'GRRRAAA! Stripes for adding, claws for subtracting 🐯',
 
     'say.atuendo.ninguno': 'All natural, like a proper cat 🐱',
     'say.atuendo.ninja': 'Ninja! Silent as a paw on carpet 🥷',

@@ -82,11 +82,17 @@
         <button class="fur-swatch" data-fur="negro">
           <span class="dot dot-negro"></span><span data-i18n="pelaje.negro">Negro</span>
         </button>
+        <button class="fur-swatch" data-fur="blanco">
+          <span class="dot dot-blanco"></span><span data-i18n="pelaje.blanco">Blanco</span>
+        </button>
+      </div>
+      <p class="theme-title sub" data-i18n="especie.titulo">Felinos salvajes 🦁</p>
+      <div class="theme-grid">
         <button class="fur-swatch" data-fur="leon">
           <span class="dot dot-leon"></span><span data-i18n="pelaje.leon">León</span>
         </button>
-        <button class="fur-swatch" data-fur="blanco">
-          <span class="dot dot-blanco"></span><span data-i18n="pelaje.blanco">Blanco</span>
+        <button class="fur-swatch" data-fur="tigre">
+          <span class="dot dot-tigre"></span><span data-i18n="pelaje.tigre">Tigre</span>
         </button>
       </div>
       <p class="theme-title sub" data-i18n="atuendo.titulo">Tu atuendo 🎩</p>
@@ -317,15 +323,20 @@
           </g>
           <path d="M110.0,34.0 C119.2,15.3 142.0,19.2 139.5,39.1 C154.1,31.0 170.7,41.1 163.2,53.6 C183.8,49.6 193.4,64.7 176.3,74.4 C226.4,74.8 226.4,97.2 176.3,97.6 C213.8,112.4 201.9,131.3 163.2,118.4 C182.6,139.8 162.8,151.8 139.5,132.9 C147.9,164.9 120.9,169.6 110.0,138.0 C98.3,176.2 69.1,171.1 80.5,132.9 C62.3,145.6 44.3,134.7 56.8,118.4 C11.7,134.4 -1.0,114.3 43.7,97.6 C-6.6,97.2 -6.6,74.8 43.7,74.4 C36.3,67.2 44.7,53.9 56.8,53.6 C38.2,32.8 57.9,20.9 80.5,39.1 C82.6,28.8 102.1,25.5 110.0,34.0 Z" fill="url(#g-volumen)" class="sin-raton"/>
 
+        </g>
+
+        <!-- Orejas redondas: las comparten todos los felinos grandes, que no
+             tienen los triángulos puntiagudos del gato doméstico. -->
+        <g id="orejas-redondas" class="especie">
           <g class="ear">
-            <ellipse cx="74" cy="44" rx="15" ry="14" fill="var(--fur)"/>
-            <ellipse cx="74" cy="44" rx="15" ry="14" fill="url(#g-volumen)"/>
-            <ellipse cx="74" cy="46" rx="8" ry="7" fill="var(--ear-inner)"/>
+            <ellipse cx="71" cy="40" rx="17.5" ry="16.5" fill="var(--fur)"/>
+            <ellipse cx="71" cy="40" rx="17.5" ry="16.5" fill="url(#g-volumen)"/>
+            <ellipse cx="71" cy="43" rx="9.5" ry="8.5" fill="var(--ear-inner)"/>
           </g>
           <g class="ear">
-            <ellipse cx="146" cy="44" rx="15" ry="14" fill="var(--fur)"/>
-            <ellipse cx="146" cy="44" rx="15" ry="14" fill="url(#g-volumen)"/>
-            <ellipse cx="146" cy="46" rx="8" ry="7" fill="var(--ear-inner)"/>
+            <ellipse cx="149" cy="40" rx="17.5" ry="16.5" fill="var(--fur)"/>
+            <ellipse cx="149" cy="40" rx="17.5" ry="16.5" fill="url(#g-volumen)"/>
+            <ellipse cx="149" cy="43" rx="9.5" ry="8.5" fill="var(--ear-inner)"/>
           </g>
         </g>
 
@@ -356,6 +367,17 @@
           <path d="M58,86 Q44,88 37,93 Q47,96 51,100 Q36,105 33,113 Q46,111 53,115 Q45,122 45,129 Q57,120 62,112 Z" fill="var(--fur)"/>
           <path d="M162,86 Q176,88 183,93 Q173,96 169,100 Q184,105 187,113 Q174,111 167,115 Q175,122 175,129 Q163,120 158,112 Z" fill="var(--fur)"/>
 
+          <!-- ===== Tigre: la gorguera =====
+               Los mechones de las mejillas son parte de la silueta y se pintan
+               antes que la cabeza, así que el tigre los vuelve a pintar en
+               claro encima: su gorguera es blanca, no naranja. -->
+          <g id="tigre-atras" class="especie">
+            <path d="M58,86 Q44,88 37,93 Q47,96 51,100 Q36,105 33,113 Q46,111 53,115 Q45,122 45,129 Q57,120 62,112 Z" fill="var(--hocico)" opacity="0.55"/>
+            <path d="M162,86 Q176,88 183,93 Q173,96 169,100 Q184,105 187,113 Q174,111 167,115 Q175,122 175,129 Q163,120 158,112 Z" fill="var(--hocico)" opacity="0.55"/>
+            <path d="M58,86 Q44,88 37,93 Q47,96 51,100 Q36,105 33,113 Q46,111 53,115 Q45,122 45,129 Q57,120 62,112 Z" fill="url(#g-volumen)" class="sin-raton"/>
+            <path d="M162,86 Q176,88 183,93 Q173,96 169,100 Q184,105 187,113 Q174,111 167,115 Q175,122 175,129 Q163,120 158,112 Z" fill="url(#g-volumen)" class="sin-raton"/>
+          </g>
+
           <!-- Cabeza -->
           <ellipse cx="110" cy="85" rx="62" ry="52" fill="var(--fur)"/>
 
@@ -368,6 +390,19 @@
                   stroke="#ffffff" stroke-opacity="0.30" stroke-width="3.5" stroke-linecap="round"/>
             <!-- sombra de contacto donde apoyan las patitas -->
             <ellipse cx="110" cy="139" rx="54" ry="12" fill="#000000" opacity="0.12"/>
+          </g>
+
+          <!-- ===== Tigre: las zonas claras =====
+               Van DEBAJO de los ojos a propósito: el tigre lleva un parche
+               pálido enorme alrededor de cada ojo, y si se pintara encima le
+               taparía la mirada. Ese parche es la mitad de lo que hace que se
+               lea como tigre; la otra mitad son las rayas. -->
+          <g id="tigre-base" class="especie" clip-path="url(#clip-cabeza)">
+            <ellipse cx="86" cy="72" rx="20" ry="16" fill="var(--hocico)" opacity="0.72"/>
+            <ellipse cx="134" cy="72" rx="20" ry="16" fill="var(--hocico)" opacity="0.72"/>
+            <ellipse cx="99" cy="110" rx="21" ry="16" fill="var(--hocico)" opacity="0.8"/>
+            <ellipse cx="121" cy="110" rx="21" ry="16" fill="var(--hocico)" opacity="0.8"/>
+            <ellipse cx="110" cy="123" rx="16" ry="10" fill="var(--hocico)" opacity="0.62"/>
           </g>
 
           <!-- Rubor -->
@@ -426,6 +461,62 @@
               <path d="M72,62 Q86,55 100,60"/>
               <path d="M148,62 Q134,55 120,60"/>
             </g>
+          </g>
+
+          <!-- ===== Tigre: las rayas y la nariz =====
+               Todo recortado a #clip-cabeza, que además de la cabeza incluye
+               los mechones: así las rayas siguen por la gorguera sin salirse
+               de la silueta.
+
+               Tres reglas para que parezcan rayas de tigre y no un código de
+               barras: en la frente van casi verticales y convergen hacia
+               arriba; en los cachetes salen del hocico hacia afuera, abriéndose;
+               y alguna se bifurca en la punta, que es lo que hacen de verdad.
+               Van DESPUÉS de los ojos porque una raya de tigre baja hasta
+               tocarlos. -->
+          <g id="tigre-cara" class="especie">
+            <g clip-path="url(#clip-cabeza)" fill="none" stroke="var(--raya)"
+               stroke-linecap="round" opacity="0.88">
+              <!-- Frente -->
+              <g stroke-width="5">
+                <path d="M105,58 Q102,46 107,34"/>
+                <path d="M115,58 Q118,46 113,34"/>
+                <path d="M93,60 Q88,48 91,35"/>
+                <path d="M127,60 Q132,48 129,35"/>
+                <path d="M79,64 Q73,53 75,42"/>
+                <path d="M141,64 Q147,53 145,42"/>
+                <path d="M66,73 Q58,63 58,53"/>
+                <path d="M154,73 Q162,63 162,53"/>
+              </g>
+              <!-- Bifurcaciones -->
+              <g stroke-width="3">
+                <path d="M75.5,50 Q70,44 69,37"/>
+                <path d="M144.5,50 Q150,44 151,37"/>
+              </g>
+              <!-- Cachetes: salen del hocico y se abren hacia el borde -->
+              <g stroke-width="5.5">
+                <path d="M76,92 Q62,88 47,86"/>
+                <path d="M144,92 Q158,88 173,86"/>
+                <path d="M74,102 Q60,101 45,103"/>
+                <path d="M146,102 Q160,101 175,103"/>
+                <path d="M76,112 Q62,115 49,120"/>
+                <path d="M144,112 Q158,115 171,120"/>
+                <path d="M82,122 Q72,127 62,133"/>
+                <path d="M138,122 Q148,127 158,133"/>
+              </g>
+              <!-- Gorguera -->
+              <g stroke-width="4.2" opacity="0.9">
+                <path d="M52,96 Q44,95 37,96"/>
+                <path d="M168,96 Q176,95 183,96"/>
+                <path d="M52,111 Q43,113 35,116"/>
+                <path d="M168,111 Q177,113 185,116"/>
+              </g>
+            </g>
+            <!-- Nariz: ancha y asalmonada, con el borde oscuro -->
+            <path d="M99,91 Q110,87.5 121,91 Q123,98.5 110,106 Q97,98.5 99,91 Z"
+                  fill="var(--nariz-tigre)" stroke="var(--raya)" stroke-width="1.6" opacity="0.95"/>
+            <path d="M103,93 Q110,90.8 117,93 Q113.5,96.5 110,96.5 Q106.5,96.5 103,93 Z"
+                  fill="#ffffff" opacity="0.3"/>
           </g>
 
           <!-- Nariz y boca -->

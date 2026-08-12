@@ -86,6 +86,43 @@ const GUION_COMPORTAMIENTO = `(() => {
   const r = [];
   const prueba = (nombre, obtenido, esperado) => r.push([nombre, obtenido, esperado]);
 
+
+  /* Los felinos salvajes se encienden con data-fur, y el riesgo real es que
+     una capa se quede prendida donde no toca: un gato carbón con melena de
+     león, o un tigre con la naricita rosa del gato encima de la suya. Se
+     comprueba el interruptor en los dos sentidos. */
+  const seVe = sel => {
+    const el = document.querySelector(sel);
+    return !!el && getComputedStyle(el).display !== 'none';
+  };
+  const capas = ['#especie-leon', '#leon-cara', '#tigre-atras', '#tigre-base', '#tigre-cara'];
+
+  applyFur('tigre');
+  prueba('el tigre enciende sus tres capas',
+         ['#tigre-atras', '#tigre-base', '#tigre-cara'].every(seVe), true);
+  prueba('el tigre no saca la melena del león', seVe('#especie-leon'), false);
+  prueba('el tigre tapa la nariz del gato', seVe('.nariz'), false);
+  prueba('el tigre lleva orejas redondas', seVe('#orejas-redondas'), true);
+  prueba('el tigre no lleva las orejas puntiagudas', seVe('#ear-left'), false);
+
+  applyFur('leon');
+  prueba('el león no se pone rayas de tigre', seVe('#tigre-cara'), false);
+  prueba('el león también lleva orejas redondas', seVe('#orejas-redondas'), true);
+
+  applyFur('carbon');
+  prueba('ninguna especie se cuela en un gato normal', capas.some(seVe), false);
+  prueba('el gato recupera su nariz', seVe('.nariz'), true);
+  prueba('el gato recupera sus orejas puntiagudas', seVe('#ear-left'), true);
+
+  // Cada felino salvaje necesita su nombre y su frase en los dos idiomas. La
+  // prueba de paridad no basta: si la clave falta en ambos, pasa igual.
+  for (const especie of ['leon', 'tigre']) {
+    for (const idioma of IDIOMAS) {
+      prueba(especie + ' tiene nombre en ' + idioma, !!TEXTOS[idioma]['pelaje.' + especie], true);
+      prueba(especie + ' tiene frase en ' + idioma, !!TEXTOS[idioma]['say.pelaje.' + especie], true);
+    }
+  }
+
   // ± tiene que ir y volver
   clearAll(true); pushToken('5');
   toggleSign(); prueba('± niega', rawExpr(), '(-5)');
@@ -289,6 +326,7 @@ const GUION_AUDIO = `(async () => {
   const prueba = (nombre, obtenido, esperado) => r.push([nombre, obtenido, esperado]);
 
   prueba('el león ruge', (applyFur('leon'), vozDeLaEspecie()), 'rugido');
+  prueba('el tigre también ruge', (applyFur('tigre'), vozDeLaEspecie()), 'rugido');
   prueba('el gato maúlla', (applyFur('carbon'), vozDeLaEspecie()), 'maullido');
   prueba('los demás pelajes maúllan', (applyFur('blanco'), vozDeLaEspecie()), 'maullido');
 

@@ -975,11 +975,33 @@ body {
 :root[data-fur="leon"] #leon-cara { display: block; }
 /* El león trae su propia nariz, ancha y oscura */
 :root[data-fur="leon"] .nariz { display: none; }
-/* El león trae orejas redondas propias, así que las del gato sobran */
+/* Los felinos grandes traen orejas redondas, así que las del gato sobran */
+:root[data-fur="leon"] #orejas-redondas,
+:root[data-fur="tigre"] #orejas-redondas { display: block; }
 :root[data-fur="leon"] #ear-left,
-:root[data-fur="leon"] #ear-right { display: none; }
+:root[data-fur="leon"] #ear-right,
+:root[data-fur="tigre"] #ear-left,
+:root[data-fur="tigre"] #ear-right { display: none; }
+
+/* El tigre. Naranja fuerte, rayas casi negras y todo lo pálido en el mismo
+   crema: hocico, parches de los ojos y gorguera. */
+:root[data-fur="tigre"] {
+  --fur: #e79233;
+  --fur-line: #4e2a0c;
+  --whisker: #fffdf6;
+  --ear-inner: #4a2c1a;
+  --raya: #2a1a0d;
+  --hocico: #fdf4e4;
+  --nariz-tigre: #d98a78;
+}
+:root[data-fur="tigre"] #tigre-atras,
+:root[data-fur="tigre"] #tigre-base,
+:root[data-fur="tigre"] #tigre-cara { display: block; }
+/* El tigre trae su propia nariz, ancha y asalmonada */
+:root[data-fur="tigre"] .nariz { display: none; }
 
 .dot-leon { background: linear-gradient(135deg, #d9a45f 55%, #a2651f 55%); }
+.dot-tigre { background: repeating-linear-gradient(115deg, #e79233 0 4px, #2a1a0d 4px 6px); }
 
 /* ---------- Pantalla de poca altura ----------
    Teléfono girado, ventana chica, pantalla dividida. Con 360 px de alto el
