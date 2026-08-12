@@ -10,6 +10,7 @@ const FILES = [
   'index.html',
   'style.css',
   'renderer.js',
+  'idiomas.js',
   'manifest.json',
   'sw.js',
   'privacidad.html',   // Play Store exige politica de privacidad con URL publica

@@ -163,6 +163,99 @@ const GUION_COMPORTAMIENTO = `(() => {
   });
   prueba('el copiado se deshace en todos los idiomas', rotos.join(','), '');
 
+  /* ---------- Diccionario de idiomas ----------
+     Lo que más se rompe al traducir no es la traducción: es una clave escrita
+     con un dedo torcido en un solo idioma, que deja la interfaz en blanco solo
+     para quien use ese idioma. Todo esto se comprueba solo. */
+  const soloEs = Object.keys(TEXTOS.es).filter(k => TEXTOS.en[k] === undefined);
+  const soloEn = Object.keys(TEXTOS.en).filter(k => TEXTOS.es[k] === undefined);
+  prueba('ninguna clave solo en español', soloEs.join(','), '');
+  prueba('ninguna clave solo en inglés', soloEn.join(','), '');
+
+  const vacio = v => Array.isArray(v)
+    ? (v.length === 0 || v.some(x => !String(x).trim()))
+    : !String(v).trim();
+  const raros = Object.keys(TEXTOS.es).filter(k =>
+    Array.isArray(TEXTOS.es[k]) !== Array.isArray(TEXTOS.en[k]) ||
+    vacio(TEXTOS.es[k]) || vacio(TEXTOS.en[k]));
+  prueba('ningún texto vacío ni de distinto tipo', raros.join(','), '');
+
+  // Si el español dice {n}, el inglés tiene que decirlo también o se pierde el dato
+  const marcas = v => (String(v).match(/\\{[a-z]\\}/g) || []).sort().join('');
+  const desparejos = Object.keys(TEXTOS.es)
+    .filter(k => marcas(TEXTOS.es[k]) !== marcas(TEXTOS.en[k]));
+  prueba('los huecos {n} coinciden entre idiomas', desparejos.join(','), '');
+
+  // Toda marca puesta en el HTML tiene que existir en el diccionario
+  const usadas = new Set();
+  ['data-i18n', 'data-i18n-title', 'data-i18n-ph', 'data-i18n-aria',
+   'data-i18n-aria2', 'data-i18n-desc'].forEach(a =>
+    document.querySelectorAll('[' + a + ']').forEach(el => usadas.add(el.getAttribute(a))));
+  const huerfanas = [...usadas].filter(k => TEXTOS.es[k] === undefined || TEXTOS.en[k] === undefined);
+  prueba('las claves del HTML existen', huerfanas.join(','), '');
+  prueba('el HTML sí está marcado', usadas.size > 60, true);
+
+  // Unidades y monedas: si falta un nombre sale el código crudo en pantalla
+  const unidades = [];
+  for (const c of Object.keys(CONV)) unidades.push(...Object.keys(CONV[c].units));
+  const sinNombre = unidades.filter(u => !/^[°K]/.test(u) &&
+    (TEXTOS.es['u.' + u] === undefined || TEXTOS.en['u.' + u] === undefined));
+  prueba('todas las unidades tienen nombre', sinNombre.join(','), '');
+  const sinCat = Object.keys(CONV).filter(c => TEXTOS.es['cat.' + c] === undefined);
+  prueba('todas las categorías tienen nombre', sinCat.join(','), '');
+  const sinMoneda = CURRENCIES.filter(c => TEXTOS.es['m.' + c.code] === undefined ||
+    TEXTOS.en['m.' + c.code] === undefined).map(c => c.code);
+  prueba('todas las monedas tienen nombre', sinMoneda.join(','), '');
+
+  /* ---------- Conversiones ----------
+     Las claves de las unidades cambiaron de nombre ('pulgadas' pasó a 'in')
+     para poder traducirlas. Los factores tienen que haber sobrevivido. */
+  const cerca = (a, b) => Math.abs(a - b) < 1e-9;
+  const conv = (cat, de, a, v) => v * CONV[cat].units[de] / CONV[cat].units[a];
+  prueba('1 pulgada son 2.54 cm', cerca(conv('longitud', 'in', 'cm', 1), 2.54), true);
+  prueba('1 milla son 1609.344 m', cerca(conv('longitud', 'mi', 'm', 1), 1609.344), true);
+  prueba('1 libra son 453.59237 g', cerca(conv('peso', 'lb', 'g', 1), 453.59237), true);
+  prueba('1 galón son 3.785411784 l', cerca(conv('volumen', 'gal', 'l', 1), 3.785411784), true);
+  prueba('100 km/h son 62.137 mph', Math.round(conv('velocidad', 'kmh', 'mph', 100) * 1000) / 1000, 62.137);
+  prueba('0 °C son 32 °F', convertTemp(0, '°C', '°F'), 32);
+  prueba('100 °C son 212 °F', convertTemp(100, '°C', '°F'), 212);
+  prueba('-40 se cruzan', convertTemp(-40, '°C', '°F'), -40);
+  prueba('0 °C son 273.15 K', cerca(convertTemp(0, '°C', 'K'), 273.15), true);
+  prueba('32 °F son 0 °C', cerca(convertTemp(32, '°F', '°C'), 0), true);
+
+  /* ---------- Antigüedad de las tasas de cambio ----------
+     En español, para poder comparar los textos exactos. */
+  const idiomaAntes = IDIOMA;
+  aplicarIdioma('es');
+  fechasTasas.CRC = Date.now();
+  prueba('tasa de hoy', antiguedadTasa('CRC').texto, 'actualizada hoy');
+  prueba('la de hoy no avisa', antiguedadTasa('CRC').vieja, false);
+  fechasTasas.CRC = Date.now() - 5 * 86400000;
+  prueba('tasa de cinco días', antiguedadTasa('CRC').texto, 'actualizada hace 5 días');
+  fechasTasas.CRC = Date.now() - 59 * 86400000;
+  prueba('a los 59 días todavía no avisa', antiguedadTasa('CRC').vieja, false);
+  fechasTasas.CRC = Date.now() - 90 * 86400000;
+  prueba('tasa de tres meses', antiguedadTasa('CRC').texto, 'actualizada hace 3 meses');
+  prueba('la de tres meses sí avisa', antiguedadTasa('CRC').vieja, true);
+  delete fechasTasas.CRC;
+  prueba('sin tocar, dice desde cuándo', /2026/.test(antiguedadTasa('CRC').texto), true);
+
+  /* ---------- Cambiar de idioma en caliente ---------- */
+  aplicarIdioma('en');
+  prueba('el panel cambia a inglés',
+    document.querySelector('[data-i18n="hist.titulo"]').textContent, 'History 🕘');
+  prueba('las unidades cambian a inglés', etiquetaUnidad('in'), 'inches');
+  prueba('el pie de página cambia',
+    /purring/.test(document.querySelector('.footer').textContent), true);
+  prueba('el idioma del documento cambia', document.documentElement.lang, 'en');
+  aplicarIdioma('es');
+  prueba('y vuelve a español',
+    document.querySelector('[data-i18n="hist.titulo"]').textContent, 'Historial 🕘');
+  prueba('las unidades vuelven', etiquetaUnidad('in'), 'pulgadas');
+
+  aplicarIdioma(idiomaAntes);
+  store.del('catculator-idioma');   // que la prueba no deje el idioma fijado
+
   return r;
 })()`;
 

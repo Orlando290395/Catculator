@@ -70,7 +70,10 @@ const TOMAS = [
       for (const k of ['1', '2', '*', '1', '2']) { $(`.key[data-k="${k}"]`).click(); await wait(50); }
       $('[data-action="equals"]').click(); await wait(250);
       $('#btn-theme').click(); await wait(600);
-      $('#theme-panel').scrollTop = $('#theme-panel').scrollHeight;
+      // Arriba del todo, no abajo: ahi esta el selector de idioma, lo unico
+      // que no se ve en ninguna otra toma. Los atuendos salen puestos en el
+      // gato en las tomas 1 (mago) y 5 (pirata), y lucen mejor asi.
+      $('#theme-panel').scrollTop = 0;
       await wait(300);
     }
   },

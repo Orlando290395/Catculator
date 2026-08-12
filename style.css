@@ -308,7 +308,9 @@ body {
 
 .theme-swatch,
 .fur-swatch,
-.outfit-swatch {
+/* Los botones de idioma comparten el aspecto de los atuendos */
+.outfit-swatch,
+.lang-swatch {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -325,10 +327,12 @@ body {
 
 .theme-swatch:hover,
 .fur-swatch:hover,
-.outfit-swatch:hover { background: rgba(127, 127, 127, 0.12); }
+.outfit-swatch:hover,
+.lang-swatch:hover { background: rgba(127, 127, 127, 0.12); }
 .theme-swatch.active,
 .fur-swatch.active,
-.outfit-swatch.active { border-color: var(--accent); }
+.outfit-swatch.active,
+.lang-swatch.active { border-color: var(--accent); }
 
 .mini {
   width: 18px;
@@ -926,6 +930,24 @@ body {
   padding: 8px 0 2px;
   color: var(--text);
 }
+
+/* Cuándo se actualizó una tasa de cambio. En gris es un dato de fondo; cuando
+   pasa de dos meses se pone ámbar, porque ahí deja de ser una aproximación
+   razonable y empieza a dar números equivocados. */
+.shop-rate-edad {
+  font-size: 11px;
+  opacity: 0.6;
+  margin: -4px 0 8px 2px;
+  color: var(--text);
+}
+
+.shop-rate-edad.vieja {
+  opacity: 1;
+  font-weight: 700;
+  color: #b45309;
+}
+
+:root[data-theme="noche"] .shop-rate-edad.vieja { color: #fbbf24; }
 
 /* ---------- Pantalla de poca altura ----------
    Teléfono girado, ventana chica, pantalla dividida. Con 360 px de alto el

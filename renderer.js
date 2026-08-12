@@ -18,6 +18,60 @@ const store = {
   }
 };
 
+/* ---------- Idioma ----------
+   Arranca con el del sistema; en cuanto el humano elige uno a mano, manda él.
+   Los textos viven en idiomas.js, que se carga antes que este archivo. */
+let IDIOMA = (() => {
+  const guardado = store.get('catculator-idioma');
+  if (IDIOMAS.indexOf(guardado) !== -1) return guardado;
+  return String(navigator.language || 'es').toLowerCase().startsWith('es') ? 'es' : 'en';
+})();
+
+/* Texto de una clave. Si el valor es un arreglo devuelve una frase al azar: así
+   el gato no repite siempre lo mismo. {n}, {a} y {b} se sustituyen por lo que
+   venga en 'vals'. Una clave que falte cae al español antes que dejar un hueco
+   en blanco en la interfaz. */
+function t(clave, vals) {
+  let v = TEXTOS[IDIOMA][clave];
+  if (v === undefined) v = TEXTOS.es[clave];
+  if (v === undefined) return clave;
+  if (Array.isArray(v)) v = v[Math.floor(Math.random() * v.length)];
+  if (vals) for (const k of Object.keys(vals)) v = v.split('{' + k + '}').join(vals[k]);
+  return v;
+}
+
+// °C, °F y K se escriben igual en todos los idiomas: si no hay entrada en el
+// diccionario, la propia clave es la etiqueta.
+const etiquetaUnidad = u => TEXTOS[IDIOMA]['u.' + u] || TEXTOS.es['u.' + u] || u;
+
+/* Recorre el HTML y coloca los textos. Cada marca dice a dónde va:
+     data-i18n        → el texto visible
+     data-i18n-title  → el atributo title
+     data-i18n-ph     → el placeholder
+     data-i18n-aria   → el aria-label
+     data-i18n-aria2  → el nombre alterno de las teclas que cambian con 2nd
+     data-i18n-desc   → el aria-description
+   Se llama al arrancar y cada vez que se cambia de idioma. */
+function traducirDOM() {
+  const cada = (attr, fn) => document.querySelectorAll('[' + attr + ']')
+    .forEach(el => fn(el, t(el.getAttribute(attr))));
+
+  cada('data-i18n',       (el, v) => { el.textContent = v; });
+  cada('data-i18n-title', (el, v) => el.setAttribute('title', v));
+  cada('data-i18n-ph',    (el, v) => el.setAttribute('placeholder', v));
+  cada('data-i18n-desc',  (el, v) => el.setAttribute('aria-description', v));
+  cada('data-i18n-aria2', (el, v) => { el.dataset.aria2 = v; });
+  cada('data-i18n-aria',  (el, v) => {
+    el.setAttribute('aria-label', v);
+    // Las teclas con segunda función guardan su nombre base para que
+    // toggle2nd pueda ir y volver entre los dos.
+    if (el.hasAttribute('data-i18n-aria2')) el.dataset.aria = v;
+  });
+
+  document.documentElement.lang = IDIOMA;
+}
+traducirDOM();
+
 // ---------- Estado de la calculadora ----------
 let tokens = [];            // expresión en construcción (un token por pulsación)
 let ans = 0;                // último resultado
@@ -88,7 +142,7 @@ function groupInt(intStr) {
 }
 
 function formatNumber(n) {
-  if (!isFinite(n)) return '¡Miau!';
+  if (!isFinite(n)) return t('miau');
   const abs = Math.abs(n);
   if (abs !== 0 && (abs >= 1e12 || abs < 1e-9)) {
     return n.toExponential(6).replace('.', SEP.decimal).replace('e', ' e');
@@ -419,7 +473,7 @@ function updateDisplay(popAnim = false) {
   elFrac.classList.toggle('hidden', !(justEvaluated && ansFrac && !errorState && !quizMode));
   elFrac.classList.toggle('active', fracMode);
   if (errorState) {
-    elResult.textContent = '¡Miau!';
+    elResult.textContent = t('miau');
     elExpr.textContent = ' ';
     fitResult();
     return;
@@ -484,7 +538,7 @@ function clearAll(silent) {
   updateDisplay();
   if (!silent) {
     setMood('normal');
-    say(randomFrom(['¡Borrón y gato nuevo! 🐱', 'Limpio como mis bigotes ✨', '¡Listo para cazar números!']), 2200);
+    say(t('say.limpiar'), 2200);
   }
 }
 
@@ -552,11 +606,11 @@ function currentValue() {
 function memoryOp(op) {
   wakeUp();
   switch (op) {
-    case 'mc': memory = 0; say('Memoria borrada 🧽', 1800); break;
+    case 'mc': memory = 0; say(t('say.mem.borrada'), 1800); break;
     case 'mr': pushToken('mem'); break;
-    case 'ms': memory = currentValue(); say('Guardado en memoria 📥', 1800); break;
-    case 'm+': memory += currentValue(); say('Sumado a memoria ➕', 1800); break;
-    case 'm-': memory -= currentValue(); say('Restado de memoria ➖', 1800); break;
+    case 'ms': memory = currentValue(); say(t('say.mem.guardada'), 1800); break;
+    case 'm+': memory += currentValue(); say(t('say.mem.sumada'), 1800); break;
+    case 'm-': memory -= currentValue(); say(t('say.mem.restada'), 1800); break;
   }
   updateMemChip();
 }
@@ -610,12 +664,7 @@ function enterError(kind) {
   justEvaluated = false;
   updateDisplay();
   setMood('angry', 3800);
-  if (kind === 'div0') say('¡MIAU! ¡Entre cero NO, humano! 😾', 3800);
-  else say(randomFrom([
-    '¡Miau! Eso no computa 🙀',
-    'Ni con nueve vidas resuelvo eso 😿',
-    '¡Error gatuno! Revisa la operación 🐾'
-  ]), 3800);
+  say(kind === 'div0' ? t('say.error.div0') : t('say.error'), 3800);
   playGrowl();
   // Dividir entre cero es lo imperdonable: gruñe y encima bufa
   if (kind === 'div0') setTimeout(playHiss, 450);
@@ -641,36 +690,29 @@ function celebrate(result) {
 
   if (result === 9) {
     setMood('happy', 3000);
-    say('¡9! Como mis vidas 🐾', 3000);
+    say(t('say.nueve'), 3000);
   } else if (result === 42) {
     setMood('surprised', 3000);
-    say('La respuesta a todo... y al atún 🐟', 3200);
+    say(t('say.42'), 3200);
   } else if (String(Math.abs(result)).includes('666')) {
     setMood('surprised', 3000);
-    say('Numeritos de gato negro 🐈‍⬛', 3000);
+    say(t('say.666'), 3000);
   } else if (result === 0) {
     setMood('normal');
-    say('Cero... como los ratones que cacé hoy 😿', 3000);
+    say(t('say.cero'), 3000);
   } else if (Math.abs(result) >= 1e9) {
     setMood('surprised', 3000);
-    say('¡MIAU! ¡Qué número tan gatormemente grande! 🙀', 3200);
+    say(t('say.grande'), 3200);
   } else {
     setMood('happy', 2500);
-    say(randomFrom([
-      '¡Purrfecto! 😺',
-      '¡Miaugnífico!',
-      '*ronroneo de aprobación*',
-      '¡Ni un ratón lo calcula mejor!',
-      '¡Eso fue gatástico! 🐾',
-      'Las cuentas claras y el atún espeso 🐟'
-    ]), 2500);
+    say(t('say.bien'), 2500);
   }
 }
 
 function checkTypedEggs() {
   const raw = rawExpr();
   if (raw === '3.14' || raw === '3.1416') {
-    say('Mmm... ¡pi! ¿Pastel de atún? 🥧', 2500);
+    say(t('say.pi'), 2500);
     setMood('happy', 2000);
   }
 }
@@ -744,14 +786,14 @@ function resetIdle() {
   if (idleTimer) clearTimeout(idleTimer);
   idleTimer = setTimeout(() => {
     setMood('sleep');
-    say('Zzz... 💤', 3500);
+    say(t('say.dormir'), 3500);
   }, 45000);
 }
 
 function wakeUp() {
   if (elCat.classList.contains('mood-sleep')) {
     setMood('normal');
-    say('¡Miau! ¿En qué estábamos? 🐱', 2200);
+    say(t('say.despertar'), 2200);
   }
   resetIdle();
 }
@@ -943,22 +985,14 @@ btnSound.addEventListener('click', () => {
   soundOn = !soundOn;
   store.set('catculator-sound', soundOn ? 'on' : 'off');
   refreshSoundBtn();
-  if (soundOn) { playMeow(); say('¡Miau! Sonido activado 🔊', 2000); }
-  else say('Modo sigiloso, como buen gato 🤫', 2000);
+  if (soundOn) { playMeow(); say(t('say.sonido.on'), 2000); }
+  else say(t('say.sonido.off'), 2000);
 });
 refreshSoundBtn();
 
 // ---------- Temas ----------
 const themePanel = document.getElementById('theme-panel');
 const btnTheme = document.getElementById('btn-theme');
-const THEME_NAMES = {
-  cian: '¡Cian, mi favorito! 💙',
-  rosa: '¡Rosa purrincesa! 💗',
-  menta: '¡Menta fresca! 💚',
-  lavanda: '¡Lavanda relajante! 💜',
-  atigrado: '¡Naranja atigrado! 🧡',
-  noche: 'Modo gato nocturno 🌙'
-};
 
 /* guardar=false es para el tema que se elige solo (el del sistema): así la app
    sigue al sistema hasta que el humano toque un color, y desde ahí manda él. */
@@ -994,7 +1028,7 @@ document.addEventListener('click', (e) => {
 document.querySelectorAll('.theme-swatch').forEach(btn => {
   btn.addEventListener('click', () => {
     applyTheme(btn.dataset.theme);
-    say(THEME_NAMES[btn.dataset.theme], 2400);
+    say(t('say.tema.' + btn.dataset.theme), 2400);
     setMood('happy', 2000);
     playMeow();
     themePanel.classList.add('hidden');
@@ -1014,14 +1048,6 @@ if (!temaGuardado && mqOscuro && mqOscuro.addEventListener) {
 }
 
 // ---------- Pelaje del gato ----------
-const FUR_NAMES = {
-  carbon: '¡Mi pelaje de siempre! 🐱',
-  naranja: '¡Naranja! ¿Hay lasaña? 🧡',
-  gris: '¡Gris elegante, casi azul ruso! 🐭',
-  negro: '¡Gato negro, suerte para ti! 🐈‍⬛',
-  blanco: '¡Blanco como la leche! 🥛'
-};
-
 function applyFur(fur) {
   document.documentElement.setAttribute('data-fur', fur);
   store.set('catculator-fur', fur);
@@ -1033,7 +1059,7 @@ function applyFur(fur) {
 document.querySelectorAll('.fur-swatch').forEach(btn => {
   btn.addEventListener('click', () => {
     applyFur(btn.dataset.fur);
-    say(FUR_NAMES[btn.dataset.fur], 2400);
+    say(t('say.pelaje.' + btn.dataset.fur), 2400);
     setMood('happy', 2000);
     playMeow();
     themePanel.classList.add('hidden');
@@ -1043,15 +1069,6 @@ document.querySelectorAll('.fur-swatch').forEach(btn => {
 applyFur(store.get('catculator-fur') || 'carbon');
 
 // ---------- Atuendos del gato ----------
-const OUTFIT_NAMES = {
-  ninguno: 'Al natural, como buen gato 🐱',
-  ninja: '¡Ninja! Silencioso como patita en alfombra 🥷',
-  futbol: '¡GOOOL! Bueno, primero las cuentas ⚽',
-  pirata: '¡Arrr! El terror de los siete sofás 🏴‍☠️',
-  mago: '¡Abracadabra! Tus errores desaparecen 🧙',
-  capucha: 'Nada es verdadero... todo es calculable 🤍'
-};
-
 function applyOutfit(outfit) {
   document.documentElement.setAttribute('data-outfit', outfit);
   store.set('catculator-outfit', outfit);
@@ -1063,7 +1080,7 @@ function applyOutfit(outfit) {
 document.querySelectorAll('.outfit-swatch').forEach(btn => {
   btn.addEventListener('click', () => {
     applyOutfit(btn.dataset.outfit);
-    say(OUTFIT_NAMES[btn.dataset.outfit], 2400);
+    say(t('say.atuendo.' + btn.dataset.outfit), 2400);
     setMood('happy', 2000);
     playMeow();
     themePanel.classList.add('hidden');
@@ -1080,14 +1097,14 @@ function applyMode(mode) {
   const sci = mode === 'sci';
   document.getElementById('app').classList.toggle('sci-on', sci);
   sciPad.classList.toggle('hidden', !sci);
-  btnMode.textContent = sci ? '🐱 Básica' : '🔬 Científica';
+  btnMode.textContent = sci ? t('ctrl.basica') : t('ctrl.cientifica');
   store.set('catculator-mode', mode);
 }
 
 btnMode.addEventListener('click', () => {
   const now = document.getElementById('app').classList.contains('sci-on') ? 'basic' : 'sci';
   applyMode(now);
-  if (now === 'sci') { say('¡Modo científico! 🔬 A ronronear ecuaciones', 2600); setMood('happy', 2000); }
+  if (now === 'sci') setMood('happy', 2000);
 });
 
 applyMode(store.get('catculator-mode') || 'basic');
@@ -1145,7 +1162,7 @@ function copyResult() {
   const done = () => {
     playClick();
     setMood('happy', 1600);
-    say('¡Copiado en mis patitas! 📋', 2000);
+    say(t('say.copiado'), 2000);
   };
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(done).catch(() => { if (fallbackCopy(text)) done(); });
@@ -1176,14 +1193,14 @@ function renderHistory() {
   if (!history.length) {
     const p = document.createElement('p');
     p.className = 'history-empty';
-    p.textContent = 'Aún no hay cuentas... ¡a calcular! 🐾';
+    p.textContent = t('hist.vacio');
     historyList.appendChild(p);
     return;
   }
   for (const item of history) {
     const btn = document.createElement('button');
     btn.className = 'history-item';
-    btn.title = 'Usar este resultado';
+    btn.title = t('hist.usar');
     const ex = document.createElement('span');
     ex.className = 'history-expr';
     ex.textContent = item.e + ' =';
@@ -1199,7 +1216,7 @@ function renderHistory() {
       tokens = numberToTokens(item.v);
       closePanels();
       updateDisplay(true);
-      say('Recuperado del baúl de cuentas 🕘', 2000);
+      say(t('say.hist.usado'), 2000);
     });
     historyList.appendChild(btn);
   }
@@ -1219,46 +1236,40 @@ document.getElementById('btn-history-clear').addEventListener('click', () => {
   history = [];
   store.del('catculator-history');
   renderHistory();
-  say('Historial borradito, como platito de atún 🧽', 2200);
+  say(t('say.hist.borrado'), 2200);
 });
 
 // ---------- Conversor de unidades ----------
 // Factores hacia la unidad base de cada categoría; temperatura va aparte
 // porque no es un simple factor (tiene desplazamiento).
+/* Las claves son códigos, NO nombres: antes la unidad se llamaba 'pulgadas' y
+   ese mismo texto era la clave del factor, así que traducirla habría roto la
+   conversión. Ahora el nombre visible sale del diccionario (etiquetaUnidad) y
+   la clave nunca cambia de idioma. Los símbolos de temperatura se quedan como
+   están porque se escriben igual en todas partes. */
 const CONV = {
   longitud: {
-    label: '📏 Longitud',
     units: {
-      'mm': 0.001, 'cm': 0.01, 'm': 1, 'km': 1000,
-      'pulgadas': 0.0254, 'pies': 0.3048, 'yardas': 0.9144, 'millas': 1609.344
+      mm: 0.001, cm: 0.01, m: 1, km: 1000,
+      in: 0.0254, ft: 0.3048, yd: 0.9144, mi: 1609.344
     },
-    def: ['cm', 'pulgadas']
+    def: ['cm', 'in']
   },
   peso: {
-    label: '⚖️ Peso',
-    units: {
-      'mg': 1e-6, 'g': 0.001, 'kg': 1,
-      'libras': 0.45359237, 'onzas': 0.028349523125, 'toneladas': 1000
-    },
-    def: ['kg', 'libras']
+    units: { mg: 1e-6, g: 0.001, kg: 1, lb: 0.45359237, oz: 0.028349523125, t: 1000 },
+    def: ['kg', 'lb']
   },
   temperatura: {
-    label: '🌡️ Temperatura',
     units: { '°C': 1, '°F': 1, 'K': 1 },
     def: ['°C', '°F']
   },
   volumen: {
-    label: '🧪 Volumen',
-    units: {
-      'ml': 0.001, 'litros': 1, 'tazas': 0.24,
-      'galones (US)': 3.785411784, 'onzas líquidas': 0.0295735295625
-    },
-    def: ['litros', 'galones (US)']
+    units: { ml: 0.001, l: 1, cup: 0.24, gal: 3.785411784, floz: 0.0295735295625 },
+    def: ['l', 'gal']
   },
   velocidad: {
-    label: '🚀 Velocidad',
-    units: { 'm/s': 1, 'km/h': 1 / 3.6, 'mph': 0.44704, 'nudos': 0.514444 },
-    def: ['km/h', 'mph']
+    units: { ms: 1, kmh: 1 / 3.6, mph: 0.44704, kn: 0.514444 },
+    def: ['kmh', 'mph']
   }
 };
 
@@ -1274,18 +1285,24 @@ function fillSelect(sel, values, chosen) {
   for (const v of values) {
     const opt = document.createElement('option');
     opt.value = v;
-    opt.textContent = v;
+    opt.textContent = etiquetaUnidad(v);
     if (v === chosen) opt.selected = true;
     sel.appendChild(opt);
   }
 }
 
-for (const key of Object.keys(CONV)) {
-  const opt = document.createElement('option');
-  opt.value = key;
-  opt.textContent = CONV[key].label;
-  convCat.appendChild(opt);
+function llenarCategorias() {
+  const elegida = convCat.value;
+  convCat.textContent = '';
+  for (const key of Object.keys(CONV)) {
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = t('cat.' + key);
+    if (key === elegida) opt.selected = true;
+    convCat.appendChild(opt);
+  }
 }
+llenarCategorias();
 
 function convSetCategory(key) {
   const cat = CONV[key];
@@ -1318,7 +1335,8 @@ function convCompute() {
   else r = v * CONV[key].units[from] / CONV[key].units[to];
   lastConv = roundNice(r);
   const shown = isFinite(lastConv) ? parseFloat(lastConv.toPrecision(8)) : lastConv;
-  convResult.textContent = formatNumber(v) + ' ' + from + ' = ' + formatNumber(shown) + ' ' + to;
+  convResult.textContent = formatNumber(v) + ' ' + etiquetaUnidad(from) +
+    ' = ' + formatNumber(shown) + ' ' + etiquetaUnidad(to);
 }
 
 convCat.addEventListener('change', () => convSetCategory(convCat.value));
@@ -1344,7 +1362,7 @@ document.getElementById('btn-conv-use').addEventListener('click', () => {
   closePanels();
   updateDisplay(true);
   setMood('happy', 1800);
-  say('¡Convertido y en pantalla! ⇄', 2200);
+  say(t('say.conv.usado'), 2200);
 });
 
 btnConv.addEventListener('click', (e) => {
@@ -1384,18 +1402,29 @@ const shopOut = {
 // Cada tasa es "cuántas unidades de esa moneda vale 1 USD". La app no toca la
 // red, así que son valores aproximados que el usuario mantiene al día a mano.
 const CURRENCIES = [
-  { code: 'CRC', name: 'Colón',            flag: '🇨🇷', sym: '₡',   rate: 510 },
-  { code: 'USD', name: 'Dólar',            flag: '🇺🇸', sym: '$',   rate: 1 },
-  { code: 'EUR', name: 'Euro',             flag: '🇪🇺', sym: '€',   rate: 0.92 },
-  { code: 'MXN', name: 'Peso mexicano',    flag: '🇲🇽', sym: 'MX$', rate: 18 },
-  { code: 'CAD', name: 'Dólar canadiense', flag: '🇨🇦', sym: 'C$',  rate: 1.38 },
-  { code: 'BRL', name: 'Real brasileño',   flag: '🇧🇷', sym: 'R$',  rate: 5.5 },
-  { code: 'ARS', name: 'Peso argentino',   flag: '🇦🇷', sym: 'AR$', rate: 1010 },
-  { code: 'COP', name: 'Peso colombiano',  flag: '🇨🇴', sym: 'CO$', rate: 4000 },
-  { code: 'CLP', name: 'Peso chileno',     flag: '🇨🇱', sym: 'CL$', rate: 950 },
-  { code: 'PEN', name: 'Sol peruano',      flag: '🇵🇪', sym: 'S/',  rate: 3.7 },
-  { code: 'GTQ', name: 'Quetzal',          flag: '🇬🇹', sym: 'Q',   rate: 7.7 }
+  { code: 'CRC', flag: '🇨🇷', sym: '₡',   rate: 510 },
+  { code: 'USD', flag: '🇺🇸', sym: '$',   rate: 1 },
+  { code: 'EUR', flag: '🇪🇺', sym: '€',   rate: 0.92 },
+  { code: 'MXN', flag: '🇲🇽', sym: 'MX$', rate: 18 },
+  { code: 'CAD', flag: '🇨🇦', sym: 'C$',  rate: 1.38 },
+  { code: 'BRL', flag: '🇧🇷', sym: 'R$',  rate: 5.5 },
+  { code: 'ARS', flag: '🇦🇷', sym: 'AR$', rate: 1010 },
+  { code: 'COP', flag: '🇨🇴', sym: 'CO$', rate: 4000 },
+  { code: 'CLP', flag: '🇨🇱', sym: 'CL$', rate: 950 },
+  { code: 'PEN', flag: '🇵🇪', sym: 'S/',  rate: 3.7 },
+  { code: 'GTQ', flag: '🇬🇹', sym: 'Q',   rate: 7.7 }
 ];
+
+/* Fecha en que se escribieron las tasas que trae la app de fábrica. Sin esto,
+   una tasa de hace dos años se ve exactamente igual que una de hoy y el usuario
+   convierte con números viejos sin enterarse. La app no toca la red, así que lo
+   único honesto que puede hacer es decir cuándo se actualizó por última vez. */
+/* Ojo con el mes: en JavaScript enero es 0, así que 6 es julio. Se construye
+   como fecha LOCAL a propósito — Date.parse('2026-07-24') la interpreta en UTC
+   y en Costa Rica (UTC−6) se mostraba como 23 de julio, un día antes. */
+const TASAS_DE_FABRICA = new Date(2026, 6, 24).getTime();
+const fechasTasas = store.json('catculator-rates-fechas', {});
+
 const savedRates = store.json('catculator-rates', {});
 for (const c of CURRENCIES) {
   const r = parseFloat(savedRates[c.code]);
@@ -1405,8 +1434,28 @@ function saveRates() {
   const o = {};
   for (const c of CURRENCIES) o[c.code] = c.rate;
   store.set('catculator-rates', JSON.stringify(o));
+  store.set('catculator-rates-fechas', JSON.stringify(fechasTasas));
 }
 const rateOf = code => { const c = CURRENCIES.find(x => x.code === code); return c ? c.rate : NaN; };
+
+/* Cuánto hace que se tocó una tasa. 'vieja' a los dos meses: es cuando una
+   cotización deja de ser una aproximación razonable y pasa a ser un error. */
+function antiguedadTasa(code) {
+  const propia = fechasTasas[code] !== undefined;
+  const cuando = propia ? fechasTasas[code] : TASAS_DE_FABRICA;
+  const dias = Math.floor((Date.now() - cuando) / 86400000);
+  const vieja = dias >= 60;
+  if (!propia) {
+    const fecha = new Date(TASAS_DE_FABRICA).toLocaleDateString(IDIOMA === 'es' ? 'es' : 'en');
+    return { texto: t('tasa.nunca', { n: fecha }), vieja };
+  }
+  if (dias <= 0) return { texto: t('tasa.hoy'), vieja };
+  if (dias === 1) return { texto: t('tasa.undia'), vieja };
+  if (dias < 30) return { texto: t('tasa.dias', { n: dias }), vieja };
+  const meses = Math.round(dias / 30);
+  if (meses === 1) return { texto: t('tasa.unmes'), vieja };
+  return { texto: t('tasa.meses', { n: meses }), vieja };
+}
 
 const shopFromSel = document.getElementById('shop-from');
 const shopToSel = document.getElementById('shop-to');
@@ -1416,12 +1465,15 @@ const shopRateFields = document.getElementById('shop-rate-fields');
 const shopConvAmount = document.getElementById('shop-conv-amount');
 
 function fillCurrencySelect(sel) {
+  const elegida = sel.value;
+  sel.textContent = '';
   for (const c of CURRENCIES) {
     const opt = document.createElement('option');
     opt.value = c.code;
-    opt.textContent = c.flag + ' ' + c.code + ' · ' + c.name;
+    opt.textContent = c.flag + ' ' + c.code + ' · ' + t('m.' + c.code);
     sel.appendChild(opt);
   }
+  if (elegida) sel.value = elegida;
 }
 fillCurrencySelect(shopFromSel);
 fillCurrencySelect(shopToSel);
@@ -1462,7 +1514,7 @@ function useShopValue(v) {
   closePanels();
   updateDisplay(true);
   setMood('happy', 1800);
-  say('¡Cuentas claras, atún espeso! 🛒', 2200);
+  say(t('say.shop.usado'), 2200);
 }
 
 // Conversión única: convierte el MONTO propio del conversor de "desde" a "hacia"
@@ -1497,18 +1549,35 @@ function renderRateFields() {
     row.className = 'shop-rate-row';
     const label = document.createElement('span');
     label.className = 'shop-rate-label';
-    label.textContent = '1 $ =';
+    label.textContent = t('shop.tasa.etiqueta');
     const inp = document.createElement('input');
     inp.className = 'shop-pct wide';
     inp.type = 'number';
     inp.step = 'any';
     inp.inputMode = 'decimal';
     inp.value = String(c.rate);
-    inp.setAttribute('aria-label', 'Cuántos ' + c.name + ' vale un dólar');
+    inp.setAttribute('aria-label', t('shop.tasa.aria', { n: t('m.' + c.code) }));
+
+    // Cuándo se actualizó, debajo del campo
+    const edad = document.createElement('div');
+    edad.className = 'shop-rate-edad';
+    const pintarEdad = () => {
+      const a = antiguedadTasa(c.code);
+      edad.textContent = a.texto;
+      edad.classList.toggle('vieja', a.vieja);
+    };
+    pintarEdad();
+
     inp.addEventListener('input', () => {
       const v = parseFloat(inp.value);
-      if (isFinite(v) && v > 0) { c.rate = v; saveRates(); renderConv(); }
+      if (!isFinite(v) || v <= 0) return;
+      c.rate = v;
+      fechasTasas[c.code] = Date.now();   // tocarla es actualizarla
+      saveRates();
+      pintarEdad();
+      renderConv();
     });
+
     const codeSpan = document.createElement('span');
     codeSpan.className = 'shop-rate-code';
     codeSpan.textContent = c.flag + ' ' + c.code;
@@ -1516,6 +1585,7 @@ function renderRateFields() {
     row.appendChild(inp);
     row.appendChild(codeSpan);
     shopRateFields.appendChild(row);
+    shopRateFields.appendChild(edad);
   }
 }
 renderRateFields();
@@ -1556,7 +1626,7 @@ function shopCompute() {
   // y de paso cuánto de ese precio es impuesto.
   if (isFinite(iva) && (1 + iva / 100) > 0) {
     const base = nice(p / (1 + iva / 100));
-    set(shopOut.noiva, formatNumber(base) + '  (IVA ' + formatNumber(nice(p - base)) + ')', base);
+    set(shopOut.noiva, formatNumber(base) + '  (' + t('shop.ivaparte', { n: formatNumber(nice(p - base)) }) + ')', base);
   } else set(shopOut.noiva, null);
 
   const tip = val('tip');
@@ -1564,7 +1634,7 @@ function shopCompute() {
   else set(shopOut.tip, null);
 
   const n = val('split');
-  if (isFinite(n) && n >= 1) { const c = nice(p / Math.round(n)); set(shopOut.split, formatNumber(c) + ' c/u', c); }
+  if (isFinite(n) && n >= 1) { const c = nice(p / Math.round(n)); set(shopOut.split, t('shop.cu', { n: formatNumber(c) }), c); }
   else set(shopOut.split, null);
 }
 
@@ -1591,11 +1661,7 @@ btnShop.addEventListener('click', (e) => {
     }
     shopCompute();
     renderConv();
-    say(randomFrom([
-      '¡A cuidar las monedas! 🛒',
-      'Ni un colón de más, humano 🪙',
-      'Yo cazo ratones, tú cazas ofertas 🛒'
-    ]), 2400);
+    say(t('say.shop.abrir'), 2400);
   }
 });
 
@@ -1622,11 +1688,7 @@ btnNotes.addEventListener('click', (e) => {
   notesPanel.classList.toggle('hidden');
   btnNotes.classList.toggle('active', opening);
   if (opening) {
-    say(randomFrom([
-      'Apunta tú, que yo no tengo pulgares 📝',
-      'Tu bloc de notas gatuno 🐾',
-      'Ideas frescas como el atún 📝'
-    ]), 2400);
+    say(t('say.notas.abrir'), 2400);
     notesText.focus();
   }
 });
@@ -1651,7 +1713,7 @@ document.getElementById('btn-notes-clear').addEventListener('click', () => {
   notesText.value = '';
   store.del('catculator-notes');
   notesText.focus();
-  say('Bloc limpio como mis bigotes ✨', 2000);
+  say(t('say.notas.borrado'), 2000);
 });
 
 // ---------- Modo aprendiz: el gato pregunta ----------
@@ -1689,7 +1751,7 @@ function checkQuiz() {
   catch (e) {
     tokens = [];
     updateDisplay();
-    say('Eso no parece un número 🙀', 2200);
+    say(t('say.quiz.nonumero'), 2200);
     return;
   }
   tokens = [];
@@ -1698,20 +1760,18 @@ function checkQuiz() {
     playPurr();
     spawnPawPrints();
     setMood('happy', 2000);
-    let frase = randomFrom([
-      '¡Correcto! 😺', '¡Purrfecto! 🐾', '¡Genio gatuno! 🎓', '¡Esa patita sabe! ✏️'
-    ]) + ' 🔥' + racha;
+    let frase = t('say.quiz.bien') + ' 🔥' + racha;
     if (racha > mejorRacha) {
       mejorRacha = racha;
       store.set('catculator-racha', String(mejorRacha));
-      if (racha >= 3) frase = '¡Récord nuevo! 🔥' + racha + ' seguidas 🏆';
+      if (racha >= 3) frase = t('say.quiz.nuevorecord', { n: racha });
     }
     say(frase, 2400);
     newQuiz();
   } else {
     playGrowl();
     setMood('angry', 2600);
-    say('Mmm no... ' + quiz.text + ' = ' + quiz.answer + ' 😿', 3200);
+    say(t('say.quiz.mal', { a: quiz.text, b: quiz.answer }), 3200);
     racha = 0;
     newQuiz();
   }
@@ -1730,12 +1790,11 @@ btnQuiz.addEventListener('click', () => {
   if (quizMode) {
     racha = 0;
     setMood('happy', 2200);
-    say('¡Modo aprendiz! Resuelve mi cuenta 🎓' +
-      (mejorRacha ? ' Récord: ' + mejorRacha + ' 🔥' : ''), 3200);
+    say(t('say.quiz.inicio') + (mejorRacha ? t('say.quiz.record', { n: mejorRacha }) : ''), 3200);
     newQuiz();
   } else {
     quiz = null;
-    say('Fin de la clase. ¡Miau-tástico! 🎓', 2400);
+    say(t('say.quiz.fin'), 2400);
     updateDisplay();
   }
 });
@@ -1749,11 +1808,7 @@ elFrac.addEventListener('click', () => {
   updateDisplay(true);
   if (fracMode) {
     setMood('happy', 2000);
-    say(randomFrom([
-      '¡En fracción y simplificada! 🐾',
-      'Partido en pedacitos, como mi atún 🐟',
-      '¡Fracción purrfecta! 😺'
-    ]), 2400);
+    say(t('say.frac'), 2400);
   }
 });
 
@@ -1774,7 +1829,7 @@ if ('serviceWorker' in navigator) {
           // Sin controller es la primera visita: no hay nada viejo que avisar.
           if (entrante.state === 'installed' && navigator.serviceWorker.controller) {
             setMood('surprised', 3000);
-            say('¡Hay una versión nueva! Recarga para estrenarla ✨', 6000);
+            say(t('say.nueva'), 6000);
           }
         });
       });
@@ -1807,12 +1862,17 @@ document.querySelectorAll('.key, .skey').forEach(btn => {
 
 /* La tecla decimal enseña el separador del país. Por dentro el token sigue
    siendo '.' siempre; esto es solo lo que se ve y lo que se lee en voz alta.
-   El teclado físico ya acepta las dos. */
-const teclaDecimal = document.querySelector('.key[data-k="."]');
-if (teclaDecimal) {
-  teclaDecimal.textContent = SEP.decimal;
-  teclaDecimal.setAttribute('aria-label', SEP.decimal === ',' ? 'coma decimal' : 'punto decimal');
+   El teclado físico ya acepta las dos.
+
+   Va DESPUÉS de traducirDOM a propósito: esa tecla también tiene data-i18n-aria
+   y si se tradujera después, pisaría el nombre correcto. */
+function ponerTeclaDecimal() {
+  const tecla = document.querySelector('.key[data-k="."]');
+  if (!tecla) return;
+  tecla.textContent = SEP.decimal;
+  tecla.setAttribute('aria-label', t(SEP.decimal === ',' ? 'k.coma' : 'k.punto'));
 }
+ponerTeclaDecimal();
 
 // ---------- Teclado físico ----------
 function flashKey(selector) {
@@ -1854,20 +1914,10 @@ elCat.addEventListener('click', () => {
   // A veces maúlla, a veces ronronea — con frase a juego
   if (Math.random() < 0.45) {
     playPurr();
-    say(randomFrom([
-      'Prrrrrr... 😌',
-      '*ronroneo feliz*',
-      'Prrrr... sigue, humano 🐾',
-      '*motor de ronroneos encendido*'
-    ]), 2400);
+    say(t('say.ronroneo'), 2400);
   } else {
     playMeow();
-    say(randomFrom([
-      '¡Miau! 😺',
-      '¿Me trajiste atún? 🐟',
-      '¡Cuidado con mis bigotes!',
-      'Soy la mejor CATculadora del mundo 🐾'
-    ]), 2400);
+    say(t('say.miau'), 2400);
   }
 });
 
@@ -1896,9 +1946,54 @@ if (capApp) {
   });
 }
 
+/* ---------- Cambio de idioma en caliente ----------
+   Sin recargar la página: se vuelve a traducir el HTML y se reconstruye todo lo
+   que se generó desde JavaScript (los desplegables, los campos de tasas, las
+   etiquetas calculadas). Recargar habría sido más corto, pero se llevaría por
+   delante la cuenta que el humano tenga a medio escribir. */
+function aplicarIdioma(nuevo) {
+  if (IDIOMAS.indexOf(nuevo) === -1 || nuevo === IDIOMA) return;
+  IDIOMA = nuevo;
+  store.set('catculator-idioma', IDIOMA);
+
+  traducirDOM();
+  marcarIdiomaActivo();
+
+  // Lo que no vive en el HTML hay que rehacerlo a mano
+  llenarCategorias();
+  convSetCategory(convCat.value);
+  fillCurrencySelect(shopFromSel);
+  fillCurrencySelect(shopToSel);
+  renderRateFields();
+  renderConv();
+  shopCompute();
+  applyMode(document.getElementById('app').classList.contains('sci-on') ? 'sci' : 'basic');
+  ponerTeclaDecimal();
+  renderHistory();
+  refreshSoundBtn();
+  updateDisplay();
+}
+
+function marcarIdiomaActivo() {
+  document.querySelectorAll('.lang-swatch').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.lang === IDIOMA);
+  });
+}
+
+document.querySelectorAll('.lang-swatch').forEach(btn => {
+  btn.addEventListener('click', () => {
+    playClick();
+    aplicarIdioma(btn.dataset.lang);
+    say(t('say.idioma'), 2400);
+    setMood('happy', 2000);
+    themePanel.classList.add('hidden');
+  });
+});
+marcarIdiomaActivo();
+
 // ---------- Saludo inicial ----------
 setTimeout(() => {
-  say('¡Miau! Lista para calcular 🐾', 3000);
+  say(t('say.saludo'), 3000);
   setMood('happy', 2200);
 }, 600);
 

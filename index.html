@@ -28,148 +28,157 @@
         <h1>Catculator</h1>
       </div>
       <div class="topbar-actions">
-        <button id="btn-history" class="icon-btn" title="Historial" aria-label="Historial">🕘</button>
-        <button id="btn-conv" class="icon-btn" title="Conversor de unidades" aria-label="Conversor de unidades">⇄</button>
-        <button id="btn-quiz" class="icon-btn" title="Modo aprendiz" aria-label="Modo aprendiz">🎓</button>
-        <button id="btn-sound" class="icon-btn" title="Sonido" aria-label="Sonido">🔊</button>
-        <button id="btn-theme" class="icon-btn" title="Cambiar color" aria-label="Personalizar color, pelaje y atuendo">🎨</button>
+        <button id="btn-history" class="icon-btn" data-i18n-title="top.historial" data-i18n-aria="top.historial" title="Historial" aria-label="Historial">🕘</button>
+        <button id="btn-conv" class="icon-btn" data-i18n-title="top.conversor" data-i18n-aria="top.conversor" title="Conversor de unidades" aria-label="Conversor de unidades">⇄</button>
+        <button id="btn-quiz" class="icon-btn" data-i18n-title="top.aprendiz" data-i18n-aria="top.aprendiz" title="Modo aprendiz" aria-label="Modo aprendiz">🎓</button>
+        <button id="btn-sound" class="icon-btn" data-i18n-title="top.sonido" data-i18n-aria="top.sonido" title="Sonido" aria-label="Sonido">🔊</button>
+        <button id="btn-theme" class="icon-btn" data-i18n-title="top.personalizar" data-i18n-aria="top.personalizar.aria" title="Cambiar color" aria-label="Personalizar color, pelaje y atuendo">🎨</button>
       </div>
     </header>
 
     <!-- Selector de temas -->
     <div id="theme-panel" class="theme-panel hidden">
-      <p class="theme-title">Tema de color 🎨</p>
+      <p class="theme-title" data-i18n="idioma.titulo">Idioma 🌎</p>
+      <div class="theme-grid">
+        <button class="lang-swatch" data-lang="es">
+          <span class="mini">🇪🇸</span><span data-i18n="idioma.es">Español</span>
+        </button>
+        <button class="lang-swatch" data-lang="en">
+          <span class="mini">🇬🇧</span><span data-i18n="idioma.en">English</span>
+        </button>
+      </div>
+      <p class="theme-title" data-i18n="tema.titulo">Tema de color 🎨</p>
       <div class="theme-grid">
         <button class="theme-swatch" data-theme="cian">
-          <span class="dot dot-cian"></span>Cian
+          <span class="dot dot-cian"></span><span data-i18n="tema.cian">Cian</span>
         </button>
         <button class="theme-swatch" data-theme="rosa">
-          <span class="dot dot-rosa"></span>Rosa
+          <span class="dot dot-rosa"></span><span data-i18n="tema.rosa">Rosa</span>
         </button>
         <button class="theme-swatch" data-theme="menta">
-          <span class="dot dot-menta"></span>Menta
+          <span class="dot dot-menta"></span><span data-i18n="tema.menta">Menta</span>
         </button>
         <button class="theme-swatch" data-theme="lavanda">
-          <span class="dot dot-lavanda"></span>Lavanda
+          <span class="dot dot-lavanda"></span><span data-i18n="tema.lavanda">Lavanda</span>
         </button>
         <button class="theme-swatch" data-theme="atigrado">
-          <span class="dot dot-atigrado"></span>Atigrado
+          <span class="dot dot-atigrado"></span><span data-i18n="tema.atigrado">Atigrado</span>
         </button>
         <button class="theme-swatch" data-theme="noche">
-          <span class="dot dot-noche"></span>Noche
+          <span class="dot dot-noche"></span><span data-i18n="tema.noche">Noche</span>
         </button>
       </div>
-      <p class="theme-title sub">Tu pelaje 🐱</p>
+      <p class="theme-title sub" data-i18n="pelaje.titulo">Tu pelaje 🐱</p>
       <div class="theme-grid">
         <button class="fur-swatch" data-fur="carbon">
-          <span class="dot dot-carbon"></span>Carbón
+          <span class="dot dot-carbon"></span><span data-i18n="pelaje.carbon">Carbón</span>
         </button>
         <button class="fur-swatch" data-fur="naranja">
-          <span class="dot dot-naranja"></span>Naranja
+          <span class="dot dot-naranja"></span><span data-i18n="pelaje.naranja">Naranja</span>
         </button>
         <button class="fur-swatch" data-fur="gris">
-          <span class="dot dot-gris"></span>Gris
+          <span class="dot dot-gris"></span><span data-i18n="pelaje.gris">Gris</span>
         </button>
         <button class="fur-swatch" data-fur="negro">
-          <span class="dot dot-negro"></span>Negro
+          <span class="dot dot-negro"></span><span data-i18n="pelaje.negro">Negro</span>
         </button>
         <button class="fur-swatch" data-fur="blanco">
-          <span class="dot dot-blanco"></span>Blanco
+          <span class="dot dot-blanco"></span><span data-i18n="pelaje.blanco">Blanco</span>
         </button>
       </div>
-      <p class="theme-title sub">Tu atuendo 🎩</p>
+      <p class="theme-title sub" data-i18n="atuendo.titulo">Tu atuendo 🎩</p>
       <div class="theme-grid">
         <button class="outfit-swatch" data-outfit="ninguno">
-          <span class="mini">🐱</span>Ninguno
+          <span class="mini">🐱</span><span data-i18n="atuendo.ninguno">Ninguno</span>
         </button>
         <button class="outfit-swatch" data-outfit="ninja">
-          <span class="mini">🥷</span>Ninja
+          <span class="mini">🥷</span><span data-i18n="atuendo.ninja">Ninja</span>
         </button>
         <button class="outfit-swatch" data-outfit="futbol">
-          <span class="mini">⚽</span>Futbolero
+          <span class="mini">⚽</span><span data-i18n="atuendo.futbol">Futbolero</span>
         </button>
         <button class="outfit-swatch" data-outfit="pirata">
-          <span class="mini">🏴‍☠️</span>Pirata
+          <span class="mini">🏴‍☠️</span><span data-i18n="atuendo.pirata">Pirata</span>
         </button>
         <button class="outfit-swatch" data-outfit="mago">
-          <span class="mini">🧙</span>Mago
+          <span class="mini">🧙</span><span data-i18n="atuendo.mago">Mago</span>
         </button>
         <button class="outfit-swatch" data-outfit="capucha">
-          <span class="mini">🤍</span>Encapuchado
+          <span class="mini">🤍</span><span data-i18n="atuendo.capucha">Encapuchado</span>
         </button>
       </div>
     </div>
 
     <!-- Historial de operaciones -->
     <div id="history-panel" class="side-panel hidden">
-      <p class="theme-title">Historial 🕘</p>
+      <p class="theme-title" data-i18n="hist.titulo">Historial 🕘</p>
       <div id="history-list" class="history-list"></div>
-      <button id="btn-history-clear" class="panel-action">Borrar historial 🧽</button>
+      <button id="btn-history-clear" class="panel-action" data-i18n="hist.borrar">Borrar historial 🧽</button>
     </div>
 
     <!-- Conversor de unidades -->
     <div id="conv-panel" class="side-panel hidden">
-      <p class="theme-title">Conversor de unidades ⇄</p>
-      <select id="conv-cat" class="conv-select" aria-label="Tipo de unidad"></select>
-      <input id="conv-value" class="conv-input" aria-label="Número a convertir" type="number" step="any" inputmode="decimal" placeholder="Número a convertir" />
+      <p class="theme-title" data-i18n="conv.titulo">Conversor de unidades ⇄</p>
+      <select id="conv-cat" class="conv-select" data-i18n-aria="conv.tipo" aria-label="Tipo de unidad"></select>
+      <input id="conv-value" class="conv-input" data-i18n-aria="conv.numero" data-i18n-ph="conv.numero" aria-label="Número a convertir" type="number" step="any" inputmode="decimal" placeholder="Número a convertir" />
       <div class="conv-row">
-        <select id="conv-from" class="conv-select" aria-label="Unidad de origen"></select>
-        <button id="conv-swap" class="conv-swap" title="Intercambiar" aria-label="Intercambiar unidades">⇄</button>
-        <select id="conv-to" class="conv-select" aria-label="Unidad de destino"></select>
+        <select id="conv-from" class="conv-select" data-i18n-aria="conv.origen" aria-label="Unidad de origen"></select>
+        <button id="conv-swap" class="conv-swap" data-i18n-title="conv.intercambiar" data-i18n-aria="conv.intercambiar" title="Intercambiar" aria-label="Intercambiar unidades">⇄</button>
+        <select id="conv-to" class="conv-select" data-i18n-aria="conv.destino" aria-label="Unidad de destino"></select>
       </div>
       <div id="conv-result" class="conv-result">—</div>
-      <button id="btn-conv-use" class="panel-action">Usar en la calculadora 🐾</button>
+      <button id="btn-conv-use" class="panel-action" data-i18n="conv.usar">Usar en la calculadora 🐾</button>
     </div>
 
     <!-- Bloc de notas -->
     <div id="notes-panel" class="side-panel hidden">
-      <p class="theme-title">Bloc de notas 📝</p>
-      <textarea id="notes-text" class="notes-textarea" aria-label="Bloc de notas"
+      <p class="theme-title" data-i18n="notas.titulo">Bloc de notas 📝</p>
+      <textarea id="notes-text" class="notes-textarea" data-i18n-aria="notas.aria" data-i18n-ph="notas.placeholder" aria-label="Bloc de notas"
         placeholder="Apunta aquí tus cuentas, listas o ideas... se guardan solas 🐾"></textarea>
       <div class="notes-row">
-        <button id="btn-notes-insert" class="panel-action">➕ Resultado</button>
-        <button id="btn-notes-clear" class="panel-action secondary">🧽 Borrar</button>
+        <button id="btn-notes-insert" class="panel-action" data-i18n="notas.insertar">➕ Resultado</button>
+        <button id="btn-notes-clear" class="panel-action secondary" data-i18n="notas.borrar">🧽 Borrar</button>
       </div>
     </div>
 
     <!-- Modo compras -->
     <div id="shop-panel" class="side-panel hidden">
-      <p class="theme-title">Modo compras 🛒</p>
-      <input id="shop-price" class="conv-input" aria-label="Precio" type="number" step="any" inputmode="decimal" placeholder="Precio" />
+      <p class="theme-title" data-i18n="shop.titulo">Modo compras 🛒</p>
+      <input id="shop-price" class="conv-input" data-i18n-aria="shop.precio" data-i18n-ph="shop.precio" aria-label="Precio" type="number" step="any" inputmode="decimal" placeholder="Precio" />
       <div class="shop-row">
-        <span class="shop-name" id="lbl-desc">Descuento</span>
-        <input id="shop-desc" class="shop-pct" aria-label="Descuento en por ciento" type="number" step="any" inputmode="decimal" value="10" /><span class="shop-unit">%</span>
-        <button id="shop-desc-res" class="shop-res" title="Usar en la calculadora" aria-labelledby="lbl-desc shop-desc-res">—</button>
+        <span class="shop-name" id="lbl-desc" data-i18n="shop.descuento">Descuento</span>
+        <input id="shop-desc" class="shop-pct" data-i18n-aria="shop.descuento.aria" aria-label="Descuento en por ciento" type="number" step="any" inputmode="decimal" value="10" /><span class="shop-unit">%</span>
+        <button id="shop-desc-res" class="shop-res" data-i18n-title="shop.usar" title="Usar en la calculadora" aria-labelledby="lbl-desc shop-desc-res">—</button>
       </div>
       <div class="shop-row">
-        <span class="shop-name" id="lbl-iva">IVA</span>
-        <input id="shop-iva" class="shop-pct" aria-label="IVA en por ciento" type="number" step="any" inputmode="decimal" value="13" /><span class="shop-unit">%</span>
-        <button id="shop-iva-res" class="shop-res" title="Usar en la calculadora" aria-labelledby="lbl-iva shop-iva-res">—</button>
+        <span class="shop-name" id="lbl-iva" data-i18n="shop.iva">IVA</span>
+        <input id="shop-iva" class="shop-pct" data-i18n-aria="shop.iva.aria" aria-label="IVA en por ciento" type="number" step="any" inputmode="decimal" value="13" /><span class="shop-unit">%</span>
+        <button id="shop-iva-res" class="shop-res" data-i18n-title="shop.usar" title="Usar en la calculadora" aria-labelledby="lbl-iva shop-iva-res">—</button>
       </div>
       <div class="shop-row">
-        <span class="shop-name" id="lbl-noiva">Sin IVA</span>
-        <button id="shop-noiva-res" class="shop-res" title="Usar en la calculadora" aria-labelledby="lbl-noiva shop-noiva-res">—</button>
+        <span class="shop-name" id="lbl-noiva" data-i18n="shop.siniva">Sin IVA</span>
+        <button id="shop-noiva-res" class="shop-res" data-i18n-title="shop.usar" title="Usar en la calculadora" aria-labelledby="lbl-noiva shop-noiva-res">—</button>
       </div>
       <div class="shop-row">
-        <span class="shop-name" id="lbl-tip">Propina</span>
-        <input id="shop-tip" class="shop-pct" aria-label="Propina en por ciento" type="number" step="any" inputmode="decimal" value="10" /><span class="shop-unit">%</span>
-        <button id="shop-tip-res" class="shop-res" title="Usar en la calculadora" aria-labelledby="lbl-tip shop-tip-res">—</button>
+        <span class="shop-name" id="lbl-tip" data-i18n="shop.propina">Propina</span>
+        <input id="shop-tip" class="shop-pct" data-i18n-aria="shop.propina.aria" aria-label="Propina en por ciento" type="number" step="any" inputmode="decimal" value="10" /><span class="shop-unit">%</span>
+        <button id="shop-tip-res" class="shop-res" data-i18n-title="shop.usar" title="Usar en la calculadora" aria-labelledby="lbl-tip shop-tip-res">—</button>
       </div>
       <div class="shop-row">
-        <span class="shop-name" id="lbl-split">Entre</span>
-        <input id="shop-split" class="shop-pct" aria-label="Entre cuántas personas" type="number" min="1" step="1" inputmode="numeric" value="2" /><span class="shop-unit">👥</span>
-        <button id="shop-split-res" class="shop-res" title="Usar en la calculadora" aria-labelledby="lbl-split shop-split-res">—</button>
+        <span class="shop-name" id="lbl-split" data-i18n="shop.entre">Entre</span>
+        <input id="shop-split" class="shop-pct" data-i18n-aria="shop.entre.aria" aria-label="Entre cuántas personas" type="number" min="1" step="1" inputmode="numeric" value="2" /><span class="shop-unit">👥</span>
+        <button id="shop-split-res" class="shop-res" data-i18n-title="shop.usar" title="Usar en la calculadora" aria-labelledby="lbl-split shop-split-res">—</button>
       </div>
-      <p class="theme-title sub" id="lbl-divisa">Convertir divisa 💱</p>
-      <input id="shop-conv-amount" class="conv-input" aria-label="Monto a convertir" type="number" step="any" inputmode="decimal" placeholder="Monto a convertir" />
+      <p class="theme-title sub" id="lbl-divisa" data-i18n="shop.divisa">Convertir divisa 💱</p>
+      <input id="shop-conv-amount" class="conv-input" data-i18n-aria="shop.monto" data-i18n-ph="shop.monto" aria-label="Monto a convertir" type="number" step="any" inputmode="decimal" placeholder="Monto a convertir" />
       <div id="shop-rate-fields" class="shop-rate-fields"></div>
       <div class="conv-row shop-conv-row">
-        <select id="shop-from" class="conv-select" aria-label="Moneda del precio" title="Moneda del precio"></select>
-        <button id="shop-swap" class="conv-swap" type="button" title="Intercambiar monedas" aria-label="Intercambiar monedas">⇄</button>
-        <select id="shop-to" class="conv-select" aria-label="Moneda a la que se convierte" title="Convertir a"></select>
+        <select id="shop-from" class="conv-select" data-i18n-aria="shop.moneda.de" data-i18n-title="shop.moneda.de" aria-label="Moneda del precio" title="Moneda del precio"></select>
+        <button id="shop-swap" class="conv-swap" type="button" data-i18n-title="shop.intercambiar" data-i18n-aria="shop.intercambiar" title="Intercambiar monedas" aria-label="Intercambiar monedas">⇄</button>
+        <select id="shop-to" class="conv-select" data-i18n-aria="shop.moneda.a" data-i18n-title="shop.moneda.a.title" aria-label="Moneda a la que se convierte" title="Convertir a"></select>
       </div>
-      <button id="shop-conv-res" class="shop-res shop-conv-res" title="Usar en la calculadora" aria-labelledby="lbl-divisa shop-conv-res">—</button>
-      <p class="shop-note">Escribe la tasa que conozcas (1 $ = ⋯). La app funciona sin internet, así que la actualizas tú. Toca el resultado para usarlo.</p>
+      <button id="shop-conv-res" class="shop-res shop-conv-res" data-i18n-title="shop.usar" title="Usar en la calculadora" aria-labelledby="lbl-divisa shop-conv-res">—</button>
+      <p class="shop-note" data-i18n="shop.nota">Escribe la tasa que conozcas (1 $ = ⋯). La app funciona sin internet, así que la actualizas tú. Toca el resultado para usarlo.</p>
     </div>
 
     <!-- Escena del gato -->
@@ -648,19 +657,19 @@
     <!-- Pantalla. Las dos líneas son regiones "live" para que el lector de
          pantalla cante la operación y el resultado cuando cambian. -->
     <div class="display">
-      <button id="btn-frac" class="frac-chip hidden" title="Ver como fracción / decimal" aria-label="Ver como fracción o decimal">¼</button>
+      <button id="btn-frac" class="frac-chip hidden" data-i18n-title="frac.title" data-i18n-aria="frac.aria" title="Ver como fracción / decimal" aria-label="Ver como fracción o decimal">¼</button>
       <div id="expression" class="expression" aria-live="polite">&nbsp;</div>
-      <div id="result" class="result" title="Tocar para copiar" role="status" aria-live="polite" aria-atomic="true"
+      <div id="result" class="result" data-i18n-title="result.title" data-i18n-desc="result.desc" title="Tocar para copiar" role="status" aria-live="polite" aria-atomic="true"
            tabindex="0" aria-keyshortcuts="Enter" aria-description="Resultado. Enter para copiarlo.">0</div>
     </div>
 
-    <!-- Controles -->
+    <!-- Controles. El texto de btn-mode lo pone applyMode: alterna Básica/Científica. -->
     <div class="calc-controls">
-      <button id="btn-mode" class="ctrl-btn" title="Cambiar modo">🔬 Científica</button>
-      <button id="btn-notes" class="ctrl-btn" title="Bloc de notas">📝 Notas</button>
-      <button id="btn-shop" class="ctrl-btn" title="Modo compras">🛒 Compras</button>
-      <button id="btn-angle" class="ctrl-btn" title="Grados / Radianes">DEG</button>
-      <span id="mem-chip" class="mem-chip" title="Memoria activa">M</span>
+      <button id="btn-mode" class="ctrl-btn" data-i18n-title="ctrl.modo" title="Cambiar modo">🔬 Científica</button>
+      <button id="btn-notes" class="ctrl-btn" data-i18n="ctrl.notas" data-i18n-title="ctrl.notas.title" title="Bloc de notas">📝 Notas</button>
+      <button id="btn-shop" class="ctrl-btn" data-i18n="ctrl.compras" data-i18n-title="ctrl.compras.title" title="Modo compras">🛒 Compras</button>
+      <button id="btn-angle" class="ctrl-btn" data-i18n-title="ctrl.angulo" title="Grados / Radianes">DEG</button>
+      <span id="mem-chip" class="mem-chip" data-i18n-title="ctrl.memoria" title="Memoria activa">M</span>
     </div>
 
     <div class="pad-wrap">
@@ -668,69 +677,70 @@
       <div id="sci-pad" class="sci-pad hidden">
         <!-- data-aria / data-aria2: cómo se llama la tecla en voz alta. Las que
              cambian con 2nd llevan las dos, y toggle2nd las intercambia. -->
-        <button class="skey mem" data-action="mc" aria-label="Memoria: borrar">MC</button>
-        <button class="skey mem" data-action="mr" aria-label="Memoria: recuperar">MR</button>
-        <button class="skey mem" data-action="m+" aria-label="Memoria: sumar">M+</button>
-        <button class="skey mem" data-action="m-" aria-label="Memoria: restar">M−</button>
-        <button class="skey mem" data-action="ms" aria-label="Memoria: guardar">MS</button>
+        <button class="skey mem" data-action="mc" data-i18n-aria="s.mc" aria-label="Memoria: borrar">MC</button>
+        <button class="skey mem" data-action="mr" data-i18n-aria="s.mr" aria-label="Memoria: recuperar">MR</button>
+        <button class="skey mem" data-action="m+" data-i18n-aria="s.mplus" aria-label="Memoria: sumar">M+</button>
+        <button class="skey mem" data-action="m-" data-i18n-aria="s.mminus" aria-label="Memoria: restar">M−</button>
+        <button class="skey mem" data-action="ms" data-i18n-aria="s.ms" aria-label="Memoria: guardar">MS</button>
 
-        <button id="btn-2nd" class="skey" aria-label="Segunda función">2nd</button>
-        <button class="skey fn" data-k="sin(" data-k2="asin(" data-label="sin" data-label2="sin⁻¹" aria-label="seno" data-aria="seno" data-aria2="arcoseno">sin</button>
-        <button class="skey fn" data-k="cos(" data-k2="acos(" data-label="cos" data-label2="cos⁻¹" aria-label="coseno" data-aria="coseno" data-aria2="arcocoseno">cos</button>
-        <button class="skey fn" data-k="tan(" data-k2="atan(" data-label="tan" data-label2="tan⁻¹" aria-label="tangente" data-aria="tangente" data-aria2="arcotangente">tan</button>
-        <button class="skey fn" data-k="π" data-label="π" aria-label="pi">π</button>
+        <button id="btn-2nd" class="skey" data-i18n-aria="s.2nd" aria-label="Segunda función">2nd</button>
+        <button class="skey fn" data-k="sin(" data-k2="asin(" data-label="sin" data-label2="sin⁻¹" data-i18n-aria="s.sin" data-i18n-aria2="s.asin" aria-label="seno" data-aria="seno" data-aria2="arcoseno">sin</button>
+        <button class="skey fn" data-k="cos(" data-k2="acos(" data-label="cos" data-label2="cos⁻¹" data-i18n-aria="s.cos" data-i18n-aria2="s.acos" aria-label="coseno" data-aria="coseno" data-aria2="arcocoseno">cos</button>
+        <button class="skey fn" data-k="tan(" data-k2="atan(" data-label="tan" data-label2="tan⁻¹" data-i18n-aria="s.tan" data-i18n-aria2="s.atan" aria-label="tangente" data-aria="tangente" data-aria2="arcotangente">tan</button>
+        <button class="skey fn" data-k="π" data-label="π" data-i18n-aria="s.pi" aria-label="pi">π</button>
 
-        <button class="skey fn" data-k="^" data-label="xʸ" aria-label="x elevado a y">xʸ</button>
-        <button class="skey fn" data-k="ln(" data-k2="e^(" data-label="ln" data-label2="eˣ" aria-label="logaritmo natural" data-aria="logaritmo natural" data-aria2="e elevado a x">ln</button>
-        <button class="skey fn" data-k="log(" data-k2="10^(" data-label="log" data-label2="10ˣ" aria-label="logaritmo base diez" data-aria="logaritmo base diez" data-aria2="diez elevado a x">log</button>
-        <button class="skey fn" data-k="sqrt(" data-k2="cbrt(" data-label="√" data-label2="∛" aria-label="raíz cuadrada" data-aria="raíz cuadrada" data-aria2="raíz cúbica">√</button>
-        <button class="skey fn" data-k="e" data-label="e" aria-label="número e">e</button>
+        <button class="skey fn" data-k="^" data-label="xʸ" data-i18n-aria="s.pow" aria-label="x elevado a y">xʸ</button>
+        <button class="skey fn" data-k="ln(" data-k2="e^(" data-label="ln" data-label2="eˣ" data-i18n-aria="s.ln" data-i18n-aria2="s.exp" aria-label="logaritmo natural" data-aria="logaritmo natural" data-aria2="e elevado a x">ln</button>
+        <button class="skey fn" data-k="log(" data-k2="10^(" data-label="log" data-label2="10ˣ" data-i18n-aria="s.log" data-i18n-aria2="s.pow10" aria-label="logaritmo base diez" data-aria="logaritmo base diez" data-aria2="diez elevado a x">log</button>
+        <button class="skey fn" data-k="sqrt(" data-k2="cbrt(" data-label="√" data-label2="∛" data-i18n-aria="s.sqrt" data-i18n-aria2="s.cbrt" aria-label="raíz cuadrada" data-aria="raíz cuadrada" data-aria2="raíz cúbica">√</button>
+        <button class="skey fn" data-k="e" data-label="e" data-i18n-aria="s.e" aria-label="número e">e</button>
 
-        <button class="skey fn" data-k="^2" data-k2="^3" data-label="x²" data-label2="x³" aria-label="x al cuadrado" data-aria="x al cuadrado" data-aria2="x al cubo">x²</button>
-        <button class="skey fn" data-k="(" data-label="(" aria-label="abrir paréntesis">(</button>
-        <button class="skey fn" data-k=")" data-label=")" aria-label="cerrar paréntesis">)</button>
-        <button class="skey fn" data-k="^(-1)" data-label="1/x" aria-label="uno entre x">1/x</button>
-        <button class="skey fn" data-k="!" data-label="n!" aria-label="factorial">n!</button>
+        <button class="skey fn" data-k="^2" data-k2="^3" data-label="x²" data-label2="x³" data-i18n-aria="s.sq" data-i18n-aria2="s.cube" aria-label="x al cuadrado" data-aria="x al cuadrado" data-aria2="x al cubo">x²</button>
+        <button class="skey fn" data-k="(" data-label="(" data-i18n-aria="s.abrir" aria-label="abrir paréntesis">(</button>
+        <button class="skey fn" data-k=")" data-label=")" data-i18n-aria="s.cerrar" aria-label="cerrar paréntesis">)</button>
+        <button class="skey fn" data-k="^(-1)" data-label="1/x" data-i18n-aria="s.inv" aria-label="uno entre x">1/x</button>
+        <button class="skey fn" data-k="!" data-label="n!" data-i18n-aria="s.fact" aria-label="factorial">n!</button>
 
-        <button class="skey fn" data-k="abs(" data-label="|x|" aria-label="valor absoluto">|x|</button>
-        <button class="skey fn" data-k="*10^" data-label="EXP" aria-label="exponente">EXP</button>
-        <button class="skey fn" data-k="mod" data-label="mod" aria-label="módulo">mod</button>
-        <button class="skey fn" data-k="%" data-label="%" aria-label="por ciento">%</button>
-        <button class="skey fn" data-k="ans" data-label="Ans" aria-label="respuesta anterior">Ans</button>
+        <button class="skey fn" data-k="abs(" data-label="|x|" data-i18n-aria="s.abs" aria-label="valor absoluto">|x|</button>
+        <button class="skey fn" data-k="*10^" data-label="EXP" data-i18n-aria="s.expn" aria-label="exponente">EXP</button>
+        <button class="skey fn" data-k="mod" data-label="mod" data-i18n-aria="s.mod" aria-label="módulo">mod</button>
+        <button class="skey fn" data-k="%" data-label="%" data-i18n-aria="k.porciento" aria-label="por ciento">%</button>
+        <button class="skey fn" data-k="ans" data-label="Ans" data-i18n-aria="s.ans" aria-label="respuesta anterior">Ans</button>
       </div>
 
       <!-- Teclado básico -->
       <div class="keypad">
-        <button class="key key-fn" data-action="clear" aria-label="Borrar todo">C</button>
-        <button class="key key-fn" data-action="back" aria-label="Borrar lo último">⌫</button>
-        <button class="key key-fn" data-k="%" aria-label="por ciento">%</button>
-        <button class="key key-op" data-k="/" aria-label="dividir">÷</button>
+        <button class="key key-fn" data-action="clear" data-i18n-aria="k.borrartodo" aria-label="Borrar todo">C</button>
+        <button class="key key-fn" data-action="back" data-i18n-aria="k.borrar" aria-label="Borrar lo último">⌫</button>
+        <button class="key key-fn" data-k="%" data-i18n-aria="k.porciento" aria-label="por ciento">%</button>
+        <button class="key key-op" data-k="/" data-i18n-aria="k.dividir" aria-label="dividir">÷</button>
 
         <button class="key" data-k="7">7</button>
         <button class="key" data-k="8">8</button>
         <button class="key" data-k="9">9</button>
-        <button class="key key-op" data-k="*" aria-label="multiplicar">×</button>
+        <button class="key key-op" data-k="*" data-i18n-aria="k.multiplicar" aria-label="multiplicar">×</button>
 
         <button class="key" data-k="4">4</button>
         <button class="key" data-k="5">5</button>
         <button class="key" data-k="6">6</button>
-        <button class="key key-op" data-k="-" aria-label="restar">−</button>
+        <button class="key key-op" data-k="-" data-i18n-aria="k.restar" aria-label="restar">−</button>
 
         <button class="key" data-k="1">1</button>
         <button class="key" data-k="2">2</button>
         <button class="key" data-k="3">3</button>
-        <button class="key key-op" data-k="+" aria-label="sumar">+</button>
+        <button class="key key-op" data-k="+" data-i18n-aria="k.sumar" aria-label="sumar">+</button>
 
-        <button class="key" data-action="negate" aria-label="Cambiar signo">±</button>
+        <button class="key" data-action="negate" data-i18n-aria="k.signo" aria-label="Cambiar signo">±</button>
         <button class="key" data-k="0">0</button>
-        <button class="key" data-k="." aria-label="punto decimal">.</button>
-        <button class="key key-eq" data-action="equals" aria-label="igual">=</button>
+        <button class="key" data-k="." data-i18n-aria="k.punto" aria-label="punto decimal">.</button>
+        <button class="key key-eq" data-action="equals" data-i18n-aria="k.igual" aria-label="igual">=</button>
       </div>
     </div>
 
-    <footer class="footer">Hecho con 🐾 y mucho ronroneo</footer>
+    <footer class="footer" data-i18n="pie">Hecho con 🐾 y mucho ronroneo</footer>
   </div>
 
+  <script src="idiomas.js"></script>
   <script src="renderer.js"></script>
 </body>
 </html>

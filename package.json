@@ -1,7 +1,7 @@
 {
   "name": "catculator",
   "productName": "Catculator",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "La calculadora con temática de gatos 🐱",
   "author": "Catculator",
   "license": "MIT",
@@ -33,6 +33,7 @@
       "index.html",
       "style.css",
       "renderer.js",
+      "idiomas.js",
       "manifest.json",
       "sw.js",
       "icons/**",

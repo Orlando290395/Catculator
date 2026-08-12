@@ -17,6 +17,7 @@ files:
   - index.html
   - style.css
   - renderer.js
+  - idiomas.js
   - manifest.json
   - sw.js
   - icons/**
