@@ -120,8 +120,12 @@ function derivarSeparadores(idioma) {
   } catch (e) { return { miles: ',', decimal: '.' }; }
 }
 
-// Se pregunta una sola vez: el idioma del sistema no cambia en caliente.
-const SEP = derivarSeparadores(undefined);
+/* Si el humano eligió idioma a mano, los números siguen ESE idioma; si no, los
+   del sistema. Importa: con la interfaz en inglés y separadores españoles,
+   39,370079 inches se lee como treinta y nueve mil. Y respetar el sistema
+   cuando no hay elección evita estropeárselo a quien está en México, donde
+   es-MX escribe 1,234.56 y no 1.234,56. */
+let SEP = derivarSeparadores(store.get('catculator-idioma') || undefined);
 
 /* Deshace el formato bonito y deja un número que entiende JS (y cualquier otra
    app donde se pegue): sin separador de miles y con punto decimal. */
@@ -1955,6 +1959,9 @@ function aplicarIdioma(nuevo) {
   if (IDIOMAS.indexOf(nuevo) === -1 || nuevo === IDIOMA) return;
   IDIOMA = nuevo;
   store.set('catculator-idioma', IDIOMA);
+
+  // Los separadores de miles y decimales van con el idioma elegido
+  SEP = derivarSeparadores(IDIOMA);
 
   traducirDOM();
   marcarIdiomaActivo();

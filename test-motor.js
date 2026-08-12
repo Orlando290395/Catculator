@@ -248,10 +248,20 @@ const GUION_COMPORTAMIENTO = `(() => {
   prueba('el pie de página cambia',
     /purring/.test(document.querySelector('.footer').textContent), true);
   prueba('el idioma del documento cambia', document.documentElement.lang, 'en');
+  /* Con la interfaz en inglés, los números también tienen que ser ingleses:
+     "39,370079 inches" se lee como treinta y nueve mil, no como treinta y nueve
+     coma tres. Este fue un bug de verdad, lo cazó una captura de la tienda. */
+  prueba('en inglés el decimal es punto', SEP.decimal, '.');
+  prueba('en inglés los miles son coma', SEP.miles, ',');
+  prueba('y el número sale bien', formatNumber(39.370079), '39.370079');
+  prueba('la tecla decimal acompaña',
+    document.querySelector('.key[data-k="."]').textContent, '.');
+
   aplicarIdioma('es');
   prueba('y vuelve a español',
     document.querySelector('[data-i18n="hist.titulo"]').textContent, 'Historial 🕘');
   prueba('las unidades vuelven', etiquetaUnidad('in'), 'pulgadas');
+  prueba('el decimal vuelve a coma', SEP.decimal, ',');
 
   aplicarIdioma(idiomaAntes);
   store.del('catculator-idioma');   // que la prueba no deje el idioma fijado

@@ -12,8 +12,16 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
+/* El idioma se siembra en localStorage antes de cargar la página, igual que el
+   tema y el pelaje: es más fiable que forzar el idioma de Chromium y usa el
+   mismo camino que un usuario que lo elige a mano.
+     npm run capturas      → español, a tienda/capturas
+     npm run capturas:en   → inglés,  a tienda/capturas-en */
+const IDIOMA_CAP = process.argv.includes('en') ? 'en' : 'es';
+
 const ROOT = path.join(__dirname, 'pwa-dist');
-const OUT = path.join(__dirname, 'tienda/capturas');
+const OUT = path.join(__dirname,
+  IDIOMA_CAP === 'es' ? 'tienda/capturas' : 'tienda/capturas-' + IDIOMA_CAP);
 const PORT = 8145;
 const W = 360, H = 640, DPR = 3;   // 360x640 x3 = 1080x1920
 
@@ -21,6 +29,8 @@ const log = (...a) => console.log(...a);
 
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
                '.json': 'application/json', '.png': 'image/png' };
+
+fs.mkdirSync(OUT, { recursive: true });
 
 const server = http.createServer((req, res) => {
   let p = decodeURIComponent(req.url.split('?')[0]);
@@ -163,8 +173,11 @@ async function run() {
       localStorage.setItem('catculator-outfit', '${t.atuendo}');
       localStorage.setItem('catculator-mode', '${t.modo}');
       localStorage.setItem('catculator-sound', 'on');
+      localStorage.setItem('catculator-idioma', '${IDIOMA_CAP}');
       localStorage.removeItem('catculator-history');
       localStorage.removeItem('catculator-shop');
+      localStorage.removeItem('catculator-rates');
+      localStorage.removeItem('catculator-rates-fechas');
     `);
     await win.loadURL(`http://localhost:${PORT}/`);
     await emular();
