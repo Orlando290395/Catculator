@@ -949,6 +949,32 @@ body {
 
 :root[data-theme="noche"] .shop-rate-edad.vieja { color: #fbbf24; }
 
+
+/* ---------- Otros felinos ----------
+   Van dentro del mismo selector de pelaje (data-fur) en vez de crear una
+   dimensión aparte: no existe un "leopardo de las nieves naranja", así que
+   multiplicar colores por especies solo daría combinaciones absurdas.
+
+   Cada especie trae su paleta y enciende su propia capa de dibujo. El volumen
+   lo siguen poniendo los gradientes neutros de siempre, así que no hace falta
+   definir luces y sombras por especie. */
+.especie { display: none; }
+
+:root[data-fur="leon"] {
+  --fur: #d9a45f;
+  --fur-line: #7c4d17;
+  --whisker: #fff6e6;
+  --ear-inner: #b06a3c;
+  --melena: #a2651f;
+  --melena-clara: #c58a33;
+}
+:root[data-fur="leon"] #especie-leon { display: block; }
+/* El león trae orejas redondas propias, así que las del gato sobran */
+:root[data-fur="leon"] #ear-left,
+:root[data-fur="leon"] #ear-right { display: none; }
+
+.dot-leon { background: linear-gradient(135deg, #d9a45f 55%, #a2651f 55%); }
+
 /* ---------- Pantalla de poca altura ----------
    Teléfono girado, ventana chica, pantalla dividida. Con 360 px de alto el
    gato, la pantalla y las pestañas se comían todo y el teclado numérico quedaba
