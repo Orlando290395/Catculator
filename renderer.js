@@ -835,79 +835,170 @@ function vozDeLaEspecie() {
   return document.documentElement.getAttribute('data-fur') === 'leon' ? 'rugido' : 'maullido';
 }
 
-/* Rugido. No es un maullido grave: un león vive dos octavas más abajo y, sobre
-   todo, su voz es RUGOSA. Esa aspereza es lo que suena a fiera; sin ella queda
-   un gato con catarro. Se arma con cuatro capas:
+/* ---------- El rugido ----------
+   La primera versión sonaba a corneta, y con razón: diente de sierra + filtro
+   pasabajos que se abre + tono que SUBE es, palabra por palabra, la receta con
+   la que se sintetiza un metal. Tres ingredientes, los tres equivocados.
 
-   - Cuerpo: diente de sierra que arranca en 70 Hz, salta a 135 al abrir la
-     boca y se desploma al final, que es el contorno de un rugido real.
-   - Pecho: un subarmónico una octava por debajo, en seno, para que se sienta
-     en el estómago y no solo en el oído.
-   - Rugosidad: un oscilador lento (34 → 22 Hz) sumado al volumen. Ahí está
-     todo el carácter; es el mismo truco del gruñido pero más hondo y lento.
-   - Aire: ruido filtrado en banda, que es el aliento saliendo. */
+   Un rugido de verdad va al revés:
+
+   - El tono BAJA. El león suelta el aire de golpe y se le va acabando.
+   - La boca no se mueve: queda abierta en "aaah". Lo que suena a garganta y no
+     a instrumento son FORMANTES FIJOS — dos pasabanda quietos, siempre en la
+     misma frecuencia. Un pasabajos que barre suena a metal; unos formantes
+     quietos suenan a bicho.
+   - La aspereza es IRREGULAR. Un seno modulando el volumen da trémolo de
+     órgano, que es justo lo que se oía. Aquí la modulación es ruido lento, que
+     tiembla sin repetirse nunca, más un subarmónico a mitad de tono: eso
+     último es la firma acústica de los felinos grandes, que rugen con las
+     cuerdas vocales en caos, no vibrando limpio.
+   - Y manda el aire, no el oscilador. Un rugido es sobre todo ruido.
+
+   Efecto secundario buscado: como el temblor es aleatorio, no hay dos rugidos
+   iguales. Hay una prueba que lo comprueba. */
+
+/* Ruido blanco crudo: el aliento. */
+function ruidoBlanco(ac, segundos) {
+  const n = Math.max(1, Math.floor(ac.sampleRate * segundos));
+  const buf = ac.createBuffer(1, n, ac.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+  return buf;
+}
+
+/* Ruido lento entre -1 y 1: valores nuevos `hz` veces por segundo, unidos con
+   una interpolación de coseno para que no queden esquinas (una esquina se oye
+   como un clic). Sirve de modulador; es un LFO que nunca se repite. */
+function ruidoLento(ac, segundos, hz) {
+  const n = Math.max(2, Math.floor(ac.sampleRate * segundos));
+  const buf = ac.createBuffer(1, n, ac.sampleRate);
+  const d = buf.getChannelData(0);
+  const paso = Math.max(1, Math.floor(ac.sampleRate / hz));
+  let a = Math.random() * 2 - 1;
+  let b = Math.random() * 2 - 1;
+  for (let i = 0; i < n; i++) {
+    const k = i % paso;
+    if (k === 0) { a = b; b = Math.random() * 2 - 1; }
+    const x = 0.5 - Math.cos(Math.PI * (k / paso)) / 2;
+    d[i] = a + (b - a) * x;
+  }
+  return buf;
+}
+
+/* Curva de saturación suave. Redondea los picos en vez de recortarlos, que es
+   lo que hace una garganta forzada: ensucia sin chasquear. */
+function curvaDeSaturacion(cantidad) {
+  const n = 1024;
+  const curva = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const x = (i / (n - 1)) * 2 - 1;
+    curva[i] = Math.tanh(x * cantidad) / Math.tanh(cantidad);
+  }
+  return curva;
+}
+
+/* Un golpe de rugido. El rugido completo son varios: el largo y los gruñidos
+   con los que se apaga. */
+function pulsoDeRugido(ac, t0, dur, fInicio, fFin, vol) {
+  // --- Envolvente, con el temblor irregular sumado encima ---
+  const pulso = ac.createGain();
+  pulso.gain.setValueAtTime(0.0001, t0);
+  pulso.gain.exponentialRampToValueAtTime(vol, t0 + Math.min(0.1, dur * 0.2));
+  pulso.gain.setValueAtTime(vol, t0 + dur * 0.55);
+  pulso.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+
+  const temblor = ac.createBufferSource();
+  temblor.buffer = ruidoLento(ac, dur + 0.1, 26);
+  const temblorG = ac.createGain();
+  temblorG.gain.value = vol * 0.5;
+  temblor.connect(temblorG).connect(pulso.gain);
+
+  // --- Cuerdas vocales: el tono y su subarmónico, los dos cayendo ---
+  const mezcla = ac.createGain();
+  mezcla.gain.value = 1;
+
+  const voz = ac.createGain();
+  voz.gain.value = 0.4;
+
+  const cuerdas = [
+    { f: 1, nivel: 1 },      // el tono
+    { f: 0.5, nivel: 0.9 }   // el subarmónico: lo que suena a fiera y no a moto
+  ];
+  const osciladores = [];
+  for (const c of cuerdas) {
+    const o = ac.createOscillator();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(fInicio * c.f, t0);
+    o.frequency.exponentialRampToValueAtTime(fFin * c.f, t0 + dur);
+    // Desafinación aleatoria y lenta: sin esto vuelve a sonar a sintetizador
+    const jitter = ac.createBufferSource();
+    jitter.buffer = ruidoLento(ac, dur + 0.1, 11);
+    const jitterG = ac.createGain();
+    jitterG.gain.value = 55;   // centésimas de tono
+    jitter.connect(jitterG).connect(o.detune);
+    jitter.start(t0); jitter.stop(t0 + dur + 0.1);
+
+    const g = ac.createGain();
+    g.gain.value = c.nivel;
+    o.connect(g).connect(voz);
+    o.start(t0); o.stop(t0 + dur + 0.05);
+    osciladores.push(o);
+  }
+
+  const garganta = ac.createWaveShaper();
+  garganta.curve = curvaDeSaturacion(2.6);
+  voz.connect(garganta).connect(mezcla);
+
+  // --- Aliento: el ruido, que aquí pesa tanto como la voz ---
+  const aire = ac.createBufferSource();
+  aire.buffer = ruidoBlanco(ac, dur + 0.1);
+  const aireAlto = ac.createBiquadFilter();
+  aireAlto.type = 'highpass';
+  aireAlto.frequency.value = 170;
+  const aireBajo = ac.createBiquadFilter();
+  aireBajo.type = 'lowpass';
+  aireBajo.frequency.value = 1500;   // sin sibilancia: un león no silba
+  const aireG = ac.createGain();
+  aireG.gain.value = 0.5;
+  aire.connect(aireAlto).connect(aireBajo).connect(aireG).connect(mezcla);
+  aire.start(t0); aire.stop(t0 + dur + 0.1);
+
+  // --- Formantes fijos: la vocal "aaah" de una boca enorme ---
+  const formantes = [
+    { hz: 400, q: 3.2, nivel: 1 },
+    { hz: 950, q: 4.5, nivel: 0.3 }
+  ];
+  for (const f of formantes) {
+    const bp = ac.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = f.hz;
+    bp.Q.value = f.q;
+    const g = ac.createGain();
+    g.gain.value = f.nivel;
+    mezcla.connect(bp).connect(g).connect(pulso);
+  }
+  // El pecho: lo que se siente en el estómago y los formantes se dejan fuera
+  const pecho = ac.createBiquadFilter();
+  pecho.type = 'lowpass';
+  pecho.frequency.value = 210;
+  const pechoG = ac.createGain();
+  pechoG.gain.value = 1.1;
+  mezcla.connect(pecho).connect(pechoG).connect(pulso);
+
+  pulso.connect(ac.destination);
+  temblor.start(t0); temblor.stop(t0 + dur + 0.1);
+  return osciladores;
+}
+
+/* Rugido completo: el bramido largo y dos gruñidos con los que se apaga, que es
+   como termina de verdad — "roaaaar… uh, uh". */
 function playRoar() {
   if (!soundOn) return;
   const ac = ctx();
   const t = ac.currentTime;
-  const dur = 1.3;
-
-  const gain = ac.createGain();
-  gain.gain.setValueAtTime(0.0001, t);
-  gain.gain.exponentialRampToValueAtTime(0.23, t + 0.13);
-  gain.gain.setValueAtTime(0.23, t + dur * 0.58);
-  gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-
-  const osc = ac.createOscillator();
-  osc.type = 'sawtooth';
-  osc.frequency.setValueAtTime(70, t);
-  osc.frequency.linearRampToValueAtTime(138, t + 0.2);
-  osc.frequency.setValueAtTime(130, t + dur * 0.62);
-  osc.frequency.linearRampToValueAtTime(60, t + dur);
-
-  const sub = ac.createOscillator();
-  sub.type = 'sine';
-  sub.frequency.setValueAtTime(35, t);
-  sub.frequency.linearRampToValueAtTime(69, t + 0.2);
-  sub.frequency.linearRampToValueAtTime(30, t + dur);
-  const subG = ac.createGain();
-  subG.gain.value = 0.55;
-
-  const rasp = ac.createOscillator();
-  rasp.type = 'sine';
-  rasp.frequency.setValueAtTime(34, t);
-  rasp.frequency.linearRampToValueAtTime(21, t + dur);
-  const raspG = ac.createGain();
-  raspG.gain.value = 0.17;
-  rasp.connect(raspG).connect(gain.gain);
-
-  const bufferSize = Math.floor(ac.sampleRate * dur);
-  const buffer = ac.createBuffer(1, bufferSize, ac.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-  const noise = ac.createBufferSource();
-  noise.buffer = buffer;
-  const nFilter = ac.createBiquadFilter();
-  nFilter.type = 'bandpass';
-  nFilter.frequency.value = 430;
-  nFilter.Q.value = 0.8;
-  const nGain = ac.createGain();
-  nGain.gain.value = 0.24;
-
-  // La boca se abre al rugir y se cierra al acabar
-  const boca = ac.createBiquadFilter();
-  boca.type = 'lowpass';
-  boca.frequency.setValueAtTime(380, t);
-  boca.frequency.linearRampToValueAtTime(1150, t + 0.22);
-  boca.frequency.linearRampToValueAtTime(300, t + dur);
-
-  osc.connect(boca);
-  sub.connect(subG).connect(boca);
-  noise.connect(nFilter).connect(nGain).connect(boca);
-  boca.connect(gain).connect(ac.destination);
-
-  osc.start(t); sub.start(t); rasp.start(t); noise.start(t);
-  osc.stop(t + dur + 0.05); sub.stop(t + dur + 0.05); rasp.stop(t + dur + 0.05);
+  pulsoDeRugido(ac, t, 1.15, 125, 62, 0.15);
+  pulsoDeRugido(ac, t + 1.30, 0.26, 95, 58, 0.10);
+  pulsoDeRugido(ac, t + 1.63, 0.22, 86, 52, 0.07);
 }
 
 function playMeow() {

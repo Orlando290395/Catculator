@@ -271,11 +271,19 @@ const GUION_COMPORTAMIENTO = `(() => {
 
 /* Pruebas de audio. Van aparte porque hay que renderizar y eso es asíncrono.
 
-   No basta con comprobar que playRoar no revienta: un rugido que suene agudo
-   es un maullido con otro nombre. Así que se rinde en un OfflineAudioContext y
-   se mide la altura contando cruces por cero — cuantos menos cruces, más
-   grave. El maullido del gato ronda los 300-700 Hz; el rugido tiene que quedar
-   muy por debajo. */
+   No basta con comprobar que playRoar no revienta. Ya pasó dos veces que el
+   rugido corría sin errores y sonaba mal, así que aquí se mide lo que de
+   verdad falló:
+
+   - La altura, por cruces por cero. Un rugido agudo es un maullido con otro
+     nombre. El maullido del gato ronda los 600 Hz; el rugido va muy por debajo.
+   - El CENTROIDE ESPECTRAL a lo largo del bramido. Esta es la importante: la
+     primera versión sonaba a corneta porque el centroide subía un 33% durante
+     el ataque (149 → 198 Hz), que es literalmente cómo se sintetiza un metal.
+     Un animal quedándose sin aire hace lo contrario. Si alguien vuelve a meter
+     un pasabajos que barre hacia arriba, esta prueba lo caza.
+   - Que no haya dos rugidos iguales: la aspereza sale de ruido aleatorio, y si
+     alguien la cambia por un oscilador vuelve el trémolo de órgano. */
 const GUION_AUDIO = `(async () => {
   const r = [];
   const prueba = (nombre, obtenido, esperado) => r.push([nombre, obtenido, esperado]);
@@ -286,12 +294,14 @@ const GUION_AUDIO = `(async () => {
 
   // Se rinde el rugido cambiando el contexto vivo por uno offline
   const guardado = audioCtx;
-  const sr = 44100, segundos = 1.5;
+  const sr = 22050, segundos = 2.2;
   try {
-    audioCtx = new OfflineAudioContext(1, sr * segundos, sr);
-    playRoar();
-    const buf = await audioCtx.startRendering();
-    const d = buf.getChannelData(0);
+    const render = async () => {
+      audioCtx = new OfflineAudioContext(1, Math.floor(sr * segundos), sr);
+      playRoar();
+      return (await audioCtx.startRendering()).getChannelData(0);
+    };
+    const d = await render();
 
     let pico = 0, cruces = 0, suma = 0;
     for (let i = 1; i < d.length; i++) {
@@ -308,6 +318,41 @@ const GUION_AUDIO = `(async () => {
     prueba('el rugido tiene cuerpo', rms > 0.02, true);
     prueba('el rugido es grave', hz < 260, true);
     prueba('el rugido no es un zumbido', hz > 25, true);
+
+    // Centroide espectral: DFT ingenua sobre una ventana de Hann de 1024
+    const centroide = (desde) => {
+      const N = 1024;
+      let suma = 0, pesada = 0;
+      for (let k = 1; k < N / 2; k++) {
+        const f = k * sr / N;
+        if (f > 6000) break;
+        let a = 0, b = 0;
+        for (let n = 0; n < N; n++) {
+          const w = 0.5 - 0.5 * Math.cos(2 * Math.PI * n / (N - 1));
+          const x = (d[desde + n] || 0) * w;
+          const ang = -2 * Math.PI * k * n / N;
+          a += x * Math.cos(ang); b += x * Math.sin(ang);
+        }
+        const p = a * a + b * b;
+        suma += p; pesada += p * f;
+      }
+      return pesada / (suma || 1);
+    };
+    const cAtaque = centroide(Math.floor(0.05 * sr));
+    const cCuerpo = centroide(Math.floor(0.30 * sr));
+    const cFinal  = centroide(Math.floor(1.05 * sr));
+
+    prueba('el rugido no suena a corneta (el brillo no sube al atacar)', cCuerpo <= cAtaque, true);
+    prueba('el rugido se apaga hacia abajo', cFinal < cAtaque, true);
+    prueba('el rugido es oscuro', cAtaque < 400, true);
+
+    // La aspereza es ruido, no un oscilador: dos rugidos nunca salen iguales
+    const d2 = await render();
+    let iguales = true;
+    for (let i = 0; i < d.length; i += 97) {
+      if (Math.abs(d[i] - d2[i]) > 1e-9) { iguales = false; break; }
+    }
+    prueba('no hay dos rugidos iguales', iguales, false);
   } finally {
     audioCtx = guardado;
     applyFur('carbon');
