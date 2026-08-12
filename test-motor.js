@@ -269,6 +269,53 @@ const GUION_COMPORTAMIENTO = `(() => {
   return r;
 })()`;
 
+/* Pruebas de audio. Van aparte porque hay que renderizar y eso es asíncrono.
+
+   No basta con comprobar que playRoar no revienta: un rugido que suene agudo
+   es un maullido con otro nombre. Así que se rinde en un OfflineAudioContext y
+   se mide la altura contando cruces por cero — cuantos menos cruces, más
+   grave. El maullido del gato ronda los 300-700 Hz; el rugido tiene que quedar
+   muy por debajo. */
+const GUION_AUDIO = `(async () => {
+  const r = [];
+  const prueba = (nombre, obtenido, esperado) => r.push([nombre, obtenido, esperado]);
+
+  prueba('el león ruge', (applyFur('leon'), vozDeLaEspecie()), 'rugido');
+  prueba('el gato maúlla', (applyFur('carbon'), vozDeLaEspecie()), 'maullido');
+  prueba('los demás pelajes maúllan', (applyFur('blanco'), vozDeLaEspecie()), 'maullido');
+
+  // Se rinde el rugido cambiando el contexto vivo por uno offline
+  const guardado = audioCtx;
+  const sr = 44100, segundos = 1.5;
+  try {
+    audioCtx = new OfflineAudioContext(1, sr * segundos, sr);
+    playRoar();
+    const buf = await audioCtx.startRendering();
+    const d = buf.getChannelData(0);
+
+    let pico = 0, cruces = 0, suma = 0;
+    for (let i = 1; i < d.length; i++) {
+      const v = Math.abs(d[i]);
+      if (v > pico) pico = v;
+      suma += v * v;
+      if ((d[i - 1] < 0) !== (d[i] < 0)) cruces++;
+    }
+    const rms = Math.sqrt(suma / d.length);
+    const hz = (cruces / 2) / segundos;
+
+    prueba('el rugido suena', pico > 0.05, true);
+    prueba('el rugido no satura', pico <= 1, true);
+    prueba('el rugido tiene cuerpo', rms > 0.02, true);
+    prueba('el rugido es grave', hz < 260, true);
+    prueba('el rugido no es un zumbido', hz > 25, true);
+  } finally {
+    audioCtx = guardado;
+    applyFur('carbon');
+  }
+
+  return r;
+})()`;
+
 function comparar(obtenido, esperado) {
   if (typeof esperado === 'number' && typeof obtenido === 'number') {
     return Math.abs(obtenido - esperado) <= 1e-9 * Math.max(1, Math.abs(esperado));
@@ -311,6 +358,12 @@ app.whenReady().then(async () => {
     else { fallan++; fallos.push(`  ${nombre}  esperaba ${JSON.stringify(esperado)}  obtuvo ${JSON.stringify(obtenido)}`); }
   }
 
+  // --- Audio ---
+  const audio = await win.webContents.executeJavaScript(GUION_AUDIO);
+  for (const [nombre, obtenido, esperado] of audio) {
+    if (comparar(obtenido, esperado)) pasan++;
+    else { fallan++; fallos.push('  ' + nombre + '  esperaba ' + JSON.stringify(esperado) + '  obtuvo ' + JSON.stringify(obtenido)); }
+  }
   if (fallos.length) {
     console.log('\nFALLOS:');
     for (const f of fallos) console.log(f);

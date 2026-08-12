@@ -827,8 +827,92 @@ function playClick() {
   osc.stop(ac.currentTime + 0.07);
 }
 
+/* ---------- La voz depende de la especie ----------
+   Un león con maullido de gato rompe la ilusión igual que le pasaba a la cara.
+   Se saca a una función aparte, en vez de mirar el atributo dentro de
+   playMeow, para poder probarlo sin tener que escuchar nada. */
+function vozDeLaEspecie() {
+  return document.documentElement.getAttribute('data-fur') === 'leon' ? 'rugido' : 'maullido';
+}
+
+/* Rugido. No es un maullido grave: un león vive dos octavas más abajo y, sobre
+   todo, su voz es RUGOSA. Esa aspereza es lo que suena a fiera; sin ella queda
+   un gato con catarro. Se arma con cuatro capas:
+
+   - Cuerpo: diente de sierra que arranca en 70 Hz, salta a 135 al abrir la
+     boca y se desploma al final, que es el contorno de un rugido real.
+   - Pecho: un subarmónico una octava por debajo, en seno, para que se sienta
+     en el estómago y no solo en el oído.
+   - Rugosidad: un oscilador lento (34 → 22 Hz) sumado al volumen. Ahí está
+     todo el carácter; es el mismo truco del gruñido pero más hondo y lento.
+   - Aire: ruido filtrado en banda, que es el aliento saliendo. */
+function playRoar() {
+  if (!soundOn) return;
+  const ac = ctx();
+  const t = ac.currentTime;
+  const dur = 1.3;
+
+  const gain = ac.createGain();
+  gain.gain.setValueAtTime(0.0001, t);
+  gain.gain.exponentialRampToValueAtTime(0.23, t + 0.13);
+  gain.gain.setValueAtTime(0.23, t + dur * 0.58);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+
+  const osc = ac.createOscillator();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(70, t);
+  osc.frequency.linearRampToValueAtTime(138, t + 0.2);
+  osc.frequency.setValueAtTime(130, t + dur * 0.62);
+  osc.frequency.linearRampToValueAtTime(60, t + dur);
+
+  const sub = ac.createOscillator();
+  sub.type = 'sine';
+  sub.frequency.setValueAtTime(35, t);
+  sub.frequency.linearRampToValueAtTime(69, t + 0.2);
+  sub.frequency.linearRampToValueAtTime(30, t + dur);
+  const subG = ac.createGain();
+  subG.gain.value = 0.55;
+
+  const rasp = ac.createOscillator();
+  rasp.type = 'sine';
+  rasp.frequency.setValueAtTime(34, t);
+  rasp.frequency.linearRampToValueAtTime(21, t + dur);
+  const raspG = ac.createGain();
+  raspG.gain.value = 0.17;
+  rasp.connect(raspG).connect(gain.gain);
+
+  const bufferSize = Math.floor(ac.sampleRate * dur);
+  const buffer = ac.createBuffer(1, bufferSize, ac.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+  const noise = ac.createBufferSource();
+  noise.buffer = buffer;
+  const nFilter = ac.createBiquadFilter();
+  nFilter.type = 'bandpass';
+  nFilter.frequency.value = 430;
+  nFilter.Q.value = 0.8;
+  const nGain = ac.createGain();
+  nGain.gain.value = 0.24;
+
+  // La boca se abre al rugir y se cierra al acabar
+  const boca = ac.createBiquadFilter();
+  boca.type = 'lowpass';
+  boca.frequency.setValueAtTime(380, t);
+  boca.frequency.linearRampToValueAtTime(1150, t + 0.22);
+  boca.frequency.linearRampToValueAtTime(300, t + dur);
+
+  osc.connect(boca);
+  sub.connect(subG).connect(boca);
+  noise.connect(nFilter).connect(nGain).connect(boca);
+  boca.connect(gain).connect(ac.destination);
+
+  osc.start(t); sub.start(t); rasp.start(t); noise.start(t);
+  osc.stop(t + dur + 0.05); sub.stop(t + dur + 0.05); rasp.stop(t + dur + 0.05);
+}
+
 function playMeow() {
   if (!soundOn) return;
+  if (vozDeLaEspecie() === 'rugido') { playRoar(); return; }
   const ac = ctx();
   const t = ac.currentTime;
   // Cada maullido sale un poco distinto: tono y duración aleatorios
