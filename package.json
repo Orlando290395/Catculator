@@ -1,7 +1,7 @@
 {
   "name": "catculator",
   "productName": "Catculator",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "description": "La calculadora con temática de gatos 🐱",
   "author": "Catculator",
   "license": "MIT",
@@ -10,14 +10,15 @@
     "start": "electron .",
     "test": "electron test-motor.js",
     "icon": "node build-icon.js",
-    "dist": "electron-builder --win",
+    "dist": "node build-win.js",
     "dist:store": "electron-builder --config microsoft-store/electron-builder.yml",
     "icon:store": "node microsoft-store/build-iconos.js",
     "pwa": "node build-pwa.js",
     "capturas": "electron build-capturas.js",
     "capturas:en": "electron build-capturas.js en",
     "capturas:store": "electron microsoft-store/build-capturas.js",
-    "capturas:store:en": "electron microsoft-store/build-capturas.js en"
+    "capturas:store:en": "electron microsoft-store/build-capturas.js en",
+    "dist:enbruto": "electron-builder --win"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.4.2",
@@ -38,7 +39,9 @@
       "idiomas.js",
       "manifest.json",
       "sw.js",
+      "sonidos/**",
       "icons/**",
+      "!node_modules/@capacitor/**",
       "icon.ico",
       "icon.png"
     ],

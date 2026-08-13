@@ -14,6 +14,10 @@ const FILES = [
   'manifest.json',
   'sw.js',
   'privacidad.html',   // Play Store exige politica de privacidad con URL publica
+  'sonidos/rugido-leon.wav',
+  'sonidos/rugido-tigre.wav',
+  'sonidos/rugido-leopardo.wav',
+  'sonidos/rugido-jaguar.wav',
   'icons/icon-192.png',
   'icons/icon-512.png',
   'icons/icon-maskable-512.png',

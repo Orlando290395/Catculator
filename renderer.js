@@ -808,8 +808,23 @@ let soundOn = store.get('catculator-sound') !== 'off';
 let audioCtx = null;
 
 function ctx() {
+  const recienNacido = !audioCtx;
   if (!audioCtx) audioCtx = new AudioContext();
-  if (audioCtx.state === 'suspended') audioCtx.resume();
+  /* Solo se reanuda un contexto vivo. Las pruebas cambian audioCtx por uno
+     offline, y a ese resume() le sienta fatal: lanza InvalidStateError sin que
+     nadie lo recoja. Se distingue por startRendering, que solo tiene el
+     offline. Y el promise se atrapa: si el navegador se niega a arrancar el
+     audio, no es motivo para ensuciar la consola. */
+  if (typeof audioCtx.startRendering !== 'function' && audioCtx.state === 'suspended') {
+    const p = audioCtx.resume();
+    if (p && p.catch) p.catch(() => {});
+  }
+  /* En cuanto hay contexto se decodifica lo que estuviera esperando. Sin esto
+     el primer rugido siempre saldría sintetizado —justo el que se oye al
+     elegir el pelaje, que es el peor momento para enseñar el plan B—. */
+  if (recienNacido && typeof decodificarRugido === 'function') {
+    for (const especie of Object.keys(rugidoBytes)) decodificarRugido(especie);
+  }
   return audioCtx;
 }
 
@@ -831,209 +846,437 @@ function playClick() {
    Un león con maullido de gato rompe la ilusión igual que le pasaba a la cara.
    Se saca a una función aparte, en vez de mirar el atributo dentro de
    playMeow, para poder probarlo sin tener que escuchar nada. */
-const RUGEN = ['leon', 'tigre'];
+/* Solo cuatro felinos en el mundo rugen —león, tigre, leopardo y jaguar— y es
+   por una razón anatómica: tienen el hioides sin osificar del todo. Los demás
+   no pueden, por grandes que sean. Así que esta lista no es una simplificación
+   para la app: es la lista real, y por eso el guepardo y el leopardo de las
+   nieves tienen voz propia en vez de rugido.
+
+   El guepardo pía como un pájaro (chirrido) y el leopardo de las nieves
+   resopla (prusten, el bufido amistoso que también hacen los tigres). */
+const RUGEN = ['leon', 'tigre', 'leopardo', 'jaguar'];
+const VOZ_PROPIA = { guepardo: 'chirrido', nieves: 'prusten' };
 function vozDeLaEspecie() {
-  return RUGEN.includes(document.documentElement.getAttribute('data-fur')) ? 'rugido' : 'maullido';
+  const pelaje = document.documentElement.getAttribute('data-fur');
+  if (RUGEN.includes(pelaje)) return 'rugido';
+  return VOZ_PROPIA[pelaje] || 'maullido';
 }
 
 /* ---------- El rugido ----------
-   La primera versión sonaba a corneta, y con razón: diente de sierra + filtro
-   pasabajos que se abre + tono que SUBE es, palabra por palabra, la receta con
-   la que se sintetiza un metal. Tres ingredientes, los tres equivocados.
+   Cuarta versión, y la primera que cambia de objetivo en vez de cambiar de
+   parámetros.
 
-   Un rugido de verdad va al revés:
+   Las tres anteriores fueron intentos de rugido realista: fuente glotal
+   escrita ciclo a ciclo, formantes de tracto de león, turbulencia acoplada,
+   reverberación, roturas de voz. Cada una medía mejor que la anterior y las
+   tres sonaron mal. El error no estaba en los números: estaba en la meta.
 
-   - El tono BAJA. El león suelta el aire de golpe y se le va acabando.
-   - La boca no se mueve: queda abierta en "aaah". Lo que suena a garganta y no
-     a instrumento son FORMANTES FIJOS — dos pasabanda quietos, siempre en la
-     misma frecuencia. Un pasabajos que barre suena a metal; unos formantes
-     quietos suenan a bicho.
-   - La aspereza es IRREGULAR. Un seno modulando el volumen da trémolo de
-     órgano, que es justo lo que se oía. Aquí la modulación es ruido lento, que
-     tiembla sin repetirse nunca, más un subarmónico a mitad de tono: eso
-     último es la firma acústica de los felinos grandes, que rugen con las
-     cuerdas vocales en caos, no vibrando limpio.
-   - Y manda el aire, no el oscilador. Un rugido es sobre todo ruido.
+   Catculator es un gato de vectores con bocadillo de diálogo. Todos sus
+   sonidos son síntesis simple y corta: el clic son 60 ms de seno, el
+   ronroneo un diente de sierra a 42 Hz, el bufido ruido pasado por un
+   pasaaltos. Y el maullido —el único que nunca ha dado problemas— son dos
+   pasabanda barriendo sobre una sierra, catorce líneas. Un rugido de
+   documental metido en esa familia suena a intruso aunque sea acústicamente
+   impecable: no desentona por malo, desentona por ajeno.
 
-   Efecto secundario buscado: como el temblor es aleatorio, no hay dos rugidos
-   iguales. Hay una prueba que lo comprueba. */
+   Así que este rugido es el maullido con dos octavas menos y peor carácter.
+   Mismo motor —sierra más dos formantes que se cierran—, mismos modales,
+   misma duración corta. No es un león de verdad: es el gato de la app
+   poniéndose serio, que es lo que la app pide.
 
-/* Ruido blanco crudo: el aliento. */
-function ruidoBlanco(ac, segundos) {
-  const n = Math.max(1, Math.floor(ac.sampleRate * segundos));
+   Lo único que se hereda de las versiones realistas es lo que se aprendió
+   sufriendo, y son tres reglas, no tres mil parámetros:
+
+   - El tono BAJA. Un tono que sube es un instrumento de viento (así sonaba
+     la primera versión: a corneta).
+   - Nada de moduladores regulares gordos. Un LFO de volumen a 26 Hz es un
+     motor y uno de altura a 11 Hz es un balido de cabra. El vibrato se queda
+     donde lo tiene el maullido: lento y de puntillas.
+   - El subarmónico, flojo. Con el grave al mismo nivel que el tono, lo que
+     se oye no es aspereza sino la nota una octava más abajo. Medido en la
+     versión que se tiró: el código decía 125 Hz y sonaba a 50.
+
+   El motor realista está en el historial de git por si algún día se quiere
+   volver, pero volver no es el plan. */
+
+/* Un golpe de rugido: el maullido, transportado y con la boca cerrándose.
+   Devuelve nada; el guion lo lleva playRoar. */
+function golpeDeRugido(ac, destino, t0, r) {
+  const fin = t0 + r.dur;
+
+  /* --- La voz --- */
+  const voz = ac.createGain();
+  voz.gain.value = 1;
+
+  /* La sierra principal, y otra una octava abajo para el peso. Muy floja: al
+     0,3 la forma de onda ya es periódica en el grave y el tono percibido se
+     cae la octava —medido, 86 Hz teniendo 172—, que es el fallo que se llevó
+     por delante la primera versión. */
+  for (const [octava, nivel] of [[1, 1], [0.5, 0.14]]) {
+    const osc = ac.createOscillator();
+    osc.type = 'sawtooth';
+    // Empuja, se sostiene y se derrumba. El maullido sube al final; esto no
+    osc.frequency.setValueAtTime(r.hz[0] * octava, t0);
+    osc.frequency.linearRampToValueAtTime(r.hz[1] * octava, t0 + r.dur * 0.14);
+    osc.frequency.setValueAtTime(r.hz[1] * octava, t0 + r.dur * 0.55);
+    osc.frequency.linearRampToValueAtTime(r.hz[2] * octava, fin);
+
+    // Vibrato lento y de puntillas, como el del maullido
+    const vib = ac.createOscillator();
+    vib.type = 'sine';
+    vib.frequency.value = 5.2;
+    const vibG = ac.createGain();
+    vibG.gain.value = 22;            // centésimas de tono
+    vib.connect(vibG).connect(osc.detune);
+
+    const g = ac.createGain();
+    g.gain.value = nivel;
+    osc.connect(g).connect(voz);
+    osc.start(t0); vib.start(t0);
+    osc.stop(fin + 0.05); vib.stop(fin + 0.05);
+  }
+
+  /* --- El aire, que es lo que separa un gruñido de una nota ---
+     Va por la misma boca que la voz: por eso se conecta antes de los
+     formantes y no directamente a la salida. */
+  const aire = ac.createBufferSource();
+  const n = Math.floor(ac.sampleRate * (r.dur + 0.05));
   const buf = ac.createBuffer(1, n, ac.sampleRate);
   const d = buf.getChannelData(0);
   for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
-  return buf;
-}
-
-/* Ruido lento entre -1 y 1: valores nuevos `hz` veces por segundo, unidos con
-   una interpolación de coseno para que no queden esquinas (una esquina se oye
-   como un clic). Sirve de modulador; es un LFO que nunca se repite. */
-function ruidoLento(ac, segundos, hz) {
-  const n = Math.max(2, Math.floor(ac.sampleRate * segundos));
-  const buf = ac.createBuffer(1, n, ac.sampleRate);
-  const d = buf.getChannelData(0);
-  const paso = Math.max(1, Math.floor(ac.sampleRate / hz));
-  let a = Math.random() * 2 - 1;
-  let b = Math.random() * 2 - 1;
-  for (let i = 0; i < n; i++) {
-    const k = i % paso;
-    if (k === 0) { a = b; b = Math.random() * 2 - 1; }
-    const x = 0.5 - Math.cos(Math.PI * (k / paso)) / 2;
-    d[i] = a + (b - a) * x;
-  }
-  return buf;
-}
-
-/* Curva de saturación suave. Redondea los picos en vez de recortarlos, que es
-   lo que hace una garganta forzada: ensucia sin chasquear. */
-function curvaDeSaturacion(cantidad) {
-  const n = 1024;
-  const curva = new Float32Array(n);
-  for (let i = 0; i < n; i++) {
-    const x = (i / (n - 1)) * 2 - 1;
-    curva[i] = Math.tanh(x * cantidad) / Math.tanh(cantidad);
-  }
-  return curva;
-}
-
-/* Un golpe de rugido. El rugido completo son varios: el largo y los gruñidos
-   con los que se apaga.
-
-   Segunda corrección, por medición: la versión anterior metía el 96% de su
-   energía por debajo de 200 Hz. Sobre el papel era un rugido gravísimo; en la
-   práctica ningún altavoz de teléfono ni de portátil baja de ahí, así que del
-   rugido se oía la sobra. Un león de verdad reparte hasta los 2 kHz — esa es
-   la textura desgarrada — y el oído reconstruye el tono grave a partir de los
-   armónicos aunque el fundamental no llegue a sonar.
-
-   Así que el pecho deja de mandar y entran tres formantes repartidos. Siguen
-   siendo FIJOS, que es lo que separa una garganta de una corneta. */
-function pulsoDeRugido(ac, t0, dur, fInicio, fFin, vol) {
-  // --- Cuerdas vocales: el tono y su subarmónico, los dos cayendo ---
-  const mezcla = ac.createGain();
-  mezcla.gain.value = 1;
-
-  const voz = ac.createGain();
-  voz.gain.value = 0.45;
-
-  const cuerdas = [
-    { f: 1, nivel: 1 },      // el tono
-    { f: 0.5, nivel: 0.9 }   // el subarmónico: lo que suena a fiera y no a moto
-  ];
-  for (const c of cuerdas) {
-    const o = ac.createOscillator();
-    o.type = 'sawtooth';
-    o.frequency.setValueAtTime(fInicio * c.f, t0);
-    o.frequency.exponentialRampToValueAtTime(fFin * c.f, t0 + dur);
-    // Desafinación aleatoria y lenta: sin esto vuelve a sonar a sintetizador
-    const jitter = ac.createBufferSource();
-    jitter.buffer = ruidoLento(ac, dur + 0.1, 11);
-    const jitterG = ac.createGain();
-    jitterG.gain.value = 55;   // centésimas de tono
-    jitter.connect(jitterG).connect(o.detune);
-    jitter.start(t0); jitter.stop(t0 + dur + 0.1);
-
-    const g = ac.createGain();
-    g.gain.value = c.nivel;
-    o.connect(g).connect(voz);
-    o.start(t0); o.stop(t0 + dur + 0.05);
-  }
-
-  const garganta = ac.createWaveShaper();
-  garganta.curve = curvaDeSaturacion(4.2);
-  voz.connect(garganta).connect(mezcla);
-
-  // --- Aliento: el ruido, que aquí pesa tanto como la voz ---
-  const aire = ac.createBufferSource();
-  aire.buffer = ruidoBlanco(ac, dur + 0.1);
-  const aireAlto = ac.createBiquadFilter();
-  aireAlto.type = 'highpass';
-  aireAlto.frequency.value = 200;
-  const aireBajo = ac.createBiquadFilter();
-  aireBajo.type = 'lowpass';
-  aireBajo.frequency.value = 3000;   // hasta aquí llega el desgarro; más arriba silba
+  aire.buffer = buf;
   const aireG = ac.createGain();
-  aireG.gain.value = 0.55;
-  aire.connect(aireAlto).connect(aireBajo).connect(aireG).connect(mezcla);
-  aire.start(t0); aire.stop(t0 + dur + 0.1);
+  aireG.gain.value = r.aire;
+  aire.connect(aireG).connect(voz);
+  aire.start(t0); aire.stop(fin + 0.05);
 
-  /* --- El temblor, MULTIPLICANDO ---
-     Antes se sumaba a la envolvente, y una suma no se apaga cuando la
-     envolvente cierra: quedaba un zumbido audible antes del ataque (medido:
-     19% de la energía del bramido) y la ganancia llegaba a cruzar a negativo,
-     invirtiendo la fase. Multiplicando, el temblor nace y muere con el golpe. */
-  const tremolo = ac.createGain();
-  tremolo.gain.value = 1;
-  const temblor = ac.createBufferSource();
-  temblor.buffer = ruidoLento(ac, dur + 0.1, 26);
-  const temblorG = ac.createGain();
-  temblorG.gain.value = 0.45;
-  temblor.connect(temblorG).connect(tremolo.gain);
-  temblor.start(t0); temblor.stop(t0 + dur + 0.1);
+  /* --- El énfasis ---
+     Una sierra cae 6 dB por octava, así que a esta altura de tono los
+     formantes se quedan sin material y todo se apelotona abajo: medido sin
+     esto, el 74% de la energía entre 100 y 200 Hz y un 3% por encima de 800.
+     Un zumbido tapado. El maullido no lo necesita porque vive dos octavas
+     más arriba; aquí sí. */
+  const enfasis = ac.createBiquadFilter();
+  enfasis.type = 'highshelf';
+  enfasis.frequency.value = 500;
+  enfasis.gain.value = 14;
+  voz.connect(enfasis);
 
-  // --- Envolvente ---
-  const pulso = ac.createGain();
-  pulso.gain.setValueAtTime(0.0001, t0);
-  pulso.gain.exponentialRampToValueAtTime(vol, t0 + Math.min(0.1, dur * 0.2));
-  pulso.gain.setValueAtTime(vol, t0 + dur * 0.55);
-  pulso.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  /* --- La boca: dos formantes que se cierran ---
+     Igual que en el maullido, pero más abajo y más lento. Que se muevan es
+     lo que da la sensación de mandíbula; que se cierren (y no que se abran)
+     es lo que evita que suene a metal. */
+  const f1 = ac.createBiquadFilter();
+  f1.type = 'bandpass'; f1.Q.value = 4;
+  f1.frequency.setValueAtTime(r.boca[0], t0);
+  f1.frequency.linearRampToValueAtTime(r.boca[1], fin);
+  const f2 = ac.createBiquadFilter();
+  f2.type = 'bandpass'; f2.Q.value = 5;
+  f2.frequency.setValueAtTime(r.boca[2], t0);
+  f2.frequency.linearRampToValueAtTime(r.boca[3], fin);
+  // Y el cuerpo grave directo, como el f0 del maullido. Va sin énfasis y con
+  // poco nivel: es el peso del bicho, no el sonido
+  const cuerpo = ac.createBiquadFilter();
+  cuerpo.type = 'lowpass';
+  cuerpo.frequency.value = 230;
 
-  /* --- Formantes fijos: la vocal "aaah" de una boca enorme ---
-     Tres, repartidos, para que el sonido exista fuera del rango que un altavoz
-     pequeño no puede dar. El pecho se queda, pero de acompañante. */
-  /* Antes de los formantes hay que quitar el fundamental de en medio. Un
-     pasabanda de Q bajo cae solo 6 dB por octava, así que el tono grave, que
-     es diez veces más fuerte que sus armónicos, se colaba por los tres y
-     seguía mandando: 82% de la energía bajo 200 Hz. Dos pasaaltos en cascada
-     (24 dB/octava) lo dejan fuera y los formantes por fin filtran lo suyo. */
-  const sinGraves = ac.createBiquadFilter();
-  sinGraves.type = 'highpass';
-  sinGraves.frequency.value = 190;
-  const sinGraves2 = ac.createBiquadFilter();
-  sinGraves2.type = 'highpass';
-  sinGraves2.frequency.value = 190;
-  mezcla.connect(sinGraves).connect(sinGraves2);
+  const env = ac.createGain();
+  env.gain.setValueAtTime(0.0001, t0);
+  env.gain.exponentialRampToValueAtTime(r.vol, t0 + Math.min(0.05, r.dur * 0.12));
+  env.gain.setValueAtTime(r.vol, t0 + r.dur * 0.6);
+  env.gain.linearRampToValueAtTime(r.vol * 0.45, t0 + r.dur * 0.9);
+  env.gain.exponentialRampToValueAtTime(0.0001, fin);
 
-  const formantes = [
-    { hz: 400, q: 2.5, nivel: 1.7 },
-    { hz: 900, q: 3, nivel: 1.3 },
-    { hz: 1900, q: 3.5, nivel: 0.7 }
-  ];
-  for (const f of formantes) {
-    const bp = ac.createBiquadFilter();
-    bp.type = 'bandpass';
-    bp.frequency.value = f.hz;
-    bp.Q.value = f.q;
-    const g = ac.createGain();
-    g.gain.value = f.nivel;
-    sinGraves2.connect(bp).connect(g).connect(tremolo);
-  }
-  const pecho = ac.createBiquadFilter();
-  pecho.type = 'lowpass';
-  pecho.frequency.value = 210;
-  const pechoG = ac.createGain();
-  pechoG.gain.value = 0.3;
-  mezcla.connect(pecho).connect(pechoG).connect(tremolo);
-
-  tremolo.connect(pulso).connect(ac.destination);
+  const g1 = ac.createGain(); g1.gain.value = 1.0;
+  const g2 = ac.createGain(); g2.gain.value = 0.7;
+  const g0 = ac.createGain(); g0.gain.value = 0.22;
+  enfasis.connect(f1).connect(g1).connect(env);
+  enfasis.connect(f2).connect(g2).connect(env);
+  voz.connect(cuerpo).connect(g0).connect(env);
+  env.connect(destino);
 }
 
-/* Rugido completo: el bramido largo y dos gruñidos con los que se apaga, que es
-   como termina de verdad — "roaaaar… uh, uh". */
-function playRoar() {
+/* Las dos voces. El león suelta el bramido y lo remata con un gruñido; el
+   tigre va más grave, más corto y más sucio. Duraciones cortas a propósito:
+   ningún otro sonido de la app pasa del segundo. */
+const RUGIDOS = {
+  leon: {
+    aire: 0.10,
+    golpes: [
+      { t: 0.05, dur: 0.95, hz: [150, 172, 96], boca: [700, 430, 1650, 980], vol: 0.14 },
+      { t: 1.12, dur: 0.28, hz: [120, 128, 78], boca: [620, 390, 1480, 880], vol: 0.08 }
+    ]
+  },
+  tigre: {
+    aire: 0.16,
+    golpes: [
+      { t: 0.05, dur: 0.62, hz: [118, 132, 74], boca: [620, 380, 1450, 880], vol: 0.15 },
+      { t: 0.76, dur: 0.19, hz: [100, 106, 66], boca: [560, 350, 1330, 800], vol: 0.07 }
+    ]
+  },
+  /* El leopardo y el jaguar también necesitan receta, aunque casi nunca suene:
+     sin ella caían en la del león por el `|| RUGIDOS.leon` de abajo, y los dos
+     sonaban exactamente igual que él —medido, mismo F0 y mismo espectro—. Un
+     plan B que suplanta a otro animal es peor que un plan B feo. */
+  leopardo: {
+    aire: 0.12,
+    golpes: [
+      { t: 0.05, dur: 0.70, hz: [176, 198, 116], boca: [760, 470, 1800, 1080], vol: 0.15 },
+      { t: 0.84, dur: 0.22, hz: [148, 156, 98], boca: [700, 430, 1650, 990], vol: 0.08 }
+    ]
+  },
+  jaguar: {
+    aire: 0.14,
+    golpes: [
+      { t: 0.05, dur: 0.80, hz: [128, 144, 82], boca: [660, 400, 1540, 930], vol: 0.16 },
+      { t: 0.96, dur: 0.24, hz: [110, 116, 72], boca: [600, 370, 1420, 850], vol: 0.08 }
+    ]
+  }
+};
+
+/* Devuelve el guion que acaba de programar —[{t, dur}]— para que las pruebas
+   midan los huecos donde de verdad están y no en tiempos copiados a mano que
+   se quedan viejos al primer retoque. */
+function rugidoSintetizado(especie) {
+  if (!soundOn) return [];
+  const ac = ctx();
+  const t = ac.currentTime;
+  const r = RUGIDOS[especie || document.documentElement.getAttribute('data-fur')] || RUGIDOS.leon;
+
+  const bus = ac.createGain();
+  bus.gain.value = 1;
+  bus.connect(ac.destination);
+
+  return r.golpes.map(golpe => {
+    golpeDeRugido(ac, bus, t + golpe.t, Object.assign({ aire: r.aire }, golpe));
+    return { t: golpe.t, dur: golpe.dur };
+  });
+}
+
+/* ---------- El rugido grabado ----------
+   Después de cuatro motores de síntesis —realista, con gesto, y el simple que
+   hay arriba— el veredicto seguía siendo el mismo: mejor, pero no suena a un
+   león. Así que el rugido, y solo el rugido, sale de una grabación. El
+   maullido, el ronroneo, el bufido y el clic siguen sintetizados: ninguno de
+   ellos tenía problema.
+
+   Las dos grabaciones son de felinos de verdad y ninguna obliga a atribuir,
+   que para una app publicada en dos tiendas es lo que importa:
+
+   - león: dominio público, grabado en un zoológico de Tamil Nadu.
+   - tigre: CC0, de Freesound vía Wikimedia Commons.
+
+   La procedencia completa está en CREDITOS.md. Ambas van a 16 kHz mono, que
+   no pierde nada: se midió que ninguna tiene energía por encima de 8 kHz.
+
+   La síntesis se queda de plan B. No es paranoia: el archivo puede no estar
+   (una compilación que se olvide de copiarlo), puede llegar corrupto, o puede
+   no haber terminado de cargar cuando el usuario pulsa. En cualquiera de esos
+   casos el gato ruge igual, peor pero ruge. */
+const RUGIDOS_GRABADOS = {
+  leon: 'sonidos/rugido-leon.wav',
+  tigre: 'sonidos/rugido-tigre.wav',
+  leopardo: 'sonidos/rugido-leopardo.wav',
+  jaguar: 'sonidos/rugido-jaguar.wav'
+};
+const rugidoBytes = {};        // especie -> ArrayBuffer del archivo, sin decodificar
+const rugidoListo = {};        // especie -> AudioBuffer ya decodificado
+const rugidoEnVuelo = {};      // especie -> promesa de la descarga
+const rugidoPreparando = {};   // especie -> promesa de "descargado Y decodificado"
+
+/* Descarga y punto: NO decodifica. Decodificar exige un AudioContext vivo, y
+   esto corre al elegir pelaje —o sea, al arrancar la app, antes de que el
+   usuario haya tocado nada—. Crear ahí un AudioContext es buscarse problemas:
+   en una máquina sin salida de audio se queda colgado, y con las políticas de
+   autoarranque del navegador nace suspendido de todas formas. Así que los
+   bytes se guardan crudos y se decodifican en el primer rugido, que por
+   definición viene de un clic. */
+function cargarRugido(especie) {
+  if (!RUGIDOS_GRABADOS[especie] || rugidoBytes[especie] || rugidoEnVuelo[especie]) return;
+  rugidoEnVuelo[especie] = fetch(RUGIDOS_GRABADOS[especie])
+    .then(res => (res.ok ? res.arrayBuffer() : Promise.reject(new Error(res.status))))
+    .then(bytes => {
+      rugidoBytes[especie] = bytes;
+      // Si ya hay contexto —o sea, si ya sonó algo— no hay por qué esperar
+      if (audioCtx) decodificarRugido(especie);
+    })
+    .catch(() => { /* sin ruido: para eso está el plan B */ });
+}
+
+/* Deja la grabación lista para sonar y dice si lo consiguió. Decodificar
+   consume el ArrayBuffer, así que se saca de rugidoBytes al entrar: si no, un
+   segundo intento trabajaría sobre un buffer ya vaciado y fallaría en silencio.
+   Necesita un AudioContext, o sea que solo se llama desde un gesto del usuario. */
+function prepararRugido(especie) {
+  if (rugidoListo[especie]) return Promise.resolve(true);
+  if (!RUGIDOS_GRABADOS[especie]) return Promise.resolve(false);
+  /* La promesa se guarda y se comparte. Sin esto, dos llamadas seguidas se
+     pisan: la primera se lleva los bytes para decodificarlos y la segunda,
+     al no encontrarlos, contesta "no hay grabación" y manda al plan B. Pasa
+     con dos clics rápidos, que no es un caso raro. */
+  if (rugidoPreparando[especie]) return rugidoPreparando[especie];
+  cargarRugido(especie);
+  rugidoPreparando[especie] = (rugidoEnVuelo[especie] || Promise.resolve()).then(() => {
+    if (rugidoListo[especie]) return true;
+    const bytes = rugidoBytes[especie];
+    if (!bytes) return false;
+    delete rugidoBytes[especie];
+    return ctx().decodeAudioData(bytes)
+      .then(buf => { rugidoListo[especie] = buf; return true; })
+      .catch(() => false);
+  });
+  return rugidoPreparando[especie];
+}
+// Se conserva el nombre viejo: ctx() lo llama al nacer para adelantar trabajo
+function decodificarRugido(especie) { prepararRugido(especie); }
+
+function sonarGrabacion(especie) {
+  const ac = ctx();
+  const src = ac.createBufferSource();
+  src.buffer = rugidoListo[especie];
+  const g = ac.createGain();
+  g.gain.value = 0.9;
+  src.connect(g).connect(ac.destination);
+  src.start(ac.currentTime);
+}
+
+function playRoar(especie) {
+  if (!soundOn) return [];
+  const cual = especie || document.documentElement.getAttribute('data-fur');
+
+  if (rugidoListo[cual]) {
+    sonarGrabacion(cual);
+    return [{ t: 0, dur: rugidoListo[cual].duration, grabado: true }];
+  }
+  if (!RUGIDOS_GRABADOS[cual]) return rugidoSintetizado(especie);
+
+  /* Hay grabación pero todavía no está lista. Antes se tiraba del plan B en el
+     acto, y por eso el PRIMER rugido de cada felino —justo el de estrenarlo,
+     que es el que más se oye— sonaba distinto de todos los demás: elegir el
+     pelaje arranca la descarga y el sonido salía en el mismo suspiro, sin
+     tiempo de que llegara nada.
+
+     Ahora se le da un respiro. Es un archivo local: tarda unos 20 ms, y 300 de
+     margen no se notan al pulsar. Si tarda más o falla, entonces sí suena el
+     sintetizado, que para eso está: lo que no puede pasar es quedarse mudo. */
+  let resuelto = false;
+  const plazo = setTimeout(() => {
+    if (resuelto) return;
+    resuelto = true;
+    rugidoSintetizado(especie);
+  }, 300);
+
+  prepararRugido(cual).then(listo => {
+    if (resuelto) return;
+    resuelto = true;
+    clearTimeout(plazo);
+    if (listo) sonarGrabacion(cual);
+    else rugidoSintetizado(especie);
+  });
+  return [{ t: 0, dur: 0, esperando: true }];
+}
+
+/* ---------- El chirrido del guepardo ----------
+   Suena a pájaro, y no es una licencia: el guepardo pía de verdad, con un
+   sonido que la gente confunde con un ave si no ve al animal. Esto sí sale
+   bien sintetizado —al revés que el rugido— porque es corto, agudo y casi un
+   tono puro: justo lo que un oscilador hace de sobra.
+
+   Son tres píos con una subida y bajada rápida de tono. La aleatoriedad no es
+   adorno: tres píos idénticos suenan a alarma de microondas. */
+function playChirrido() {
+  if (!soundOn) return;
+  const ac = ctx();
+  const t0 = ac.currentTime;
+  const cuantos = 2 + Math.floor(Math.random() * 2);
+  for (let i = 0; i < cuantos; i++) {
+    const t = t0 + i * (0.135 + Math.random() * 0.05);
+    const dur = 0.075 + Math.random() * 0.03;
+    const base = 1150 + Math.random() * 350;
+
+    const osc = ac.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(base * 0.72, t);
+    osc.frequency.exponentialRampToValueAtTime(base * 1.5, t + dur * 0.35);
+    osc.frequency.exponentialRampToValueAtTime(base * 0.9, t + dur);
+
+    // Un poco de sierra por encima: el pío del guepardo no es un seno limpio
+    const aspero = ac.createOscillator();
+    aspero.type = 'sawtooth';
+    aspero.frequency.setValueAtTime(base * 0.72, t);
+    aspero.frequency.exponentialRampToValueAtTime(base * 1.5, t + dur * 0.35);
+    aspero.frequency.exponentialRampToValueAtTime(base * 0.9, t + dur);
+    const asperoG = ac.createGain();
+    asperoG.gain.value = 0.18;
+
+    const boca = ac.createBiquadFilter();
+    boca.type = 'bandpass';
+    boca.frequency.value = base * 1.35;
+    boca.Q.value = 2.2;
+
+    const env = ac.createGain();
+    env.gain.setValueAtTime(0.0001, t);
+    env.gain.exponentialRampToValueAtTime(0.11, t + 0.012);
+    env.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+
+    osc.connect(boca);
+    aspero.connect(asperoG).connect(boca);
+    boca.connect(env).connect(ac.destination);
+    osc.start(t); aspero.start(t);
+    osc.stop(t + dur + 0.02); aspero.stop(t + dur + 0.02);
+  }
+}
+
+/* ---------- El prusten del leopardo de las nieves ----------
+   El resoplido amistoso: aire soltado por la nariz en ráfagas rápidas, sin
+   voz. Es puro ruido pulsado, así que aquí un modulador regular sí vale —lo
+   que en el rugido sonaba a motor, aquí ES el sonido—. La diferencia está en
+   que no hay ningún oscilador debajo: si lo hubiera, volvería a sonar a
+   máquina. */
+function playPrusten() {
   if (!soundOn) return;
   const ac = ctx();
   const t = ac.currentTime;
-  pulsoDeRugido(ac, t, 1.15, 125, 62, 0.16);
-  pulsoDeRugido(ac, t + 1.30, 0.26, 95, 58, 0.11);
-  pulsoDeRugido(ac, t + 1.63, 0.22, 86, 52, 0.075);
+  const dur = 0.5;
+  const sr = ac.sampleRate;
+  const n = Math.floor(sr * dur);
+  const buf = ac.createBuffer(1, n, sr);
+  const d = buf.getChannelData(0);
+  const pulsos = 20;                       // ráfagas por segundo
+  for (let i = 0; i < n; i++) {
+    const fase = (i / sr) * pulsos % 1;
+    // Cada ráfaga: sube de golpe y se apaga; entre ráfaga y ráfaga no hay cero
+    const sobre = 0.25 + 0.75 * Math.pow(Math.max(0, 1 - fase * 1.6), 1.8);
+    d[i] = (Math.random() * 2 - 1) * sobre;
+  }
+  const src = ac.createBufferSource();
+  src.buffer = buf;
+
+  const nariz = ac.createBiquadFilter();
+  nariz.type = 'bandpass';
+  nariz.frequency.value = 750;             // sale por la nariz, no por la boca
+  nariz.Q.value = 0.9;
+  const cuerpo = ac.createBiquadFilter();
+  cuerpo.type = 'lowpass';
+  cuerpo.frequency.value = 1700;
+
+  const env = ac.createGain();
+  env.gain.setValueAtTime(0.0001, t);
+  env.gain.linearRampToValueAtTime(0.17, t + 0.06);
+  env.gain.setValueAtTime(0.17, t + dur * 0.6);
+  env.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+
+  src.connect(nariz).connect(cuerpo).connect(env).connect(ac.destination);
+  src.start(t);
+  src.stop(t + dur + 0.02);
 }
 
 function playMeow() {
   if (!soundOn) return;
-  if (vozDeLaEspecie() === 'rugido') { playRoar(); return; }
+  const voz = vozDeLaEspecie();
+  if (voz === 'rugido') { playRoar(); return; }
+  if (voz === 'chirrido') { playChirrido(); return; }
+  if (voz === 'prusten') { playPrusten(); return; }
   const ac = ctx();
   const t = ac.currentTime;
   // Cada maullido sale un poco distinto: tono y duración aleatorios
@@ -1263,6 +1506,10 @@ function applyFur(fur) {
   document.querySelectorAll('.fur-swatch').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.fur === fur);
   });
+  /* Aquí es donde el rugido pasa a ser posible, así que aquí se pide el
+     archivo. Pedirlo al arrancar sería gastar 50 KB con quien nunca se pone
+     de león; pedirlo al pulsar llegaría tarde y sonaría el sintetizado. */
+  cargarRugido(fur);
 }
 
 document.querySelectorAll('.fur-swatch').forEach(btn => {
@@ -2186,20 +2433,21 @@ function aplicarIdioma(nuevo) {
   updateDisplay();
 }
 
+/* El botón dice el idioma que se está usando ahora mismo, no al que se va a
+   cambiar: es lo que espera quien lo mira sin pulsarlo. La etiqueta se saca
+   de IDIOMAS y no de una lista aparte, para que al añadir un idioma no haya
+   que acordarse de tocar esto. */
+const btnLang = document.getElementById('btn-lang');
 function marcarIdiomaActivo() {
-  document.querySelectorAll('.lang-swatch').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.lang === IDIOMA);
-  });
+  btnLang.textContent = IDIOMA.slice(0, 2).toUpperCase();
 }
 
-document.querySelectorAll('.lang-swatch').forEach(btn => {
-  btn.addEventListener('click', () => {
-    playClick();
-    aplicarIdioma(btn.dataset.lang);
-    say(t('say.idioma'), 2400);
-    setMood('happy', 2000);
-    themePanel.classList.add('hidden');
-  });
+btnLang.addEventListener('click', () => {
+  playClick();
+  const i = IDIOMAS.indexOf(IDIOMA);
+  aplicarIdioma(IDIOMAS[(i + 1) % IDIOMAS.length]);
+  say(t('say.idioma'), 2400);
+  setMood('happy', 2000);
 });
 marcarIdiomaActivo();
 

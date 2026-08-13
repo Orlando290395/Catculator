@@ -95,28 +95,55 @@ const GUION_COMPORTAMIENTO = `(() => {
     const el = document.querySelector(sel);
     return !!el && getComputedStyle(el).display !== 'none';
   };
-  const capas = ['#especie-leon', '#leon-cara', '#tigre-atras', '#tigre-base', '#tigre-cara'];
+  /* Con seis felinos el riesgo cambió de sitio. Antes era que una capa se
+     quedara prendida donde no tocaba; ahora, además, CUATRO de ellos comparten
+     capas (#manchado-base y #manchado-nariz), así que "no debe verse ninguna
+     capa de otro" hay que calcularlo, no listarlo a mano: lo prohibido para
+     cada uno es lo de los demás MENOS lo que comparten con él. Escrito a mano,
+     esta tabla se desincronizaría al primer felino nuevo. */
+  const CAPAS = {
+    leon:     ['#especie-leon', '#leon-cara'],
+    tigre:    ['#tigre-atras', '#tigre-base', '#tigre-cara'],
+    leopardo: ['#manchado-base', '#manchado-nariz', '#leopardo-cara'],
+    jaguar:   ['#manchado-base', '#manchado-nariz', '#jaguar-cara'],
+    guepardo: ['#manchado-base', '#manchado-nariz', '#guepardo-cara'],
+    nieves:   ['#manchado-base', '#manchado-nariz', '#nieves-cara', '#nieves-atras']
+  };
+  const SALVAJES = Object.keys(CAPAS);
+  const TODAS_CAPAS = [];
+  for (const e of SALVAJES) for (const c of CAPAS[e])
+    if (TODAS_CAPAS.indexOf(c) === -1) TODAS_CAPAS.push(c);
 
-  applyFur('tigre');
-  prueba('el tigre enciende sus tres capas',
-         ['#tigre-atras', '#tigre-base', '#tigre-cara'].every(seVe), true);
-  prueba('el tigre no saca la melena del león', seVe('#especie-leon'), false);
-  prueba('el tigre tapa la nariz del gato', seVe('.nariz'), false);
-  prueba('el tigre lleva orejas redondas', seVe('#orejas-redondas'), true);
-  prueba('el tigre no lleva las orejas puntiagudas', seVe('#ear-left'), false);
+  for (const especie of SALVAJES) {
+    applyFur(especie);
+    const faltan = CAPAS[especie].filter(c => !seVe(c));
+    prueba(especie + ' enciende todas sus capas', faltan.join(','), '');
+    const ajenas = TODAS_CAPAS.filter(c => CAPAS[especie].indexOf(c) === -1 && seVe(c));
+    prueba('a ' + especie + ' no se le cuela ninguna capa ajena', ajenas.join(','), '');
+    prueba(especie + ' trae su propia nariz', seVe('.nariz'), false);
+    prueba(especie + ' lleva orejas redondas', seVe('#orejas-redondas'), true);
+    prueba(especie + ' no lleva las puntiagudas', seVe('#ear-left'), false);
+    // Y cada uno tiene que tener color propio: si dos comparten --fur, alguien
+    // se olvidó de escribir su bloque y se está viendo el pelaje de al lado
+    prueba(especie + ' tiene su propio color',
+           getComputedStyle(document.documentElement).getPropertyValue('--fur').trim().length > 0, true);
+  }
 
-  applyFur('leon');
-  prueba('el león no se pone rayas de tigre', seVe('#tigre-cara'), false);
-  prueba('el león también lleva orejas redondas', seVe('#orejas-redondas'), true);
+  const colores = SALVAJES.map(e => {
+    applyFur(e);
+    return getComputedStyle(document.documentElement).getPropertyValue('--fur').trim();
+  });
+  prueba('ningún felino repite el color de otro',
+         new Set(colores).size, SALVAJES.length);
 
   applyFur('carbon');
-  prueba('ninguna especie se cuela en un gato normal', capas.some(seVe), false);
+  prueba('ninguna especie se cuela en un gato normal', TODAS_CAPAS.filter(seVe).join(','), '');
   prueba('el gato recupera su nariz', seVe('.nariz'), true);
   prueba('el gato recupera sus orejas puntiagudas', seVe('#ear-left'), true);
 
   // Cada felino salvaje necesita su nombre y su frase en los dos idiomas. La
   // prueba de paridad no basta: si la clave falta en ambos, pasa igual.
-  for (const especie of ['leon', 'tigre']) {
+  for (const especie of SALVAJES) {
     for (const idioma of IDIOMAS) {
       prueba(especie + ' tiene nombre en ' + idioma, !!TEXTOS[idioma]['pelaje.' + especie], true);
       prueba(especie + ' tiene frase en ' + idioma, !!TEXTOS[idioma]['say.pelaje.' + especie], true);
@@ -300,6 +327,27 @@ const GUION_COMPORTAMIENTO = `(() => {
   prueba('las unidades vuelven', etiquetaUnidad('in'), 'pulgadas');
   prueba('el decimal vuelve a coma', SEP.decimal, ',');
 
+  /* ---------- El botón de idioma ----------
+     Se mudó del panel de personalizar a la barra de arriba: quien abre la app
+     en el idioma que no es no tiene por qué adivinar que se cambia detrás de
+     una paleta de colores. Al ser ahora un botón que alterna en vez de una
+     lista, lo que hay que vigilar es que dé la vuelta entera y que la etiqueta
+     diga siempre el idioma que se está usando. */
+  const btnIdioma = document.getElementById('btn-lang');
+  prueba('el botón de idioma está en la barra',
+         !!btnIdioma && btnIdioma.closest('.topbar-actions') !== null, true);
+  prueba('y ya no está escondido en el panel',
+         document.querySelectorAll('#theme-panel .lang-swatch').length, 0);
+
+  aplicarIdioma('es');
+  prueba('el botón dice el idioma de ahora', btnIdioma.textContent, 'ES');
+  btnIdioma.click();
+  prueba('al pulsarlo cambia el idioma', IDIOMA, 'en');
+  prueba('y la etiqueta acompaña', btnIdioma.textContent, 'EN');
+  // Con dos idiomas tiene que volver; con tres tendría que seguir dando la vuelta
+  for (let i = 0; i < IDIOMAS.length; i++) btnIdioma.click();
+  prueba('el botón da la vuelta entera', IDIOMA, 'en');
+
   aplicarIdioma(idiomaAntes);
   store.del('catculator-idioma');   // que la prueba no deje el idioma fijado
 
@@ -310,99 +358,329 @@ const GUION_COMPORTAMIENTO = `(() => {
 
    No basta con comprobar que playRoar no revienta: ya pasó tres veces que el
    rugido corría sin un solo error y sonaba mal. Cada prueba de aquí abajo
-   nació de un fallo real, y los umbrales están puestos sobre medidas de las
-   dos versiones, no a ojo (entre paréntesis, lo medido).
+   nació de un fallo real y los umbrales están puestos sobre medidas de las
+   dos versiones —cuatro tiradas de cada una—, no a ojo. Entre paréntesis, lo
+   medido: primero el rugido nuevo (león / tigre) y luego el viejo.
 
-   - REPARTO DEL ESPECTRO. La versión que sonaba a corneta metía el 96% de su
-     energía bajo 200 Hz. Sobre el papel, gravísima; en la práctica ningún
-     altavoz de teléfono llega ahí, así que del rugido se oía la sobra. Esta
-     prueba es la que más separa: nuevo 77-82% sobre 200 Hz, viejo 23-25%.
-   - SILENCIO ANTES DEL ATAQUE. El temblor se sumaba a la envolvente en vez de
-     multiplicarla, así que zumbaba con el golpe cerrado. Nuevo 0.005 del
-     cuerpo, viejo 0.62.
+   - LA ALTURA NO SE CAE UNA OCTAVA. El fallo más gordo del rugido anterior:
+     el código decía 125 Hz y el subarmónico iba tan fuerte que lo que se oía
+     era una segunda nota a 50. Nuevo 159 / 115 Hz, viejo 46-51.
+     Ojo con el detector: cualquier felino grande rompe el ciclo en dos, así
+     que la autocorrelación encuentra el periodo doble y acierta. Por eso
+     lleva corrección de octava —entre dos periodos casi igual de buenos gana
+     el corto—, que es justo lo que separa una aspereza de una octava abajo.
+   - DESGARRO. La textura de un felino vive entre 800 Hz y 2,5 kHz, y es la
+     banda que un altavoz de teléfono sí da. Nuevo 18-21%, viejo 9-13%.
+   - SILENCIO ANTES DEL ATAQUE. El temblor se sumaba a la envolvente en vez
+     de multiplicarla, así que zumbaba con el golpe cerrado. Nuevo 0.
+   - LOS GOLPES SE OYEN SEPARADOS. Con reverberación el hueco ya no es
+     silencio digital, pero tiene que seguir siendo un hueco. Nuevo 0,02-0,04
+     del cuerpo.
+   - EL TIGRE NO ES EL LEÓN CON OTRO NOMBRE. Hasta esta versión sonaban
+     exactamente igual.
    - QUE NO HAYA DOS IGUALES. La aspereza sale de ruido aleatorio; si alguien
      la cambia por un oscilador vuelve el trémolo de órgano.
 
-   Lo que NO está aquí, y merece explicación: el centroide espectral fue el
-   diagnóstico que destapó lo de la corneta (el viejo subía un 33% durante el
-   ataque). Como prueba no sirve: medido sobre varias tiradas da 1.05-1.12 en
-   el nuevo y 1.19-1.25 en el viejo, un 4% de margen. Eso no es una prueba, es
-   un falso fallo esperando. */
+   Los huecos y las ventanas de medida salen del guion que devuelve playRoar,
+   no de tiempos copiados a mano: así no se quedan viejos al primer retoque.
+
+   Lo que NO está aquí, y merece explicación:
+
+   - El centroide espectral fue el diagnóstico que destapó lo de la corneta.
+     Como prueba no sirve: da un 4% de margen entre versiones, y eso no es una
+     prueba, es un falso fallo esperando.
+   - "Se oye en un altavoz pequeño" (energía sobre 200 Hz) se queda porque
+     protege de volver a un rugido todo subgrave, pero ya no distingue una
+     versión de la otra: medido sobre varias ventanas, el viejo también lo
+     pasaba. El que de verdad separa es el del desgarro. */
 const GUION_AUDIO = `(async () => {
   const r = [];
   const prueba = (nombre, obtenido, esperado) => r.push([nombre, obtenido, esperado]);
 
+  /* Quién ruge y quién no. Esto no es una decisión de diseño que se pueda
+     cambiar a gusto: solo león, tigre, leopardo y jaguar tienen el hioides que
+     hace falta para rugir. El guepardo pía y el leopardo de las nieves
+     resopla, y si alguien los mete en RUGEN el gato dirá una mentira. */
   prueba('el león ruge', (applyFur('leon'), vozDeLaEspecie()), 'rugido');
   prueba('el tigre también ruge', (applyFur('tigre'), vozDeLaEspecie()), 'rugido');
+  prueba('el leopardo también', (applyFur('leopardo'), vozDeLaEspecie()), 'rugido');
+  prueba('el jaguar también', (applyFur('jaguar'), vozDeLaEspecie()), 'rugido');
+  prueba('el guepardo NO ruge: pía', (applyFur('guepardo'), vozDeLaEspecie()), 'chirrido');
+  prueba('el de las nieves NO ruge: resopla', (applyFur('nieves'), vozDeLaEspecie()), 'prusten');
   prueba('el gato maúlla', (applyFur('carbon'), vozDeLaEspecie()), 'maullido');
   prueba('los demás pelajes maúllan', (applyFur('blanco'), vozDeLaEspecie()), 'maullido');
+  prueba('rugen exactamente cuatro', RUGEN.length, 4);
 
   // Se rinde el rugido cambiando el contexto vivo por uno offline
-  const guardado = audioCtx;
-  const sr = 22050, segundos = 2.2;
+  const guardado = audioCtx, sonabaAntes = soundOn;
+  const sr = 22050;
+  soundOn = true;   // que la prueba no dependa de si el usuario lo dejó apagado
   try {
-    const render = async () => {
+    /* Se rinde el SINTETIZADO a propósito, no playRoar. El rugido que se oye
+       ahora sale de una grabación, pero el sintetizado sigue en el código como
+       plan B para cuando el archivo falte o no haya cargado todavía, y un plan
+       B que nadie prueba no es un plan B. Las pruebas acústicas de abajo son
+       las que impiden que se pudra sin que nadie se entere. */
+    const render = async (especie, segundos) => {
       audioCtx = new OfflineAudioContext(1, Math.floor(sr * segundos), sr);
-      playRoar();
-      return (await audioCtx.startRendering()).getChannelData(0);
+      const guion = rugidoSintetizado(especie);
+      return { d: (await audioCtx.startRendering()).getChannelData(0), guion: guion };
     };
-    const d = await render();
 
-    let pico = 0, suma = 0;
-    for (let i = 0; i < d.length; i++) {
-      const v = Math.abs(d[i]);
-      if (v > pico) pico = v;
-      suma += d[i] * d[i];
-    }
-    const rms = Math.sqrt(suma / d.length);
-    const rmsEntre = (a, b) => {
+    const rms = (d, desde, hasta) => {
       let s = 0, n = 0;
-      for (let i = Math.floor(a * sr); i < Math.floor(b * sr); i++) { s += d[i] * d[i]; n++; }
-      return Math.sqrt(s / n);
+      const a = Math.max(0, Math.floor(desde * sr)), b = Math.min(d.length, Math.floor(hasta * sr));
+      for (let i = a; i < b; i++) { s += d[i] * d[i]; n++; }
+      return n ? Math.sqrt(s / n) : 0;
     };
-    const cuerpo = rmsEntre(0.3, 0.9);
 
-    prueba('el rugido suena', pico > 0.05, true);
-    prueba('el rugido no satura', pico <= 1, true);
-    prueba('el rugido tiene cuerpo', rms > 0.02, true);
-    prueba('el rugido no zumba antes de empezar', rmsEntre(0, 0.03) < cuerpo * 0.1, true);
-    prueba('el rugido calla entre gruñidos', rmsEntre(1.18, 1.28) < cuerpo * 0.2, true);
-
-    // Reparto por bandas, con una DFT ingenua sobre una ventana de Hann
-    const N = 2048, desde = Math.floor(0.3 * sr);
-    const pot = new Float64Array(N / 2);
-    for (let k = 1; k < N / 2; k++) {
-      let a = 0, b = 0;
-      for (let n = 0; n < N; n++) {
-        const w = 0.5 - 0.5 * Math.cos(2 * Math.PI * n / (N - 1));
-        const x = (d[desde + n] || 0) * w;
-        const ang = -2 * Math.PI * k * n / N;
-        a += x * Math.cos(ang); b += x * Math.sin(ang);
-      }
-      pot[k] = a * a + b * b;
+    /* Reparto por bandas con una DFT ingenua sobre ventanas de Hann. Las
+       tablas de senos y cosenos se calculan una vez: sin ellas son diecisiete
+       millones de llamadas a Math.cos y la prueba tarda segundos. */
+    const N = 2048;
+    const hann = new Float64Array(N), cosT = new Float64Array(N), senT = new Float64Array(N);
+    for (let n = 0; n < N; n++) {
+      hann[n] = 0.5 - 0.5 * Math.cos(2 * Math.PI * n / (N - 1));
+      cosT[n] = Math.cos(-2 * Math.PI * n / N);
+      senT[n] = Math.sin(-2 * Math.PI * n / N);
     }
-    const banda = (lo, hi) => {
-      let s = 0, t = 0;
-      for (let k = 1; k < N / 2; k++) {
-        const f = k * sr / N;
-        t += pot[k];
-        if (f >= lo && f < hi) s += pot[k];
+    const espectro = (d, desdes) => {
+      const pot = new Float64Array(N / 2);
+      for (let v = 0; v < desdes.length; v++) {
+        for (let k = 1; k < N / 2; k++) {
+          let a = 0, b = 0;
+          for (let n = 0; n < N; n++) {
+            const x = (d[desdes[v] + n] || 0) * hann[n], j = (k * n) % N;
+            a += x * cosT[j]; b += x * senT[j];
+          }
+          pot[k] += a * a + b * b;
+        }
       }
-      return 100 * s / (t || 1);
+      let total = 0;
+      for (let k = 1; k < N / 2; k++) total += pot[k];
+      return (lo, hi) => {
+        let s = 0;
+        for (let k = 1; k < N / 2; k++) { const f = k * sr / N; if (f >= lo && f < hi) s += pot[k]; }
+        return 100 * s / (total || 1);
+      };
     };
 
-    prueba('el rugido se oye en un altavoz pequeño', banda(200, 11025) > 50, true);
-    prueba('el rugido sigue siendo grave', banda(0, 800) > 60, true);
+    /* Altura con corrección de octava (ver arriba: sin ella, la duplicación
+       de periodo de cualquier felino la haría fallar siempre). */
+    const altura = (d, desde) => {
+      const lagMin = Math.floor(sr / 320), lagMax = Math.floor(sr / 35);
+      const v = new Float64Array(lagMax + 2);
+      let mejor = 0;
+      for (let lag = lagMin; lag <= lagMax; lag++) {
+        let s = 0, e1 = 0, e2 = 0;
+        for (let i = 0; i < 1024; i++) {
+          const a = d[desde + i] || 0, b = d[desde + i + lag] || 0;
+          s += a * b; e1 += a * a; e2 += b * b;
+        }
+        v[lag] = s / (Math.sqrt(e1 * e2) || 1);
+        if (v[lag] > mejor) mejor = v[lag];
+      }
+      for (let lag = lagMin; lag <= lagMax; lag++) {
+        if (v[lag] >= 0.92 * mejor && v[lag] >= v[lag - 1] && v[lag] >= v[lag + 1]) return sr / lag;
+      }
+      return 0;
+    };
+
+    // Cinco sondas y nos quedamos con la de en medio: una sola se despista
+    const alturaTipica = (d, golpe) => {
+      const a = [];
+      for (let k = 0; k < 5; k++) {
+        a.push(altura(d, Math.floor((golpe.t + golpe.dur * (0.15 + 0.12 * k)) * sr)));
+      }
+      a.sort((x, y) => x - y);
+      return a[2];
+    };
+
+    const revisa = (quien, d, guion, hzMin, hzMax) => {
+      let pico = 0, suma = 0;
+      for (let i = 0; i < d.length; i++) {
+        const x = Math.abs(d[i]);
+        if (x > pico) pico = x;
+        suma += d[i] * d[i];
+      }
+      // El golpe largo es el bramido; lo demás son el quejido y los gruñidos
+      const golpe = guion.reduce((a, b) => (b.dur > a.dur ? b : a));
+      const cuerpo = rms(d, golpe.t + golpe.dur * 0.2, golpe.t + golpe.dur * 0.7);
+      let hueco = null;
+      for (let i = 1; i < guion.length; i++) {
+        const a = guion[i - 1].t + guion[i - 1].dur, b = guion[i].t;
+        if (!hueco || b - a > hueco.b - hueco.a) hueco = { a: a, b: b };
+      }
+
+      prueba(quien + ' programa su secuencia', guion.length > 1, true);
+      prueba(quien + ' suena', pico > 0.05, true);
+      prueba(quien + ' no satura', pico <= 1, true);
+      prueba(quien + ' tiene cuerpo', Math.sqrt(suma / d.length) > 0.02, true);
+      prueba(quien + ' no zumba antes de empezar', rms(d, 0, guion[0].t) < cuerpo * 0.1, true);
+      prueba(quien + ' deja hueco entre golpes',
+             rms(d, hueco.a + (hueco.b - hueco.a) * 0.25, hueco.b) < cuerpo * 0.2, true);
+
+      const banda = espectro(d, [0.20, 0.35, 0.50, 0.65].map(
+        f => Math.floor((golpe.t + golpe.dur * f) * sr)));
+      prueba(quien + ' se oye en un altavoz pequeño', banda(200, sr / 2) > 50, true);
+      /* Este umbral bajó de 60 a 45 al cambiar de motor, y conviene decir por
+         qué para que nadie lo "arregle" subiéndolo otra vez: el 60 describía
+         el rugido realista, que metía el 70% de su energía bajo 800 Hz y
+         sonaba a bocinazo tapado. El maullido —que es el sonido que sí
+         funciona en esta app— está en el 54%. El rugido nuevo, en el 58%: más
+         grave que el maullido, como debe ser, pero de la misma familia. Lo
+         que aquí se vigila ya no es "que sea grave" en absoluto sino que no
+         se vuelva delgado; de que sea MÁS GRAVE QUE EL MAULLIDO se encarga la
+         prueba de abajo, que es la que expresa la intención de verdad. */
+      prueba(quien + ' no se queda delgado', banda(0, 800) > 45, true);
+      prueba(quien + ' tiene desgarro', banda(800, 2500) > 15, true);
+
+      const hz = alturaTipica(d, golpe);
+      prueba(quien + ' no se cae una octava', hz > hzMin, true);
+      prueba(quien + ' tampoco se agudiza', hz < hzMax, true);
+      return { hz: hz, fin: guion[guion.length - 1].t + guion[guion.length - 1].dur };
+    };
+
+    const leon = await render('leon', 3.0);
+    const tigre = await render('tigre', 2.2);
+    const mLeon = revisa('el león', leon.d, leon.guion, 90, 260);
+    const mTigre = revisa('el tigre', tigre.d, tigre.guion, 80, 200);
+
+    // Y no pueden ser el mismo sonido con otro nombre
+    prueba('el tigre ruge más grave que el león', mTigre.hz < mLeon.hz * 0.85, true);
+    prueba('y más corto', mTigre.fin < mLeon.fin * 0.75, true);
+
+    /* El rugido es el maullido con dos octavas menos: si alguien lo sube sin
+       darse cuenta, deja de ser un felino grande y vuelve a ser un gato.
+       Se compara con el maullido de verdad, no contra un número fijo, porque
+       el maullido sale con altura aleatoria en cada tirada.
+       Medido: maullido 258-383 Hz, león 165, tigre 131. */
+    audioCtx = new OfflineAudioContext(1, Math.floor(sr * 1.0), sr);
+    applyFur('carbon');
+    playMeow();
+    const maullido = (await audioCtx.startRendering()).getChannelData(0);
+    const hzMaullido = alturaTipica(maullido, { t: 0.06, dur: 0.42 });
+    prueba('el maullido sigue siendo agudo', hzMaullido > 200, true);
+    prueba('el león ruge mucho más grave que el maullido',
+           mLeon.hz < hzMaullido * 0.75, true);
+    prueba('y el tigre más todavía', mTigre.hz < mLeon.hz, true);
+
+    /* ---------- El rugido grabado ----------
+       Lo que de verdad se oye. Aquí no se juzga si suena bien —eso es de
+       oído—, se comprueba que llega entero y que no se queda por el camino.
+
+       El fallo que más miedo da no es que suene mal: es que el archivo no
+       entre en el paquete. Eso no lo nota nadie hasta que un usuario se pone
+       de león en la versión publicada y no pasa nada. Por eso se leen las
+       listas de las tres compilaciones y se exige que los dos WAV estén. */
+    for (const especie of Object.keys(RUGIDOS_GRABADOS)) {
+      const ruta = RUGIDOS_GRABADOS[especie];
+      let bytes = null;
+      try { const res = await fetch(ruta); if (res.ok) bytes = await res.arrayBuffer(); } catch (e) {}
+      prueba('la grabación del ' + especie + ' está donde dice', !!bytes, true);
+      if (!bytes) continue;
+
+      audioCtx = new OfflineAudioContext(1, Math.floor(sr * 0.1), sr);
+      const buf = await audioCtx.decodeAudioData(bytes);
+      const d = buf.getChannelData(0);
+      let pico = 0, suma = 0;
+      for (let i = 0; i < d.length; i++) {
+        const x = Math.abs(d[i]);
+        if (x > pico) pico = x;
+        suma += d[i] * d[i];
+      }
+      prueba('la del ' + especie + ' dura lo que un rugido',
+             buf.duration > 0.8 && buf.duration < 3, true);
+      prueba('la del ' + especie + ' no está muda', Math.sqrt(suma / d.length) > 0.02, true);
+      prueba('la del ' + especie + ' no viene recortada por saturar', pico <= 1, true);
+      /* Ojo con lo que se puede comprobar aquí: decodeAudioData remuestrea al
+         ritmo del contexto, así que buf.sampleRate dice el del contexto y no
+         el del archivo — comprobarlo no probaría nada. Lo que sí sobrevive es
+         el número de canales, y el peso se mira en los bytes crudos, que es
+         justo lo que se quiere vigilar: que nadie suelte aquí el WAV original
+         de 6 MB del que salió el recorte. */
+      prueba('la del ' + especie + ' es mono', buf.numberOfChannels, 1);
+      prueba('la del ' + especie + ' no engorda la app',
+             bytes.byteLength < 120 * 1024, true);
+    }
+
+    /* Que playRoar elija bien. Son tres caminos y los tres importan:
+       la grabación si la tiene; esperarla si viene en camino; y el sintetizado
+       para el que no tiene grabación ninguna.
+
+       El de en medio es el que arregla un fallo real: antes, elegir un felino
+       soltaba el sintetizado en el acto porque la descarga no había llegado, y
+       ese primer rugido no volvía a oírse nunca más. */
+    const habia = rugidoListo.leon;
+    audioCtx = new OfflineAudioContext(1, Math.floor(sr * 0.5), sr);
+    rugidoListo.leon = audioCtx.createBuffer(1, Math.floor(sr * 0.5), sr);
+    const conGrabacion = playRoar('leon');
+    prueba('con la grabación cargada, playRoar la usa',
+           conGrabacion.length === 1 && conGrabacion[0].grabado === true, true);
+
+    delete rugidoListo.leon;
+    audioCtx = new OfflineAudioContext(1, Math.floor(sr * 3), sr);
+    const enCamino = playRoar('leon');
+    prueba('si la grabación viene en camino, la espera en vez de tirar del plan B',
+           enCamino.length === 1 && enCamino[0].esperando === true, true);
+    // Y termina llegando: si esto falla, el felino se quedaría con el plan B
+    prueba('y acaba llegando', await prepararRugido('leon'), true);
+
+    // Un pelaje sin grabación asignada sí tira del sintetizado, y en el acto
+    audioCtx = new OfflineAudioContext(1, Math.floor(sr * 3), sr);
+    const sinGrabacion = playRoar('carbon');
+    prueba('sin grabación asignada, suena el sintetizado y no se queda mudo',
+           sinGrabacion.length > 1 && !sinGrabacion[0].grabado, true);
+    if (habia) rugidoListo.leon = habia;
+
+    /* La precarga. El archivo se pide al elegir pelaje, no al pulsar, para que
+       cuando el usuario haga rugir al gato ya esté. Se comprueba mirando la
+       petición en vuelo y no el AudioBuffer: lo segundo obligaría a un
+       AudioContext vivo, y en una ventana sin tarjeta de sonido eso se cuelga
+       —costó cinco minutos de reloj descubrirlo—. */
+    delete rugidoEnVuelo.tigre;
+    delete rugidoListo.tigre;
+    applyFur('tigre');
+    prueba('elegir tigre pide su grabación', !!rugidoEnVuelo.tigre, true);
+    applyFur('carbon');
+    prueba('elegir gato normal no pide ninguna', !!rugidoEnVuelo.carbon, false);
+
+    // Las listas que deciden si el archivo llega al usuario
+    const listas = [['sw.js', 'el caché sin conexión'],
+                    ['build-pwa.js', 'el paquete de la PWA']];
+    for (const [archivo, queEs] of listas) {
+      let texto = '';
+      try { texto = await (await fetch(archivo)).text(); } catch (e) {}
+      for (const especie of Object.keys(RUGIDOS_GRABADOS)) {
+        prueba('el rugido del ' + especie + ' entra en ' + queEs,
+               texto.indexOf(RUGIDOS_GRABADOS[especie]) !== -1, true);
+      }
+    }
+
+    /* Y que todo el que ruge tenga grabación: si alguien añade un felino a
+       RUGEN y se olvida del archivo, se queda con el sintetizado para siempre
+       sin que salte nada. */
+    for (const especie of RUGEN) {
+      prueba(especie + ' tiene grabación asignada', !!RUGIDOS_GRABADOS[especie], true);
+      /* Y receta sintetizada PROPIA. Sin ella caen en la del león por el
+         "|| RUGIDOS.leon" de playRoar, y el plan B suplanta a otro animal:
+         medido, leopardo y jaguar salían con el espectro del león clavado.
+         (Ojo: aquí no se pueden usar comillas invertidas. Esto vive dentro de
+         una plantilla, y un par de ellas la parte en dos sin que node --check
+         se queje — el guion llega cortado a la página y revienta allí.) */
+      prueba(especie + ' tiene receta sintetizada propia', !!RUGIDOS[especie], true);
+    }
 
     // La aspereza es ruido, no un oscilador: dos rugidos nunca salen iguales
-    const d2 = await render();
+    const otroLeon = await render('leon', 3.0);
     let iguales = true;
-    for (let i = 0; i < d.length; i += 97) {
-      if (Math.abs(d[i] - d2[i]) > 1e-9) { iguales = false; break; }
+    for (let i = 0; i < leon.d.length; i += 97) {
+      if (Math.abs(leon.d[i] - otroLeon.d[i]) > 1e-9) { iguales = false; break; }
     }
     prueba('no hay dos rugidos iguales', iguales, false);
   } finally {
     audioCtx = guardado;
+    soundOn = sonabaAntes;
     applyFur('carbon');
   }
 
@@ -418,10 +696,36 @@ function comparar(obtenido, esperado) {
 
 app.on('window-all-closed', () => {});
 
+/* Corre una fase y, si revienta, lo DICE. Antes no: si el guion lanzaba, la
+   promesa de executeJavaScript quedaba rechazada sin recoger, el proceso se
+   quedaba colgado sin imprimir nada y había que salir a buscar el error por
+   fuera. Un banco de pruebas que se cuelga en silencio es peor que uno que
+   falla. */
+async function fase(win, nombre, guion) {
+  try {
+    return await win.webContents.executeJavaScript(guion);
+  } catch (e) {
+    console.log('\n💥 La fase "' + nombre + '" reventó antes de terminar:');
+    console.log('   ' + e.message);
+    console.log('   (el error de verdad sale arriba, en la consola de la página)');
+    win.destroy();
+    app.exit(1);
+    return [];
+  }
+}
+
 app.whenReady().then(async () => {
   const win = new BrowserWindow({
     show: false,
     webPreferences: { contextIsolation: true, nodeIntegration: false }
+  });
+  // Sin esto, un error dentro de la página no se ve por ningún lado
+  win.webContents.on('console-message', (ev, nivel, mensaje, linea, fuente) => {
+    if (nivel >= 2) console.log('   [página] ' + mensaje + '  (' + fuente + ':' + linea + ')');
+  });
+  win.webContents.on('render-process-gone', (ev, detalle) => {
+    console.log('\n💥 La página se murió: ' + JSON.stringify(detalle));
+    app.exit(1);
   });
   await win.loadFile(path.join(__dirname, 'index.html'));
 
@@ -437,7 +741,7 @@ app.whenReady().then(async () => {
       catch (e) { return 'ERR'; }
     });
   })()`;
-  const obtenidos = await win.webContents.executeJavaScript(guion);
+  const obtenidos = await fase(win, 'motor de expresiones', guion);
 
   expresiones.forEach(([expr, esperado], i) => {
     if (comparar(obtenidos[i], esperado)) pasan++;
@@ -445,14 +749,14 @@ app.whenReady().then(async () => {
   });
 
   // --- Comportamiento ---
-  const conducta = await win.webContents.executeJavaScript(GUION_COMPORTAMIENTO);
+  const conducta = await fase(win, 'comportamiento', GUION_COMPORTAMIENTO);
   for (const [nombre, obtenido, esperado] of conducta) {
     if (comparar(obtenido, esperado)) pasan++;
     else { fallan++; fallos.push(`  ${nombre}  esperaba ${JSON.stringify(esperado)}  obtuvo ${JSON.stringify(obtenido)}`); }
   }
 
   // --- Audio ---
-  const audio = await win.webContents.executeJavaScript(GUION_AUDIO);
+  const audio = await fase(win, 'audio', GUION_AUDIO);
   for (const [nombre, obtenido, esperado] of audio) {
     if (comparar(obtenido, esperado)) pasan++;
     else { fallan++; fallos.push('  ' + nombre + '  esperaba ' + JSON.stringify(esperado) + '  obtuvo ' + JSON.stringify(obtenido)); }

@@ -28,6 +28,11 @@
         <h1>Catculator</h1>
       </div>
       <div class="topbar-actions">
+        <!-- Idioma. Va aquí y no dentro del panel de personalizar porque quien
+             abre la app en el idioma que no es no tiene por qué adivinar que
+             se cambia detrás de una paleta de colores. Dice el idioma ACTUAL;
+             al pulsarlo alterna, que con dos idiomas sobra una lista. -->
+        <button id="btn-lang" class="icon-btn icon-btn-texto" data-i18n-title="top.idioma" data-i18n-aria="top.idioma" title="Cambiar idioma" aria-label="Cambiar idioma">ES</button>
         <button id="btn-history" class="icon-btn" data-i18n-title="top.historial" data-i18n-aria="top.historial" title="Historial" aria-label="Historial">🕘</button>
         <button id="btn-conv" class="icon-btn" data-i18n-title="top.conversor" data-i18n-aria="top.conversor" title="Conversor de unidades" aria-label="Conversor de unidades">⇄</button>
         <button id="btn-quiz" class="icon-btn" data-i18n-title="top.aprendiz" data-i18n-aria="top.aprendiz" title="Modo aprendiz" aria-label="Modo aprendiz">🎓</button>
@@ -38,15 +43,6 @@
 
     <!-- Selector de temas -->
     <div id="theme-panel" class="theme-panel hidden">
-      <p class="theme-title" data-i18n="idioma.titulo">Idioma 🌎</p>
-      <div class="theme-grid">
-        <button class="lang-swatch" data-lang="es">
-          <span class="mini">🇪🇸</span><span data-i18n="idioma.es">Español</span>
-        </button>
-        <button class="lang-swatch" data-lang="en">
-          <span class="mini">🇬🇧</span><span data-i18n="idioma.en">English</span>
-        </button>
-      </div>
       <p class="theme-title" data-i18n="tema.titulo">Tema de color 🎨</p>
       <div class="theme-grid">
         <button class="theme-swatch" data-theme="cian">
@@ -93,6 +89,18 @@
         </button>
         <button class="fur-swatch" data-fur="tigre">
           <span class="dot dot-tigre"></span><span data-i18n="pelaje.tigre">Tigre</span>
+        </button>
+        <button class="fur-swatch" data-fur="leopardo">
+          <span class="dot dot-leopardo"></span><span data-i18n="pelaje.leopardo">Leopardo</span>
+        </button>
+        <button class="fur-swatch" data-fur="jaguar">
+          <span class="dot dot-jaguar"></span><span data-i18n="pelaje.jaguar">Jaguar</span>
+        </button>
+        <button class="fur-swatch" data-fur="guepardo">
+          <span class="dot dot-guepardo"></span><span data-i18n="pelaje.guepardo">Guepardo</span>
+        </button>
+        <button class="fur-swatch" data-fur="nieves">
+          <span class="dot dot-nieves"></span><span data-i18n="pelaje.nieves">Leopardo de las nieves</span>
         </button>
       </div>
       <p class="theme-title sub" data-i18n="atuendo.titulo">Tu atuendo 🎩</p>
@@ -378,6 +386,19 @@
             <path d="M162,86 Q176,88 183,93 Q173,96 169,100 Q184,105 187,113 Q174,111 167,115 Q175,122 175,129 Q163,120 158,112 Z" fill="url(#g-volumen)" class="sin-raton"/>
           </g>
 
+          <!-- ===== Leopardo de las nieves: el pelaje de invierno =====
+               Se le da gorguera propia, más ancha y redondeada que la del
+               tigre, porque es lo único que lo separa de un leopardo pálido a
+               este tamaño: el bicho vive a 4000 m y su pelo es el más espeso
+               de todos los felinos. La silueta hace el trabajo que el color no
+               puede hacer. -->
+          <g id="nieves-atras" class="especie">
+            <path d="M56,84 Q38,86 30,94 Q42,98 46,103 Q28,108 26,118 Q42,115 50,120 Q40,128 40,136 Q56,125 62,114 Z" fill="var(--hocico)" opacity="0.6"/>
+            <path d="M164,84 Q182,86 190,94 Q178,98 174,103 Q192,108 194,118 Q178,115 170,120 Q180,128 180,136 Q164,125 158,114 Z" fill="var(--hocico)" opacity="0.6"/>
+            <path d="M56,84 Q38,86 30,94 Q42,98 46,103 Q28,108 26,118 Q42,115 50,120 Q40,128 40,136 Q56,125 62,114 Z" fill="url(#g-volumen)" class="sin-raton"/>
+            <path d="M164,84 Q182,86 190,94 Q178,98 174,103 Q192,108 194,118 Q178,115 170,120 Q180,128 180,136 Q164,125 158,114 Z" fill="url(#g-volumen)" class="sin-raton"/>
+          </g>
+
           <!-- Cabeza -->
           <ellipse cx="110" cy="85" rx="62" ry="52" fill="var(--fur)"/>
 
@@ -403,6 +424,20 @@
             <ellipse cx="99" cy="110" rx="21" ry="16" fill="var(--hocico)" opacity="0.8"/>
             <ellipse cx="121" cy="110" rx="21" ry="16" fill="var(--hocico)" opacity="0.8"/>
             <ellipse cx="110" cy="123" rx="16" ry="10" fill="var(--hocico)" opacity="0.62"/>
+          </g>
+
+          <!-- ===== Los manchados: la base pálida =====
+               Los cuatro llevan la barbilla y el hocico claros, igual que el
+               tigre, pero sin el parche gigante alrededor del ojo. Va debajo
+               de los ojos, como en el tigre y por la misma razón: encima les
+               taparía la mirada. -->
+          <g id="manchado-base" class="especie" clip-path="url(#clip-cabeza)">
+            <ellipse cx="99" cy="112" rx="20" ry="15" fill="var(--hocico)" opacity="0.8"/>
+            <ellipse cx="121" cy="112" rx="20" ry="15" fill="var(--hocico)" opacity="0.8"/>
+            <ellipse cx="110" cy="124" rx="16" ry="10" fill="var(--hocico)" opacity="0.62"/>
+            <!-- Ceja clara: la tienen los cuatro y les levanta la mirada -->
+            <ellipse cx="86" cy="62" rx="14" ry="7" fill="var(--hocico)" opacity="0.35"/>
+            <ellipse cx="134" cy="62" rx="14" ry="7" fill="var(--hocico)" opacity="0.35"/>
           </g>
 
           <!-- Rubor -->
@@ -516,6 +551,115 @@
             <path d="M99,91 Q110,87.5 121,91 Q123,98.5 110,106 Q97,98.5 99,91 Z"
                   fill="var(--nariz-tigre)" stroke="var(--raya)" stroke-width="1.6" opacity="0.95"/>
             <path d="M103,93 Q110,90.8 117,93 Q113.5,96.5 110,96.5 Q106.5,96.5 103,93 Z"
+                  fill="#ffffff" opacity="0.3"/>
+          </g>
+
+          <!-- ===== Los cuatro manchados =====
+               El problema aquí no es distinguirlos del tigre —eso lo hace solo
+               el que uno lleva rayas y los otros manchas—: es distinguirlos
+               ENTRE ELLOS, que a 220 px de ancho es donde se pierde todo. Cada
+               uno lleva la marca que de verdad lo separa en la vida real:
+
+               - leopardo: rosetas ABIERTAS, anillos sin nada dentro.
+               - jaguar: rosetas más grandes y CON UN PUNTO dentro. Es
+                 literalmente la diferencia que usan los biólogos para
+                 distinguirlos, así que sirve igual aquí.
+               - guepardo: manchas SÓLIDAS, redondas y pequeñas, más las dos
+                 lágrimas negras del ojo a la boca. Con las lágrimas no hace
+                 falta nada más: no hay otro felino que las lleve.
+               - leopardo de las nieves: rosetas enormes, grises y difuminadas
+                 sobre un pelaje casi blanco, más su gorguera.
+
+               Todos van recortados a #clip-cabeza y DESPUÉS de los ojos, como
+               las rayas del tigre. -->
+          <g id="leopardo-cara" class="especie">
+            <g clip-path="url(#clip-cabeza)">
+              <g fill="var(--mancha)" opacity="0.85">
+                <circle cx="98" cy="50" r="2.4"/><circle cx="110" cy="44" r="2.4"/>
+                <circle cx="122" cy="50" r="2.4"/><circle cx="86" cy="55" r="2.2"/>
+                <circle cx="134" cy="55" r="2.2"/><circle cx="74" cy="64" r="2.2"/>
+                <circle cx="146" cy="64" r="2.2"/><circle cx="110" cy="57" r="2"/>
+              </g>
+              <g fill="none" stroke="var(--mancha)" stroke-width="2.6" opacity="0.82">
+                <circle cx="60" cy="80" r="6.5"/><circle cx="64" cy="99" r="6"/>
+                <circle cx="73" cy="117" r="5.5"/><circle cx="160" cy="80" r="6.5"/>
+                <circle cx="156" cy="99" r="6"/><circle cx="147" cy="117" r="5.5"/>
+                <circle cx="86" cy="126" r="5"/><circle cx="134" cy="126" r="5"/>
+              </g>
+            </g>
+          </g>
+
+          <g id="jaguar-cara" class="especie">
+            <g clip-path="url(#clip-cabeza)">
+              <g fill="var(--mancha)" opacity="0.88">
+                <circle cx="97" cy="48" r="2.8"/><circle cx="110" cy="42" r="2.8"/>
+                <circle cx="123" cy="48" r="2.8"/><circle cx="84" cy="55" r="2.5"/>
+                <circle cx="136" cy="55" r="2.5"/>
+              </g>
+              <!-- Rosetas grandes; el punto de dentro es la firma del jaguar -->
+              <g fill="none" stroke="var(--mancha)" stroke-width="3" opacity="0.85">
+                <circle cx="58" cy="82" r="8.5"/><circle cx="67" cy="105" r="8"/>
+                <circle cx="81" cy="123" r="7"/><circle cx="162" cy="82" r="8.5"/>
+                <circle cx="153" cy="105" r="8"/><circle cx="139" cy="123" r="7"/>
+              </g>
+              <g fill="var(--mancha)" opacity="0.85">
+                <circle cx="58" cy="82" r="2.3"/><circle cx="67" cy="105" r="2.2"/>
+                <circle cx="81" cy="123" r="2"/><circle cx="162" cy="82" r="2.3"/>
+                <circle cx="153" cy="105" r="2.2"/><circle cx="139" cy="123" r="2"/>
+              </g>
+            </g>
+          </g>
+
+          <g id="guepardo-cara" class="especie">
+            <g clip-path="url(#clip-cabeza)">
+              <g fill="var(--mancha)" opacity="0.9">
+                <circle cx="96" cy="48" r="2.6"/><circle cx="110" cy="42" r="2.6"/>
+                <circle cx="124" cy="48" r="2.6"/><circle cx="84" cy="54" r="2.5"/>
+                <circle cx="136" cy="54" r="2.5"/><circle cx="72" cy="62" r="2.5"/>
+                <circle cx="148" cy="62" r="2.5"/><circle cx="61" cy="75" r="2.4"/>
+                <circle cx="159" cy="75" r="2.4"/><circle cx="58" cy="92" r="2.4"/>
+                <circle cx="162" cy="92" r="2.4"/><circle cx="64" cy="107" r="2.3"/>
+                <circle cx="156" cy="107" r="2.3"/><circle cx="73" cy="121" r="2.2"/>
+                <circle cx="147" cy="121" r="2.2"/><circle cx="85" cy="129" r="2.1"/>
+                <circle cx="135" cy="129" r="2.1"/><circle cx="110" cy="56" r="2.2"/>
+              </g>
+              <!-- Las lágrimas. Van del lagrimal a la comisura, por fuera del
+                   hocico: por dentro chocarían con la boca. -->
+              <g fill="none" stroke="var(--lagrima)" stroke-width="4.2"
+                 stroke-linecap="round" opacity="0.9">
+                <path d="M93,91 Q88,105 93,122"/>
+                <path d="M127,91 Q132,105 127,122"/>
+              </g>
+            </g>
+          </g>
+
+          <g id="nieves-cara" class="especie">
+            <g clip-path="url(#clip-cabeza)">
+              <g fill="var(--mancha)" opacity="0.55">
+                <circle cx="98" cy="48" r="2.6"/><circle cx="110" cy="42" r="2.6"/>
+                <circle cx="122" cy="48" r="2.6"/><circle cx="86" cy="55" r="2.4"/>
+                <circle cx="134" cy="55" r="2.4"/>
+              </g>
+              <!-- Enormes y desdibujadas: es pelo largo, no manchas nítidas -->
+              <g fill="none" stroke="var(--mancha)" stroke-width="3.4" opacity="0.42">
+                <circle cx="58" cy="80" r="9.5"/><circle cx="70" cy="105" r="9"/>
+                <circle cx="86" cy="124" r="7.5"/><circle cx="162" cy="80" r="9.5"/>
+                <circle cx="150" cy="105" r="9"/><circle cx="134" cy="124" r="7.5"/>
+              </g>
+              <g fill="var(--mancha)" opacity="0.3">
+                <circle cx="58" cy="80" r="3"/><circle cx="70" cy="105" r="2.8"/>
+                <circle cx="162" cy="80" r="3"/><circle cx="150" cy="105" r="2.8"/>
+              </g>
+            </g>
+          </g>
+
+          <!-- La nariz de los cuatro. Una sola, con el color por variable:
+               copiarla cuatro veces sería garantizar que se desincronicen. -->
+          <g id="manchado-nariz" class="especie">
+            <path d="M99,92 Q110,88.5 121,92 Q123,99 110,106 Q97,99 99,92 Z"
+                  fill="var(--nariz-manchado)" stroke="var(--mancha)"
+                  stroke-width="1.5" opacity="0.95"/>
+            <path d="M103,94 Q110,91.8 117,94 Q113.5,97.3 110,97.3 Q106.5,97.3 103,94 Z"
                   fill="#ffffff" opacity="0.3"/>
           </g>
 

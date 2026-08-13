@@ -218,9 +218,21 @@ body {
 :root[data-theme="noche"] .brand h1 { color: #e2f8fd; }
 :root[data-theme="noche"] .footer { color: #9fd8e4; }
 
+/* Los botones no se encogen ni se salen NUNCA: si falta sitio, lo cede el
+   nombre. Sin esto, quien pierde es siempre el último botón de la fila, que
+   se va fuera de pantalla sin avisar — pasó con 🎨 al entrar el de idioma.
+   Un nombre recortado se entiende; un botón que no está, no se encuentra. */
 .topbar-actions {
   display: flex;
   gap: 8px;
+  flex: 0 0 auto;
+}
+
+.brand { min-width: 0; }
+.brand h1 {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .icon-btn {
@@ -238,24 +250,61 @@ body {
 .icon-btn:hover { transform: scale(1.08); }
 .icon-btn:active { transform: scale(0.94); }
 
-/* En teléfono la barra de arriba no cabía: cinco botones de 40 px más el nombre
-   suman 407 px y el celular más común mide 360, así que el botón de personalizar
-   (🎨) quedaba fuera de pantalla y la página se arrastraba de lado. Aquí se
-   aprieta todo. El corte es 415 px: por debajo están los celulares (320, 360,
-   393, 412 dp) y por encima la ventana del escritorio (440), que siempre cupo. */
-@media (max-width: 415px) {
+/* El de idioma lleva letras en vez de emoji. Letras y no bandera a propósito:
+   Windows no dibuja los emoji de bandera —los deja en dos cuadritos con las
+   siglas—, así que la bandera se veía distinta en cada sistema. "ES"/"EN" se
+   lee igual en todos y encima ocupa menos. */
+.icon-btn-texto {
+  width: 30px;            /* más estrecho que los de emoji: dos letras ocupan menos */
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: var(--accent);
+}
+
+/* En teléfono la barra de arriba no cabe sola. Con cinco botones de 40 px más
+   el nombre ya sumaba 407 px contra los 360 del celular más común, y el botón
+   de personalizar (🎨) se salía de pantalla arrastrando la página de lado. Al
+   entrar el sexto botón (el de idioma) hubo que volver a apretar: medido, a
+   360 px faltaban 11 y a 320 faltaban 31.
+
+   El corte estuvo en 415 px mientras hubo cinco botones, con la idea de que
+   por debajo estaban los celulares y por encima la ventana del escritorio,
+   que siempre cupo. Con seis botones dejó de ser verdad y hubo que subirlo a
+   470, porque la ventana del escritorio NO mide 440 px de CSS: main.js la crea
+   con 440 dp y en una pantalla al 110% eso son 426 px de CSS. Entre 416 y 465
+   quedaba una franja sin ninguna media query donde los botones seguían a 40 px
+   y pedían 443: el de personalizar (🎨) se salía 27 px. Justo la ventana por
+   defecto.
+
+   Moraleja para el próximo que toque esto: los dp de main.js no son px de CSS.
+   Hay un script que mide la ventana de verdad en vez de adivinarlo. */
+@media (max-width: 470px) {
   .brand { gap: 6px; }
   .brand-paw { font-size: 19px; }
   .brand h1 { font-size: 18px; letter-spacing: 0.2px; }
-  .topbar-actions { gap: 5px; }
-  .icon-btn { width: 34px; height: 34px; font-size: 16px; border-radius: 10px; }
+  .topbar-actions { gap: 4px; }
+  .icon-btn { width: 32px; height: 32px; font-size: 15px; border-radius: 10px; }
+  .icon-btn-texto { width: 27px; font-size: 12px; }
 }
 
-@media (max-width: 350px) {
+/* Este corte subió de 350 a 365 al entrar el sexto botón: a 360 px —que es el
+   ancho de celular más repetido— con los botones de 32 px la barra se quedaba
+   en 6 px negativos y el nombre empezaba a comprimirse. */
+@media (max-width: 365px) {
   .brand-paw { font-size: 16px; }
   .brand h1 { font-size: 16px; }
-  .topbar-actions { gap: 4px; }
-  .icon-btn { width: 31px; height: 31px; font-size: 15px; }
+  .topbar-actions { gap: 3px; }
+  .icon-btn { width: 29px; height: 29px; font-size: 14px; }
+  .icon-btn-texto { width: 25px; font-size: 11px; }
+}
+
+/* A 320 px no caben el nombre y seis botones por mucho que se aprieten. Se va
+   el nombre y se queda la patita. La alternativa era esconder un botón, y un
+   botón escondido no se encuentra; el nombre de la app, dentro de la propia
+   app, no le dice nada a nadie. */
+@media (max-width: 335px) {
+  .brand h1 { display: none; }
 }
 
 /* Quien pidió "reducir movimiento" en su sistema no quiere la patita moviéndose
@@ -282,7 +331,16 @@ body {
   animation: pop-in 0.22s ease;
   max-height: min(72vh, 560px);
   overflow-y: auto;
+  /* El panel se ajustaba al contenido sin tope, así que la etiqueta más larga
+     decidía su ancho: con "Leopardo de las nieves" se iba a más de 400 px y en
+     la ventana por defecto (426 px de CSS) quedaba pegado al borde izquierdo;
+     en un móvil de 360 se salía. Con tope, el nombre largo parte en dos
+     líneas, que es justo lo que debe ceder. */
+  width: max-content;
+  max-width: min(340px, calc(100vw - 36px));
 }
+/* Sin esto el texto no parte: una celda de rejilla no baja de su contenido */
+.theme-grid > * { min-width: 0; }
 
 :root[data-theme="noche"] .theme-panel { color: #e2f8fd; }
 
@@ -1000,8 +1058,111 @@ body {
 /* El tigre trae su propia nariz, ancha y asalmonada */
 :root[data-fur="tigre"] .nariz { display: none; }
 
+/* ---------- Los cuatro manchados ----------
+   Comparten la base pálida, la nariz y las orejas redondas; lo único propio de
+   cada uno son sus manchas y sus colores. Se agrupan los selectores en vez de
+   repetir cuatro bloques iguales: cuando se añada un quinto, se toca una lista
+   y no cuatro sitios. */
+:root[data-fur="leopardo"] #manchado-base,
+:root[data-fur="jaguar"] #manchado-base,
+:root[data-fur="guepardo"] #manchado-base,
+:root[data-fur="nieves"] #manchado-base,
+:root[data-fur="leopardo"] #manchado-nariz,
+:root[data-fur="jaguar"] #manchado-nariz,
+:root[data-fur="guepardo"] #manchado-nariz,
+:root[data-fur="nieves"] #manchado-nariz,
+:root[data-fur="leopardo"] #leopardo-cara,
+:root[data-fur="jaguar"] #jaguar-cara,
+:root[data-fur="guepardo"] #guepardo-cara,
+:root[data-fur="nieves"] #nieves-cara,
+:root[data-fur="nieves"] #nieves-atras { display: block; }
+
+/* Los cuatro traen nariz propia, así que la rosada del gato sobra */
+:root[data-fur="leopardo"] .nariz,
+:root[data-fur="jaguar"] .nariz,
+:root[data-fur="guepardo"] .nariz,
+:root[data-fur="nieves"] .nariz { display: none; }
+
+/* Y orejas redondas, como el león y el tigre */
+:root[data-fur="leopardo"] #orejas-redondas,
+:root[data-fur="jaguar"] #orejas-redondas,
+:root[data-fur="guepardo"] #orejas-redondas,
+:root[data-fur="nieves"] #orejas-redondas { display: block; }
+:root[data-fur="leopardo"] #ear-left,
+:root[data-fur="leopardo"] #ear-right,
+:root[data-fur="jaguar"] #ear-left,
+:root[data-fur="jaguar"] #ear-right,
+:root[data-fur="guepardo"] #ear-left,
+:root[data-fur="guepardo"] #ear-right,
+:root[data-fur="nieves"] #ear-left,
+:root[data-fur="nieves"] #ear-right { display: none; }
+
+/* Leopardo: oro cálido y rosetas casi negras */
+:root[data-fur="leopardo"] {
+  --fur: #dfa94e;
+  --fur-line: #5a3a12;
+  --whisker: #fff6e2;
+  --ear-inner: #6b4420;
+  --mancha: #2e2113;
+  --hocico: #f7e9cd;
+  --nariz-manchado: #c98a80;
+}
+
+/* Jaguar: más rojizo y más macizo que el leopardo, que es justo la diferencia
+   que se ve de lejos entre los dos */
+:root[data-fur="jaguar"] {
+  --fur: #d99038;
+  --fur-line: #4d2f0f;
+  --whisker: #fff3dd;
+  --ear-inner: #5c3418;
+  --mancha: #241a0f;
+  --hocico: #f6e4c2;
+  --nariz-manchado: #9d6455;
+}
+
+/* Guepardo: arena clara, manchas puras y la lágrima negra */
+:root[data-fur="guepardo"] {
+  --fur: #e2bd74;
+  --fur-line: #6a4b22;
+  --whisker: #fffaf0;
+  --ear-inner: #7d5a2c;
+  --mancha: #22190e;
+  --lagrima: #1b140b;
+  --hocico: #fbf1dc;
+  --nariz-manchado: #6f4c3d;
+}
+
+/* Leopardo de las nieves: casi sin color. Es el único de los cuatro que no es
+   dorado, así que se distingue antes por el gris que por las manchas. */
+:root[data-fur="nieves"] {
+  --fur: #d9dae2;
+  --fur-line: #4a4c57;
+  --whisker: #ffffff;
+  --ear-inner: #9a9cab;
+  --mancha: #3b3d49;
+  --hocico: #f7f8fb;
+  --nariz-manchado: #7d6f74;
+}
+
 .dot-leon { background: linear-gradient(135deg, #d9a45f 55%, #a2651f 55%); }
 .dot-tigre { background: repeating-linear-gradient(115deg, #e79233 0 4px, #2a1a0d 4px 6px); }
+/* Los puntos del selector imitan la marca de cada uno: anillo, anillo con
+   punto, mancha llena y mancha gris difusa. */
+.dot-leopardo {
+  background: #dfa94e;
+  box-shadow: inset 0 0 0 2px #2e2113, inset 0 0 0 4px #dfa94e;
+}
+.dot-jaguar {
+  background: radial-gradient(circle at 50% 50%, #241a0f 0 1.5px, #d99038 1.5px);
+  box-shadow: inset 0 0 0 2px #241a0f, inset 0 0 0 4px #d99038;
+}
+.dot-guepardo {
+  background: radial-gradient(circle at 50% 50%, #22190e 0 3.5px, #e2bd74 3.5px);
+}
+.dot-nieves {
+  background: radial-gradient(circle at 50% 50%, #3b3d49 0 2px, #d9dae2 2px);
+  box-shadow: inset 0 0 0 2px #3b3d49aa;
+}
 
 /* ---------- Pantalla de poca altura ----------
    Teléfono girado, ventana chica, pantalla dividida. Con 360 px de alto el

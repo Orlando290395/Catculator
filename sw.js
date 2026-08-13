@@ -2,7 +2,7 @@
    La app no usa red para nada, así que la estrategia es cache-first pura.
    Al cambiar los archivos hay que subir CACHE de versión: eso descarta el caché
    viejo en activate y el usuario recibe la versión nueva en la siguiente visita. */
-const CACHE = 'catculator-v14';
+const CACHE = 'catculator-v16';
 
 const ASSETS = [
   '.',
@@ -11,6 +11,10 @@ const ASSETS = [
   'renderer.js',
   'idiomas.js',
   'manifest.json',
+  'sonidos/rugido-leon.wav',
+  'sonidos/rugido-tigre.wav',
+  'sonidos/rugido-leopardo.wav',
+  'sonidos/rugido-jaguar.wav',
   'icons/icon-192.png',
   'icons/icon-512.png',
   'icons/icon-maskable-512.png',
