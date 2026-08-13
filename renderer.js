@@ -899,33 +899,29 @@ function curvaDeSaturacion(cantidad) {
 }
 
 /* Un golpe de rugido. El rugido completo son varios: el largo y los gruñidos
-   con los que se apaga. */
+   con los que se apaga.
+
+   Segunda corrección, por medición: la versión anterior metía el 96% de su
+   energía por debajo de 200 Hz. Sobre el papel era un rugido gravísimo; en la
+   práctica ningún altavoz de teléfono ni de portátil baja de ahí, así que del
+   rugido se oía la sobra. Un león de verdad reparte hasta los 2 kHz — esa es
+   la textura desgarrada — y el oído reconstruye el tono grave a partir de los
+   armónicos aunque el fundamental no llegue a sonar.
+
+   Así que el pecho deja de mandar y entran tres formantes repartidos. Siguen
+   siendo FIJOS, que es lo que separa una garganta de una corneta. */
 function pulsoDeRugido(ac, t0, dur, fInicio, fFin, vol) {
-  // --- Envolvente, con el temblor irregular sumado encima ---
-  const pulso = ac.createGain();
-  pulso.gain.setValueAtTime(0.0001, t0);
-  pulso.gain.exponentialRampToValueAtTime(vol, t0 + Math.min(0.1, dur * 0.2));
-  pulso.gain.setValueAtTime(vol, t0 + dur * 0.55);
-  pulso.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-
-  const temblor = ac.createBufferSource();
-  temblor.buffer = ruidoLento(ac, dur + 0.1, 26);
-  const temblorG = ac.createGain();
-  temblorG.gain.value = vol * 0.5;
-  temblor.connect(temblorG).connect(pulso.gain);
-
   // --- Cuerdas vocales: el tono y su subarmónico, los dos cayendo ---
   const mezcla = ac.createGain();
   mezcla.gain.value = 1;
 
   const voz = ac.createGain();
-  voz.gain.value = 0.4;
+  voz.gain.value = 0.45;
 
   const cuerdas = [
     { f: 1, nivel: 1 },      // el tono
     { f: 0.5, nivel: 0.9 }   // el subarmónico: lo que suena a fiera y no a moto
   ];
-  const osciladores = [];
   for (const c of cuerdas) {
     const o = ac.createOscillator();
     o.type = 'sawtooth';
@@ -943,11 +939,10 @@ function pulsoDeRugido(ac, t0, dur, fInicio, fFin, vol) {
     g.gain.value = c.nivel;
     o.connect(g).connect(voz);
     o.start(t0); o.stop(t0 + dur + 0.05);
-    osciladores.push(o);
   }
 
   const garganta = ac.createWaveShaper();
-  garganta.curve = curvaDeSaturacion(2.6);
+  garganta.curve = curvaDeSaturacion(4.2);
   voz.connect(garganta).connect(mezcla);
 
   // --- Aliento: el ruido, que aquí pesa tanto como la voz ---
@@ -955,19 +950,56 @@ function pulsoDeRugido(ac, t0, dur, fInicio, fFin, vol) {
   aire.buffer = ruidoBlanco(ac, dur + 0.1);
   const aireAlto = ac.createBiquadFilter();
   aireAlto.type = 'highpass';
-  aireAlto.frequency.value = 170;
+  aireAlto.frequency.value = 200;
   const aireBajo = ac.createBiquadFilter();
   aireBajo.type = 'lowpass';
-  aireBajo.frequency.value = 1500;   // sin sibilancia: un león no silba
+  aireBajo.frequency.value = 3000;   // hasta aquí llega el desgarro; más arriba silba
   const aireG = ac.createGain();
-  aireG.gain.value = 0.5;
+  aireG.gain.value = 0.55;
   aire.connect(aireAlto).connect(aireBajo).connect(aireG).connect(mezcla);
   aire.start(t0); aire.stop(t0 + dur + 0.1);
 
-  // --- Formantes fijos: la vocal "aaah" de una boca enorme ---
+  /* --- El temblor, MULTIPLICANDO ---
+     Antes se sumaba a la envolvente, y una suma no se apaga cuando la
+     envolvente cierra: quedaba un zumbido audible antes del ataque (medido:
+     19% de la energía del bramido) y la ganancia llegaba a cruzar a negativo,
+     invirtiendo la fase. Multiplicando, el temblor nace y muere con el golpe. */
+  const tremolo = ac.createGain();
+  tremolo.gain.value = 1;
+  const temblor = ac.createBufferSource();
+  temblor.buffer = ruidoLento(ac, dur + 0.1, 26);
+  const temblorG = ac.createGain();
+  temblorG.gain.value = 0.45;
+  temblor.connect(temblorG).connect(tremolo.gain);
+  temblor.start(t0); temblor.stop(t0 + dur + 0.1);
+
+  // --- Envolvente ---
+  const pulso = ac.createGain();
+  pulso.gain.setValueAtTime(0.0001, t0);
+  pulso.gain.exponentialRampToValueAtTime(vol, t0 + Math.min(0.1, dur * 0.2));
+  pulso.gain.setValueAtTime(vol, t0 + dur * 0.55);
+  pulso.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+
+  /* --- Formantes fijos: la vocal "aaah" de una boca enorme ---
+     Tres, repartidos, para que el sonido exista fuera del rango que un altavoz
+     pequeño no puede dar. El pecho se queda, pero de acompañante. */
+  /* Antes de los formantes hay que quitar el fundamental de en medio. Un
+     pasabanda de Q bajo cae solo 6 dB por octava, así que el tono grave, que
+     es diez veces más fuerte que sus armónicos, se colaba por los tres y
+     seguía mandando: 82% de la energía bajo 200 Hz. Dos pasaaltos en cascada
+     (24 dB/octava) lo dejan fuera y los formantes por fin filtran lo suyo. */
+  const sinGraves = ac.createBiquadFilter();
+  sinGraves.type = 'highpass';
+  sinGraves.frequency.value = 190;
+  const sinGraves2 = ac.createBiquadFilter();
+  sinGraves2.type = 'highpass';
+  sinGraves2.frequency.value = 190;
+  mezcla.connect(sinGraves).connect(sinGraves2);
+
   const formantes = [
-    { hz: 400, q: 3.2, nivel: 1 },
-    { hz: 950, q: 4.5, nivel: 0.3 }
+    { hz: 400, q: 2.5, nivel: 1.7 },
+    { hz: 900, q: 3, nivel: 1.3 },
+    { hz: 1900, q: 3.5, nivel: 0.7 }
   ];
   for (const f of formantes) {
     const bp = ac.createBiquadFilter();
@@ -976,19 +1008,16 @@ function pulsoDeRugido(ac, t0, dur, fInicio, fFin, vol) {
     bp.Q.value = f.q;
     const g = ac.createGain();
     g.gain.value = f.nivel;
-    mezcla.connect(bp).connect(g).connect(pulso);
+    sinGraves2.connect(bp).connect(g).connect(tremolo);
   }
-  // El pecho: lo que se siente en el estómago y los formantes se dejan fuera
   const pecho = ac.createBiquadFilter();
   pecho.type = 'lowpass';
   pecho.frequency.value = 210;
   const pechoG = ac.createGain();
-  pechoG.gain.value = 1.1;
-  mezcla.connect(pecho).connect(pechoG).connect(pulso);
+  pechoG.gain.value = 0.3;
+  mezcla.connect(pecho).connect(pechoG).connect(tremolo);
 
-  pulso.connect(ac.destination);
-  temblor.start(t0); temblor.stop(t0 + dur + 0.1);
-  return osciladores;
+  tremolo.connect(pulso).connect(ac.destination);
 }
 
 /* Rugido completo: el bramido largo y dos gruñidos con los que se apaga, que es
@@ -997,9 +1026,9 @@ function playRoar() {
   if (!soundOn) return;
   const ac = ctx();
   const t = ac.currentTime;
-  pulsoDeRugido(ac, t, 1.15, 125, 62, 0.15);
-  pulsoDeRugido(ac, t + 1.30, 0.26, 95, 58, 0.10);
-  pulsoDeRugido(ac, t + 1.63, 0.22, 86, 52, 0.07);
+  pulsoDeRugido(ac, t, 1.15, 125, 62, 0.16);
+  pulsoDeRugido(ac, t + 1.30, 0.26, 95, 58, 0.11);
+  pulsoDeRugido(ac, t + 1.63, 0.22, 86, 52, 0.075);
 }
 
 function playMeow() {

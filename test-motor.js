@@ -308,19 +308,26 @@ const GUION_COMPORTAMIENTO = `(() => {
 
 /* Pruebas de audio. Van aparte porque hay que renderizar y eso es asíncrono.
 
-   No basta con comprobar que playRoar no revienta. Ya pasó dos veces que el
-   rugido corría sin errores y sonaba mal, así que aquí se mide lo que de
-   verdad falló:
+   No basta con comprobar que playRoar no revienta: ya pasó tres veces que el
+   rugido corría sin un solo error y sonaba mal. Cada prueba de aquí abajo
+   nació de un fallo real, y los umbrales están puestos sobre medidas de las
+   dos versiones, no a ojo (entre paréntesis, lo medido).
 
-   - La altura, por cruces por cero. Un rugido agudo es un maullido con otro
-     nombre. El maullido del gato ronda los 600 Hz; el rugido va muy por debajo.
-   - El CENTROIDE ESPECTRAL a lo largo del bramido. Esta es la importante: la
-     primera versión sonaba a corneta porque el centroide subía un 33% durante
-     el ataque (149 → 198 Hz), que es literalmente cómo se sintetiza un metal.
-     Un animal quedándose sin aire hace lo contrario. Si alguien vuelve a meter
-     un pasabajos que barre hacia arriba, esta prueba lo caza.
-   - Que no haya dos rugidos iguales: la aspereza sale de ruido aleatorio, y si
-     alguien la cambia por un oscilador vuelve el trémolo de órgano. */
+   - REPARTO DEL ESPECTRO. La versión que sonaba a corneta metía el 96% de su
+     energía bajo 200 Hz. Sobre el papel, gravísima; en la práctica ningún
+     altavoz de teléfono llega ahí, así que del rugido se oía la sobra. Esta
+     prueba es la que más separa: nuevo 77-82% sobre 200 Hz, viejo 23-25%.
+   - SILENCIO ANTES DEL ATAQUE. El temblor se sumaba a la envolvente en vez de
+     multiplicarla, así que zumbaba con el golpe cerrado. Nuevo 0.005 del
+     cuerpo, viejo 0.62.
+   - QUE NO HAYA DOS IGUALES. La aspereza sale de ruido aleatorio; si alguien
+     la cambia por un oscilador vuelve el trémolo de órgano.
+
+   Lo que NO está aquí, y merece explicación: el centroide espectral fue el
+   diagnóstico que destapó lo de la corneta (el viejo subía un 33% durante el
+   ataque). Como prueba no sirve: medido sobre varias tiradas da 1.05-1.12 en
+   el nuevo y 1.19-1.25 en el viejo, un 4% de margen. Eso no es una prueba, es
+   un falso fallo esperando. */
 const GUION_AUDIO = `(async () => {
   const r = [];
   const prueba = (nombre, obtenido, esperado) => r.push([nombre, obtenido, esperado]);
@@ -341,48 +348,51 @@ const GUION_AUDIO = `(async () => {
     };
     const d = await render();
 
-    let pico = 0, cruces = 0, suma = 0;
-    for (let i = 1; i < d.length; i++) {
+    let pico = 0, suma = 0;
+    for (let i = 0; i < d.length; i++) {
       const v = Math.abs(d[i]);
       if (v > pico) pico = v;
-      suma += v * v;
-      if ((d[i - 1] < 0) !== (d[i] < 0)) cruces++;
+      suma += d[i] * d[i];
     }
     const rms = Math.sqrt(suma / d.length);
-    const hz = (cruces / 2) / segundos;
+    const rmsEntre = (a, b) => {
+      let s = 0, n = 0;
+      for (let i = Math.floor(a * sr); i < Math.floor(b * sr); i++) { s += d[i] * d[i]; n++; }
+      return Math.sqrt(s / n);
+    };
+    const cuerpo = rmsEntre(0.3, 0.9);
 
     prueba('el rugido suena', pico > 0.05, true);
     prueba('el rugido no satura', pico <= 1, true);
     prueba('el rugido tiene cuerpo', rms > 0.02, true);
-    prueba('el rugido es grave', hz < 260, true);
-    prueba('el rugido no es un zumbido', hz > 25, true);
+    prueba('el rugido no zumba antes de empezar', rmsEntre(0, 0.03) < cuerpo * 0.1, true);
+    prueba('el rugido calla entre gruñidos', rmsEntre(1.18, 1.28) < cuerpo * 0.2, true);
 
-    // Centroide espectral: DFT ingenua sobre una ventana de Hann de 1024
-    const centroide = (desde) => {
-      const N = 1024;
-      let suma = 0, pesada = 0;
+    // Reparto por bandas, con una DFT ingenua sobre una ventana de Hann
+    const N = 2048, desde = Math.floor(0.3 * sr);
+    const pot = new Float64Array(N / 2);
+    for (let k = 1; k < N / 2; k++) {
+      let a = 0, b = 0;
+      for (let n = 0; n < N; n++) {
+        const w = 0.5 - 0.5 * Math.cos(2 * Math.PI * n / (N - 1));
+        const x = (d[desde + n] || 0) * w;
+        const ang = -2 * Math.PI * k * n / N;
+        a += x * Math.cos(ang); b += x * Math.sin(ang);
+      }
+      pot[k] = a * a + b * b;
+    }
+    const banda = (lo, hi) => {
+      let s = 0, t = 0;
       for (let k = 1; k < N / 2; k++) {
         const f = k * sr / N;
-        if (f > 6000) break;
-        let a = 0, b = 0;
-        for (let n = 0; n < N; n++) {
-          const w = 0.5 - 0.5 * Math.cos(2 * Math.PI * n / (N - 1));
-          const x = (d[desde + n] || 0) * w;
-          const ang = -2 * Math.PI * k * n / N;
-          a += x * Math.cos(ang); b += x * Math.sin(ang);
-        }
-        const p = a * a + b * b;
-        suma += p; pesada += p * f;
+        t += pot[k];
+        if (f >= lo && f < hi) s += pot[k];
       }
-      return pesada / (suma || 1);
+      return 100 * s / (t || 1);
     };
-    const cAtaque = centroide(Math.floor(0.05 * sr));
-    const cCuerpo = centroide(Math.floor(0.30 * sr));
-    const cFinal  = centroide(Math.floor(1.05 * sr));
 
-    prueba('el rugido no suena a corneta (el brillo no sube al atacar)', cCuerpo <= cAtaque, true);
-    prueba('el rugido se apaga hacia abajo', cFinal < cAtaque, true);
-    prueba('el rugido es oscuro', cAtaque < 400, true);
+    prueba('el rugido se oye en un altavoz pequeño', banda(200, 11025) > 50, true);
+    prueba('el rugido sigue siendo grave', banda(0, 800) > 60, true);
 
     // La aspereza es ruido, no un oscilador: dos rugidos nunca salen iguales
     const d2 = await render();
