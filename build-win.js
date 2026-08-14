@@ -1,18 +1,31 @@
-/* Compila el instalador de Windows FUERA de la carpeta OneDrive.
+/* Compila el instalador de Windows FUERA de la carpeta del proyecto.
 
    Por qué existe este archivo en vez de un simple "electron-builder --win":
-   compilando dentro de C:\Users\...\OneDrive\... el paso final de NSIS falla
-   siempre con
+   compilando dentro del proyecto, el paso final de NSIS falla siempre con
 
        File: "...\dist\__uninstaller-nsis-catculator.exe" -> no files found
 
-   NSIS crea el desinstalador y acto seguido intenta meterlo dentro del
-   instalador, pero el filtro de OneDrive se interpone con el archivo recién
-   escrito y para NSIS es como si no existiera. No hace falta que la carpeta
-   esté sincronizando: basta con que el filtro esté montado en esa ruta.
+   La culpa NO es de OneDrive, aunque la ruta lo lleve en el nombre (esa carpeta
+   es local y OneDrive ni siquiera está instalado). Es el **Acceso Controlado a
+   Carpetas** de Windows Defender, que está activado y protege Documentos — y el
+   proyecto vive dentro. NSIS crea el desinstalador y, al intentar meterlo en el
+   instalador, Defender bloquea la operación en silencio: para NSIS el archivo
+   no existe.
+
+   Se ve en el visor de eventos, y no es un caso aislado: el mismo bloqueo
+   tumbaba a rm, cp y mkdir dentro del proyecto, que es lo que durante meses
+   pareció "el shell falla a ratos".
+
+       Get-WinEvent -FilterHashtable @{
+         LogName='Microsoft-Windows-Windows Defender/Operational'; Id=1123,1124 }
 
    Comprobado a la contra: la misma compilación, con la misma configuración,
-   sale a la primera si la salida va a %LOCALAPPDATA%.
+   sale a la primera si la salida va a %LOCALAPPDATA%, que no está protegido.
+
+   Arreglo de raíz, si algún día se quiere (pide administrador): añadir la
+   carpeta del proyecto a las carpetas permitidas en
+   Seguridad de Windows → Protección antivirus → Acceso controlado a carpetas.
+   Mientras tanto, este rodeo basta y no toca la configuración del sistema.
 
    De paso, un aviso para quien venga a tocar la lista `files` de package.json:
    los paquetes de @capacitor están excluidos a propósito. Solo sirven para
