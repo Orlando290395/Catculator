@@ -20,9 +20,13 @@ files:
   - idiomas.js
   - manifest.json
   - sw.js
+  - sonidos/**
   - icons/**
   - icon.ico
   - icon.png
+  # Capacitor solo sirve para compilar Android. Si se cuela, arrastra el arbol
+  # de gradle entero: rutas de mas de 260 caracteres que Windows no maneja.
+  - '!node_modules/@capacitor/**'
 win:
   icon: icon.ico
   target:

@@ -645,15 +645,29 @@ const GUION_AUDIO = `(async () => {
     applyFur('carbon');
     prueba('elegir gato normal no pide ninguna', !!rugidoEnVuelo.carbon, false);
 
-    // Las listas que deciden si el archivo llega al usuario
+    /* Las listas que deciden si el archivo llega al usuario. Son TRES, una por
+       destino, y hay que mirarlas todas: la de Microsoft Store se quedó sin
+       sonidos/** al añadirlos y el .appx habría salido mudo —con el gato
+       cayendo al plan B justo en la versión de la tienda—, mientras las otras
+       dos estaban bien. Un fallo así no se nota compilando: se nota cuando lo
+       instala alguien. */
     const listas = [['sw.js', 'el caché sin conexión'],
-                    ['build-pwa.js', 'el paquete de la PWA']];
+                    ['build-pwa.js', 'el paquete de la PWA'],
+                    ['microsoft-store/electron-builder.yml', 'el .appx de Microsoft Store']];
     for (const [archivo, queEs] of listas) {
       let texto = '';
       try { texto = await (await fetch(archivo)).text(); } catch (e) {}
+      /* Cada lista nombra los archivos a su manera: sw.js y build-pwa.js los
+         listan uno a uno, y el .yml usa un comodín de carpeta. Vale cualquiera
+         de las dos formas mientras el archivo acabe dentro. */
+      const cubre = (ruta) => {
+        if (texto.indexOf(ruta) !== -1) return true;
+        const carpeta = ruta.slice(0, ruta.lastIndexOf('/') + 1);
+        return texto.indexOf(carpeta + '**') !== -1;
+      };
       for (const especie of Object.keys(RUGIDOS_GRABADOS)) {
         prueba('el rugido del ' + especie + ' entra en ' + queEs,
-               texto.indexOf(RUGIDOS_GRABADOS[especie]) !== -1, true);
+               cubre(RUGIDOS_GRABADOS[especie]), true);
       }
     }
 
