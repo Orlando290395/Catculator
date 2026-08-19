@@ -74,14 +74,20 @@ const TOMAS = [
     }
   },
   {
-    // Pegar: se enseña el resultado del pegado y el gato diciéndolo.
-    nombre: '3-pegar', w: 360, h: 640,
+    /* El menú del portapapeles. Enseña las dos cosas en una sola imagen, que
+       es lo que hay que contar: copiar se había quedado sin gesto porque
+       tocar la pantalla ahora coloca el cursor. Se pega antes un precio para
+       que haya un número de verdad detrás del menú. */
+    nombre: '3-copiar-pegar', w: 360, h: 640,
     tema: 'rosa', pelaje: 'blanco', atuendo: 'ninguno', modo: 'basic',
-    rotulo: { es: 'Pega precios desde donde sea 📋',
-              en: 'Paste prices from anywhere 📋' },
+    rotulo: { es: 'Mantén pulsado: copiar y pegar 📋',
+              en: 'Press and hold: copy and paste 📋' },
     guion: async ($, wait, rotulo) => {
       pegarTexto(document.documentElement.lang === 'en' ? '1,234.56' : '1.234,56');
       await wait(400);
+      const r = $('#result').getBoundingClientRect();
+      abrirMenuClip(r.left + r.width * 0.62, r.bottom - 4);
+      await wait(250);
       say(rotulo, 6000);
       await wait(300);
     }
@@ -160,8 +166,8 @@ async function run() {
 
     await win.webContents.insertCSS('::-webkit-scrollbar { width: 0 !important; height: 0 !important; }');
     await win.webContents.insertCSS(
-      '.side-panel, .theme-panel, .speech { animation: none !important; transition: none !important; }' +
-      '.side-panel:not(.hidden), .theme-panel:not(.hidden) { opacity: 1 !important; }' +
+      '.side-panel, .theme-panel, .speech, .clip-menu { animation: none !important; transition: none !important; }' +
+      '.side-panel:not(.hidden), .theme-panel:not(.hidden), .clip-menu:not(.hidden) { opacity: 1 !important; }' +
       /* El cursor parpadea con step-end: la mitad del tiempo es invisible y la
          captura salía sin él, que es justo lo que se quiere enseñar. */
       '.caret { animation: none !important; opacity: 1 !important; }');

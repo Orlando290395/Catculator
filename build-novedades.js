@@ -23,7 +23,7 @@ const TEXTOS = {
   'play-es': { limite: 500, texto:
 `Cinco mejoras para el día a día:
 
-• PEGAR números de otras apps: Ctrl+V, o mantén pulsada la pantalla.
+• COPIAR Y PEGAR: mantén pulsada la pantalla (o botón derecho) y elige.
 • CORRIGE EN MEDIO: toca donde está el error y arréglalo ahí, sin borrarlo todo.
 • NO SE PIERDE la cuenta a medias al cerrar la app.
 • PULSA = OTRA VEZ y repite la última operación.
@@ -34,7 +34,7 @@ const TEXTOS = {
   'play-en': { limite: 500, texto:
 `Five everyday improvements:
 
-• PASTE numbers from other apps: Ctrl+V, or press and hold the display.
+• COPY AND PASTE: press and hold the display (or right-click) and pick.
 • FIX THE MIDDLE: tap where the mistake is and fix it there, no clearing everything.
 • KEEPS your half-finished sum when you close the app.
 • PRESS = AGAIN to repeat the last operation.
@@ -45,10 +45,12 @@ Thanks for using Catculator! 🐱` },
   'microsoft-es': { limite: 1500, texto:
 `Catculator 1.2.0 — cinco mejoras de uso diario
 
-PEGAR NÚMEROS
-Ya se pueden traer cifras desde otras aplicaciones: Ctrl+V en el teclado, o
-mantener pulsada la pantalla. Entiende los dos formatos (1.234,56 y 1,234.56) y
-avisa cuando lo pegado no es un número, en vez de inventarse uno.
+COPIAR Y PEGAR
+Ya se pueden traer cifras desde otras aplicaciones y llevarse el resultado a
+donde haga falta: mantén pulsada la pantalla —o el botón derecho en Windows— y
+elige Copiar o Pegar. Para pegar también vale Ctrl+V. Entiende los dos formatos
+(1.234,56 y 1,234.56) y avisa cuando lo pegado no es un número, en vez de
+inventarse uno.
 
 CORREGIR EN MEDIO DE LA CUENTA
 Antes solo se podía borrar desde el final: si la errata estaba al principio de
@@ -71,10 +73,12 @@ lados vacíos. También aprovecha mejor las pantallas de tableta.
   'microsoft-en': { limite: 1500, texto:
 `Catculator 1.2.0 — five everyday improvements
 
-PASTE NUMBERS
-You can now bring figures in from other apps: Ctrl+V, or press and hold the
-display. It understands both formats (1,234.56 and 1.234,56) and tells you when
-what you pasted isn't a number, instead of making one up.
+COPY AND PASTE
+You can now bring figures in from other apps and take the result out again:
+press and hold the display — or right-click on Windows — and pick Copy or
+Paste. Ctrl+V works for pasting too. It understands both formats (1,234.56 and
+1.234,56) and tells you when what you pasted isn't a number, instead of making
+one up.
 
 FIX THE MIDDLE OF A SUM
 Before, you could only delete from the end: if the typo was at the start of a
