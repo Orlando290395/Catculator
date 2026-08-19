@@ -351,6 +351,155 @@ const GUION_COMPORTAMIENTO = `(() => {
   aplicarIdioma(idiomaAntes);
   store.del('catculator-idioma');   // que la prueba no deje el idioma fijado
 
+  /* ---------- Cursor dentro de la expresión ----------
+     Antes solo se borraba desde el final: si la errata estaba al principio de
+     una cuenta larga, o borrabas todo o te aguantabas. Ahora hay un índice de
+     inserción, y lo que hay que vigilar es que TODO lo que toca la expresión lo
+     respete: teclear, borrar, el ±, y los bordes. */
+  const histAntes = store.get('catculator-history');
+
+  clearAll(true);
+  pushToken('1'); pushToken('2'); pushToken('3');
+  prueba('escribir deja el cursor al final', cursor, 3);
+
+  ponerCursor(1);
+  pushToken('9');
+  prueba('se teclea donde está el cursor', rawExpr(), '1923');
+  prueba('y el cursor avanza con lo tecleado', cursor, 2);
+
+  backspace();
+  prueba('borrar quita lo de detrás del cursor, no lo último', rawExpr(), '123');
+  prueba('y el cursor retrocede', cursor, 1);
+
+  ponerCursor(0);
+  backspace();
+  prueba('pegado al borde izquierdo, borrar no hace nada', rawExpr(), '123');
+  prueba('ni se mueve más a la izquierda', moverCursor(-1), false);
+  ponerCursor(999);
+  prueba('el cursor no se sale por la derecha', cursor, tokens.length);
+  prueba('ni se mueve más a la derecha', moverCursor(1), false);
+
+  /* El cursor es un <span> vacío a propósito: fitResult() elige el tamaño de
+     letra midiendo la longitud del texto, y un cursor hecho con un carácter
+     encogía los números al escribir. */
+  clearAll(true);
+  pushToken('7'); pushToken('+'); pushToken('8');
+  ponerCursor(1);
+  prueba('cada pulsación es su propio trozo', document.querySelectorAll('#result .tok').length, 3);
+  prueba('hay un cursor y solo uno', document.querySelectorAll('#result .caret').length, 1);
+  prueba('y está en su sitio',
+         document.querySelector('#result .caret').nextElementSibling.dataset.i, '1');
+  prueba('el cursor no aporta texto', document.querySelector('#result .caret').textContent, '');
+  prueba('la pantalla se sigue leyendo entera', elResult.textContent, '7+8');
+
+  // El ± trabaja sobre el número que toca el cursor, no sobre el final
+  clearAll(true);
+  for (const k of ['1', '2', '+', '3', '4']) pushToken(k);
+  ponerCursor(2);
+  toggleSign();
+  prueba('el ± niega el número del cursor', rawExpr(), '(-12)+34');
+  toggleSign();
+  prueba('y al repetirlo lo desenvuelve', rawExpr(), '12+34');
+
+  /* ---------- Pegar ----------
+     Lo pegado viene de donde sea: del banco, de un mensaje, de una web. Se mide
+     que entienda las dos convenciones de separadores y, sobre todo, que diga
+     que no antes que inventarse un número. */
+  const idiomaPegar = IDIOMA;
+  aplicarIdioma('es');                       // miles con punto, decimales con coma
+  prueba('pega un entero pelado', numeroPegado('1234'), 1234);
+  prueba('pega con moneda y espacios', numeroPegado(' $ 1.234,56 '), 1234.56);
+  prueba('entiende los miles a la inglesa', numeroPegado('1,234.56'), 1234.56);
+  prueba('un punto y tres cifras es de miles en español', numeroPegado('1.234'), 1234);
+  prueba('una coma y tres cifras es decimal en español', numeroPegado('1,234'), 1.234);
+  prueba('pega millones', numeroPegado('1.234.567'), 1234567);
+  prueba('pega negativos', numeroPegado('-42,5'), -42.5);
+  prueba('rechaza texto', numeroPegado('hola'), null);
+  prueba('rechaza lo vacío', numeroPegado('   '), null);
+  prueba('rechaza una fecha', numeroPegado('1.2.3'), null);
+  prueba('rechaza una cuenta entera', numeroPegado('12+34'), null);
+  prueba('rechaza un rango', numeroPegado('5-7'), null);
+
+  clearAll(true);
+  pushToken('5'); pushToken('+');
+  pegarTexto('1.234,50');
+  prueba('lo pegado entra donde está el cursor', rawExpr(), '5+1234.5');
+  aplicarIdioma(idiomaPegar);
+
+  /* ---------- Repetir con = ----------
+     5+3= da 8 y volver a pulsar = da 11. Lo delicado es de dónde sale lo que se
+     repite: el último operador de nivel superior, sin colarse en un paréntesis. */
+  prueba('la cola de 5+3', colaRepetible(['5', '+', '3']).join(''), '+3');
+  prueba('en 2*3+4 se repite lo último', colaRepetible(['2', '*', '3', '+', '4']).join(''), '+4');
+  prueba('no se mete dentro del paréntesis',
+         colaRepetible(['(', '1', '+', '2', ')', '*', '3']).join(''), '*3');
+  prueba('tampoco dentro de una función',
+         colaRepetible(['sqrt(', '4', '+', '5', ')']), null);
+  prueba('un número suelto no tiene nada que repetir', colaRepetible(['7']), null);
+  prueba('el menos de -5 es signo, no resta', colaRepetible(['-', '5']), null);
+  prueba('una cuenta a medias tampoco', colaRepetible(['5', '+']), null);
+
+  clearAll(true);
+  for (const k of ['5', '+', '3']) pushToken(k);
+  equals();
+  prueba('5+3 da 8', ans, 8);
+  equals();
+  prueba('otro = repite el +3', ans, 11);
+  equals();
+  prueba('y otra vez', ans, 14);
+
+  /* ---------- La cuenta a medias sobrevive al cierre ---------- */
+  clearAll(true);
+  for (const k of ['4', '2', '+', '8']) pushToken(k);
+  ponerCursor(2);
+  const sesion = JSON.parse(store.get('catculator-sesion'));
+  prueba('se guarda la cuenta a medias', sesion.tokens.join(''), '42+8');
+  prueba('y dónde estaba el cursor', sesion.cursor, 2);
+
+  clearAll(true);
+  store.set('catculator-sesion', JSON.stringify(sesion));
+  restaurarSesion();
+  prueba('al volver, la cuenta sigue ahí', rawExpr(), '42+8');
+  prueba('y el cursor donde lo dejaste', cursor, 2);
+
+  /* Lo guardado no es de fiar: localStorage lo puede tocar cualquiera y una
+     versión vieja pudo dejar otro formato. Nunca debe dejar la app inservible. */
+  clearAll(true);
+  store.set('catculator-sesion', JSON.stringify({ tokens: ['3', 'jamón', '*'] }));
+  restaurarSesion();
+  prueba('un guardado con basura se ignora', rawExpr(), '');
+  store.set('catculator-sesion', JSON.stringify({ tokens: 'no soy un arreglo' }));
+  restaurarSesion();
+  prueba('y uno con otro formato, también', rawExpr(), '');
+  store.set('catculator-sesion', 'esto no es ni JSON');
+  restaurarSesion();
+  prueba('y uno que ni es JSON', rawExpr(), '');
+
+  /* ---------- Vibración ----------
+     Va aparte del sonido porque mucha gente lleva el móvil en silencio: sin una
+     cosa ni la otra, las teclas se sienten muertas. */
+  const btnVib = document.getElementById('btn-vibrar');
+  prueba('el interruptor de vibrar existe', !!btnVib, true);
+  prueba('y vive en el panel de personalizar', btnVib.closest('#theme-panel') !== null, true);
+  const vibAntes = vibrarOn;
+  if (!vibrarOn) btnVib.click();
+  prueba('viene encendido de fábrica', vibrarOn, true);
+  prueba('y lo dice para el lector de pantalla', btnVib.getAttribute('aria-pressed'), 'true');
+  btnVib.click();
+  prueba('al pulsarlo se apaga', vibrarOn, false);
+  prueba('y queda guardado', store.get('catculator-vibrar'), 'off');
+  prueba('apagado, vibrar no hace nada', vibrar(10), undefined);
+  btnVib.click();
+  prueba('y vuelve a encenderse', vibrarOn, true);
+  if (vibrarOn !== vibAntes) btnVib.click();
+  store.del('catculator-vibrar');
+
+  // Que las pruebas no le dejen a nadie la calculadora sucia
+  clearAll(true);
+  store.del('catculator-sesion');
+  if (histAntes === null) store.del('catculator-history');
+  else store.set('catculator-history', histAntes);
+
   return r;
 })()`;
 
@@ -715,6 +864,84 @@ app.on('window-all-closed', () => {});
    quedaba colgado sin imprimir nada y había que salir a buscar el error por
    fuera. Un banco de pruebas que se cuelga en silencio es peor que uno que
    falla. */
+/* ---------- Diseño al girar el móvil ----------
+   Esto no cabe en el guion de comportamiento: las media queries dependen del
+   tamaño REAL de la ventana, y desde dentro de la página no se puede cambiar.
+   Hay que redimensionar de verdad y volver a medir, así que es una fase aparte.
+
+   Lo que se vigila: que en horizontal el teclado se vaya a su columna, que
+   quepa entero, que las teclas no se queden en tamaño de hormiga, y —lo más
+   importante— que el vertical de siempre no se haya movido ni un pelo. */
+const TAMANOS = [
+  { nombre: 'móvil girado',                 w: 844,  h: 390, sci: false, cols: 2 },
+  { nombre: 'móvil girado con científica',  w: 844,  h: 390, sci: true,  cols: 3 },
+  { nombre: 'móvil pequeño girado',         w: 640,  h: 360, sci: false, cols: 2 },
+  { nombre: 'móvil pequeño con científica', w: 640,  h: 360, sci: true,  cols: 3 },
+  { nombre: 'tablet en horizontal',         w: 1024, h: 768, sci: false, cols: 2 },
+  { nombre: 'tablet con científica',        w: 1024, h: 768, sci: true,  cols: 3 },
+  { nombre: 'móvil de pie',                 w: 440,  h: 780, sci: false, cols: 0 },
+  { nombre: 'móvil de pie con científica',  w: 440,  h: 780, sci: true,  cols: 0 }
+];
+
+/* "Alcanzable" no es lo mismo que "cabe en pantalla": en vertical con la
+   científica abierta el teclado se sale por abajo desde siempre, y está bien
+   porque .pad-wrap se desplaza. Lo que nunca puede pasar es que quede fuera
+   SIN forma de llegar a él. */
+const MEDIR_DISENO = `(() => {
+  const g = getComputedStyle(document.getElementById('app'));
+  const visible = (e) => e && getComputedStyle(e).display !== 'none';
+  const alcanzable = (sel) => {
+    const e = document.querySelector(sel);
+    if (!visible(e)) return true;
+    const r = e.getBoundingClientRect();
+    if (r.bottom <= innerHeight + 1 && r.right <= innerWidth + 1) return true;
+    for (let p = e.parentElement; p; p = p.parentElement) {
+      const o = getComputedStyle(p).overflowY;
+      if (o === 'auto' || o === 'scroll') return true;
+    }
+    return false;
+  };
+  const rk = document.querySelector('.keypad').getBoundingClientRect();
+  const rd = document.querySelector('.display').getBoundingClientRect();
+  return {
+    columnas: g.display === 'grid' ? g.gridTemplateColumns.split(' ').length : 0,
+    aLaDerecha: rk.left > rd.right - 2,
+    tecladoCabe: rk.bottom <= innerHeight + 1 && rk.right <= innerWidth + 1,
+    todoAlcanzable: alcanzable('.keypad') && alcanzable('#sci-pad'),
+    filaTecla: Math.round((rk.height - 40) / 5)
+  };
+})()`;
+
+async function faseDiseno(win) {
+  const r = [];
+  const original = win.getContentSize();
+  for (const t of TAMANOS) {
+    win.setContentSize(t.w, t.h);
+    await new Promise(res => setTimeout(res, 220));
+    await win.webContents.executeJavaScript(
+      "closePanels(); applyMode('" + (t.sci ? 'sci' : 'basic') + "'); clearAll(true);" +
+      "for (const k of ['1','2','3','4','+','5','6']) pushToken(k); 'listo';");
+    await new Promise(res => setTimeout(res, 200));
+    const m = await win.webContents.executeJavaScript(MEDIR_DISENO);
+    const n = t.nombre;
+    r.push([n + ': columnas', m.columnas, t.cols]);
+    r.push([n + ': no deja nada inalcanzable', m.todoAlcanzable, true]);
+    if (t.cols) {
+      r.push([n + ': el teclado va a la derecha de la cuenta', m.aLaDerecha, true]);
+      r.push([n + ': el teclado cabe entero', m.tecladoCabe, true]);
+      r.push([n + ': teclas de tamaño usable', m.filaTecla >= 40, true]);
+    } else {
+      r.push([n + ': sigue en una sola columna', m.aLaDerecha, false]);
+    }
+  }
+  win.setContentSize(original[0], original[1]);
+  await new Promise(res => setTimeout(res, 200));
+  await win.webContents.executeJavaScript(
+    "applyMode('basic'); clearAll(true);" +
+    "store.del('catculator-mode'); store.del('catculator-sesion'); 'listo';");
+  return r;
+}
+
 async function fase(win, nombre, guion) {
   try {
     return await win.webContents.executeJavaScript(guion);
@@ -765,6 +992,13 @@ app.whenReady().then(async () => {
   // --- Comportamiento ---
   const conducta = await fase(win, 'comportamiento', GUION_COMPORTAMIENTO);
   for (const [nombre, obtenido, esperado] of conducta) {
+    if (comparar(obtenido, esperado)) pasan++;
+    else { fallan++; fallos.push(`  ${nombre}  esperaba ${JSON.stringify(esperado)}  obtuvo ${JSON.stringify(obtenido)}`); }
+  }
+
+  // --- Diseño al girar (redimensiona la ventana de verdad) ---
+  const diseno = await faseDiseno(win);
+  for (const [nombre, obtenido, esperado] of diseno) {
     if (comparar(obtenido, esperado)) pasan++;
     else { fallan++; fallos.push(`  ${nombre}  esperaba ${JSON.stringify(esperado)}  obtuvo ${JSON.stringify(obtenido)}`); }
   }

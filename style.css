@@ -764,6 +764,45 @@ body {
 .result { cursor: pointer; }
 .copy-helper { position: fixed; left: -9999px; top: 0; }
 
+/* ---------- Cursor de edición ----------
+   Es un <span> SIN texto: la raya la pinta el fondo. Importa porque fitResult()
+   decide el tamaño de letra midiendo la longitud del contenido, y un cursor
+   hecho con un carácter (│ o |) engordaba la cuenta y encogía los números. */
+.caret {
+  display: inline-block;
+  width: 2px;
+  height: 0.92em;
+  vertical-align: -0.1em;
+  margin: 0 1px;
+  background: var(--accent);
+  animation: parpadeo 1.05s step-end infinite;
+}
+@keyframes parpadeo {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0; }
+}
+/* Un cursor parpadeando es justo lo que molesta a quien pide menos movimiento;
+   se queda fijo, que sigue marcando el sitio igual de bien. */
+@media (prefers-reduced-motion: reduce) {
+  .caret { animation: none; }
+}
+/* Cada pulsación es su propio trozo para poder tocarla, pero tiene que leerse
+   como texto corrido: sin esto los espacios de ' mod ' se colapsaban. */
+.tok { white-space: pre; }
+
+/* Interruptor dentro de un panel: hueco cuando está apagado, macizo cuando no.
+   Se distingue sin depender del color, porque el relleno también cambia. */
+.panel-action.toggle {
+  background: transparent;
+  color: var(--accent);
+  border: 2px solid var(--accent);
+  padding: 6px 8px;
+}
+.panel-action.toggle.active {
+  background: var(--accent);
+  color: #fff;
+}
+
 /* Partes decorativas del gato que no deben robarle el clic al SVG. Vive aquí y
    no en un style="" porque la CSP de la página no permite estilos en línea: los
    descartaba en silencio. */
@@ -1192,4 +1231,108 @@ body {
   .pad-wrap { padding-top: 6px; gap: 7px; }
   .keypad { grid-template-rows: repeat(5, minmax(38px, 1fr)); gap: 7px; }
   .footer { display: none; }         /* el pie es adorno; el teclado no */
+}
+
+/* ---------- Horizontal: dos columnas ----------
+   Girando el móvil se pierde alto y se gana el doble de ancho. Con una sola
+   columna de 460px eso significaba media pantalla vacía a cada lado mientras
+   el teclado se aplastaba hasta ser incómodo de usar.
+
+   En dos columnas cabe todo sin encoger nada: la cuenta a la izquierda, las
+   teclas a la derecha, y cada pulgar con lo suyo cerca. Vale igual para la
+   tablet en horizontal y para la ventana de escritorio estirada. El móvil de
+   pie y la ventana estrecha no se enteran: nada de esto les aplica.
+
+   Va al final del archivo a propósito, para pisar a las dos reglas de arriba
+   con las que se solapa (la de min-width:1140px y la de max-height:520px). */
+@media (orientation: landscape) and (min-width: 600px) {
+  #app {
+    max-width: 940px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+    column-gap: 18px;
+  }
+  .topbar        { grid-column: 1 / -1; grid-row: 1; }
+  .cat-scene     { grid-column: 1; grid-row: 2; }
+  .display       { grid-column: 1; grid-row: 3; }
+  .calc-controls { grid-column: 1; grid-row: 4; align-self: start; }
+  .pad-wrap      { grid-column: 2; grid-row: 2 / -1; padding-top: 0; }
+  .footer        { display: none; }  /* aquí el pie solo le robaría alto a las teclas */
+
+  /* En la columna izquierda sobra alto, así que el gato puede volver a
+     respirar: la regla de pantallas bajas lo encoge a 104px porque allí compite
+     con el teclado, y aquí ya no compite con nada.
+
+     Pero se mide contra SU columna y no en píxeles fijos: con la científica
+     abierta en una ventana de 640 esa columna baja de 200px, y un gato de 132
+     le plantaba las patas encima de la vista previa. El alto va en auto para
+     que el SVG conserve su proporción. */
+  #cat { width: min(132px, 62%); height: auto; }
+  .cat-scene { margin-bottom: -14px; }
+  /* Hueco arriba para las patas, que asoman por el borde de la pantalla */
+  .display { padding-top: 26px; }
+
+  /* Teclas cómodas, pero con techo: en una tablet de 768 de alto, cinco filas a
+     partes iguales salían de 141px cada una — botones de juguete. Con el tope
+     puesto, el bloque se queda de tamaño humano y se centra en su columna.
+
+     El height:100% no es decorativo y cuesta un párrafo explicarlo: en cuanto
+     se pone align-self distinto de stretch, la casilla deja de imponer altura y
+     el teclado pasa a medir por su contenido. Con filas de tope fijo eso
+     significaba que cada una cogía su máximo SIEMPRE —86px— y las cinco se
+     salían por abajo de una pantalla de 390. Con height:100% la altura vuelve a
+     ser la de la casilla, las filas en fr se reparten lo que hay, y el
+     max-height es el que pone el techo en pantallas altas. */
+  .keypad {
+    grid-template-rows: repeat(5, minmax(40px, 1fr));
+    align-self: center;
+    height: 100%;
+    max-height: 520px;
+  }
+
+  /* Los paneles vuelven a abrirse DENTRO de la app. Con la ventana ya en 940px
+     no quedan 320px libres al costado, y la regla de min-width:1140px —pensada
+     para la columna estrecha— los mandaba fuera de la pantalla. Y con tope de
+     alto, que es justo lo que aquí escasea. */
+  .theme-panel,
+  .side-panel {
+    left: auto;
+    right: 18px;
+    max-height: calc(100dvh - 80px);
+    overflow-y: auto;
+  }
+}
+
+/* Con la científica abierta son diez filas de teclas apiladas en una columna:
+   en 390px de alto el '=' quedaba fuera de la pantalla.
+
+   La salida es la misma que usan las calculadoras del sistema al girar el
+   móvil: en vez de apilar, se abre una TERCERA columna. La cuenta a la
+   izquierda, las funciones en medio, el teclado a la derecha, y todo del mismo
+   tamaño que sin la científica.
+
+   Para eso hay que deshacer la caja de .pad-wrap, y así sus dos hijos ascienden
+   a casillas de la rejilla de #app. Envuelto en @supports porque
+   display:contents no existe antes de Chrome 65 (el mínimo de la app es Android
+   7, cuyo WebView original es más viejo, aunque se actualiza por su cuenta).
+   Donde no esté, queda la regla de arriba: los dos teclados apilados en la
+   columna derecha con su barra de desplazamiento. Más apretado, pero entero. */
+@supports (display: contents) {
+  @media (orientation: landscape) and (min-width: 600px) {
+    .pad-wrap { display: contents; }
+    .keypad  { grid-column: 2; grid-row: 2 / -1; }
+    /* Oculta no ocupa casilla, así que sin científica el teclado se queda con
+       la columna 2 y la rejilla sigue teniendo dos. */
+    #sci-pad {
+      grid-column: 2;
+      grid-row: 2 / -1;
+      align-self: center;
+      height: 100%;
+      max-height: 520px;
+      grid-auto-rows: minmax(34px, 1fr);
+    }
+    #app.sci-on { grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr) minmax(0, 1fr); }
+    #app.sci-on .keypad { grid-column: 3; }
+  }
 }

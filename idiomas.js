@@ -32,8 +32,8 @@ const TEXTOS = {
     // ---------- Pantalla ----------
     'frac.title': 'Ver como fracción / decimal',
     'frac.aria': 'Ver como fracción o decimal',
-    'result.title': 'Tocar para copiar',
-    'result.desc': 'Resultado. Enter para copiarlo.',
+    'result.title': 'Tocar para copiar · mantener para pegar',
+    'result.desc': 'Resultado. Enter para copiarlo. Con una cuenta a medias, tocar coloca el cursor y las flechas lo mueven.',
     'miau': '¡Miau!',
 
     // ---------- Controles ----------
@@ -75,6 +75,9 @@ const TEXTOS = {
     'atuendo.pirata': 'Pirata',
     'atuendo.mago': 'Mago',
     'atuendo.capucha': 'Encapuchado',
+
+    'ajustes.titulo': 'Ajustes ⚙️',
+    'ajustes.vibrar': 'Vibrar al pulsar 📳',
 
     // ---------- Historial ----------
     'hist.titulo': 'Historial 🕘',
@@ -204,6 +207,11 @@ const TEXTOS = {
 
     'say.sonido.on': '¡Miau! Sonido activado 🔊',
     'say.sonido.off': 'Modo sigiloso, como buen gato 🤫',
+    'say.vibrar.on': 'Vibración activada 📳',
+    'say.vibrar.off': 'Sin vibración: patitas suaves 🐾',
+    'say.pegado': '¡Pegado! 📋',
+    'say.pegar.no': 'Eso no me parece un número 🤔',
+    'say.pegar.permiso': 'No me dejan mirar el portapapeles 🙀',
     'say.mem.borrada': 'Memoria borrada 🧽',
     'say.mem.guardada': 'Guardado en memoria 📥',
     'say.mem.sumada': 'Sumado a memoria ➕',
@@ -268,8 +276,8 @@ const TEXTOS = {
 
     'frac.title': 'Show as fraction / decimal',
     'frac.aria': 'Show as fraction or decimal',
-    'result.title': 'Tap to copy',
-    'result.desc': 'Result. Press Enter to copy it.',
+    'result.title': 'Tap to copy · hold to paste',
+    'result.desc': 'Result. Press Enter to copy it. While typing a sum, tapping places the cursor and the arrow keys move it.',
     'miau': 'Meow!',
 
     'ctrl.modo': 'Switch mode',
@@ -309,6 +317,9 @@ const TEXTOS = {
     'atuendo.pirata': 'Pirate',
     'atuendo.mago': 'Wizard',
     'atuendo.capucha': 'Hooded',
+
+    'ajustes.titulo': 'Settings ⚙️',
+    'ajustes.vibrar': 'Vibrate on tap 📳',
 
     'hist.titulo': 'History 🕘',
     'hist.borrar': 'Clear history 🧽',
@@ -430,6 +441,11 @@ const TEXTOS = {
 
     'say.sonido.on': 'Meow! Sound on 🔊',
     'say.sonido.off': 'Stealth mode, like a proper cat 🤫',
+    'say.vibrar.on': 'Vibration on 📳',
+    'say.vibrar.off': 'No vibration: soft paws 🐾',
+    'say.pegado': 'Pasted! 📋',
+    'say.pegar.no': "That doesn't look like a number 🤔",
+    'say.pegar.permiso': 'They will not let me peek at the clipboard 🙀',
     'say.mem.borrada': 'Memory cleared 🧽',
     'say.mem.guardada': 'Stored in memory 📥',
     'say.mem.sumada': 'Added to memory ➕',

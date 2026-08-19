@@ -74,6 +74,12 @@ traducirDOM();
 
 // ---------- Estado de la calculadora ----------
 let tokens = [];            // expresión en construcción (un token por pulsación)
+/* Dónde se inserta lo próximo que se teclee: 0 = antes del primer token,
+   tokens.length = al final (que es lo de siempre). Que cada pulsación sea un
+   token atómico es lo que hace barato tener cursor: es un índice del arreglo y
+   no una posición dentro de una cadena, así que nadie tiene que saber cuánto
+   ocupa 'sqrt(' ni dónde empieza un número de varias cifras. */
+let cursor = 0;
 let ans = 0;                // último resultado
 let lastExprRaw = '';       // expresión evaluada (para la línea superior)
 let memory = 0;             // memoria (MC/MR/M+/M-/MS)
@@ -473,13 +479,56 @@ function fitResult() {
   else if (t.length > 10) elResult.classList.add('small');
 }
 
+/* Dibuja la expresión token a token, en vez de como una sola cadena de texto.
+   Hace falta para dos cosas: poner el cursor ENTRE dos pulsaciones, y saber
+   sobre cuál se ha tocado (cada <span> lleva su índice).
+
+   prettify se aplica a cada token por separado y no a la cadena entera. Se
+   puede porque todos los tokens son unidades completas —'sqrt(', '^(-1)',
+   '*10^'…— y ninguna sustitución cruza de un token al siguiente. */
+function pintarExpresion() {
+  const nuevoCaret = () => {
+    const c = document.createElement('span');
+    c.className = 'caret';
+    return c;
+  };
+  const frag = document.createDocumentFragment();
+  for (let i = 0; i < tokens.length; i++) {
+    if (i === cursor) frag.appendChild(nuevoCaret());
+    const s = document.createElement('span');
+    s.className = 'tok';
+    s.dataset.i = String(i);
+    s.textContent = prettify(tokens[i]);
+    frag.appendChild(s);
+  }
+  if (cursor === tokens.length) frag.appendChild(nuevoCaret());
+  elResult.textContent = '';
+  elResult.appendChild(frag);
+  /* Con una cuenta larga la pantalla recorta por los lados, y editando en medio
+     te quedabas escribiendo a ciegas. Un elemento con overflow oculto sigue
+     pudiéndose desplazar por código, así que se arrastra lo justo para que el
+     cursor vuelva a verse. */
+  const c = elResult.querySelector('.caret');
+  if (!c) return;
+  const caja = elResult.getBoundingClientRect();
+  const cc = c.getBoundingClientRect();
+  const margen = 14;
+  if (cc.left < caja.left + margen) elResult.scrollLeft -= (caja.left + margen - cc.left);
+  else if (cc.right > caja.right - margen) elResult.scrollLeft += (cc.right - caja.right + margen);
+}
+
 function updateDisplay(popAnim = false) {
+  /* Red de seguridad: hay varios sitios que reemplazan tokens en bloque (el
+     historial, el conversor, el modo aprendiz). Si alguno olvida recolocar el
+     cursor, aquí se recorta al rango válido en vez de romperse. */
+  cursor = Math.min(tokens.length, Math.max(0, cursor));
   elFrac.classList.toggle('hidden', !(justEvaluated && ansFrac && !errorState && !quizMode));
   elFrac.classList.toggle('active', fracMode);
   if (errorState) {
     elResult.textContent = t('miau');
     elExpr.textContent = ' ';
     fitResult();
+    guardarSesion();
     return;
   }
   if (quizMode) {
@@ -487,14 +536,15 @@ function updateDisplay(popAnim = false) {
       (racha > 0 ? '  ·  🔥' + racha : '');
     elResult.textContent = tokens.length ? prettify(rawExpr()) : '?';
     fitResult();
-    return;
+    return;                                  // el quiz no se guarda: es de usar y tirar
   }
   if (justEvaluated) {
     elExpr.textContent = prettify(lastExprRaw) + ' =';
     elResult.textContent = (fracMode && ansFrac) ? formatFraction(ansFrac) : formatNumber(ans);
   } else {
     const raw = rawExpr();
-    elResult.textContent = raw ? prettify(raw) : '0';
+    if (raw) pintarExpresion();
+    else elResult.textContent = '0';
     let preview = ' ';
     if (raw) {
       try { const v = evaluate(raw); if (isFinite(v)) preview = '= ' + formatNumber(v); }
@@ -503,6 +553,7 @@ function updateDisplay(popAnim = false) {
     elExpr.textContent = preview;
   }
   fitResult();
+  guardarSesion();
   if (popAnim) {
     elResult.classList.remove('pop');
     void elResult.offsetWidth;
@@ -513,6 +564,13 @@ function updateDisplay(popAnim = false) {
 // ---------- Entrada ----------
 const OPENERS = /^(sqrt\(|cbrt\(|sin\(|cos\(|tan\(|asin\(|acos\(|atan\(|ln\(|log\(|abs\(|e\^\(|10\^\(|\(|π|e|ans|mem|\.|\d)/;
 
+/* Mete tokens donde esté el cursor y lo deja detrás de lo insertado. Pasan por
+   aquí el teclado en pantalla, el teclado físico y el pegado. */
+function insertarTokens(lista) {
+  tokens.splice(cursor, 0, ...lista);
+  cursor += lista.length;
+}
+
 function pushToken(tok) {
   if (errorState) clearAll(true);
   wakeUp();
@@ -520,9 +578,10 @@ function pushToken(tok) {
     // Si sigue operando, arrastra el resultado como número visible (no "Ans")
     const continues = /^(\+|-|\*|\/|\^|!|%|mod|\^2|\^3|\^\(-1\))/.test(tok);
     tokens = continues ? numberToTokens(ans) : [];
+    cursor = tokens.length;
     justEvaluated = false;
   }
-  tokens.push(tok);
+  insertarTokens([tok]);
   updateDisplay();
   checkTypedEggs();
 }
@@ -531,12 +590,17 @@ function backspace() {
   if (errorState) { clearAll(); return; }
   wakeUp();
   if (justEvaluated) { clearAll(true); return; }
-  tokens.pop();
+  // Borra lo que queda DETRÁS del cursor, como cualquier campo de texto.
+  if (cursor > 0) {
+    tokens.splice(cursor - 1, 1);
+    cursor--;
+  }
   updateDisplay();
 }
 
 function clearAll(silent) {
   tokens = [];
+  cursor = 0;
   errorState = false;
   justEvaluated = false;
   updateDisplay();
@@ -546,20 +610,70 @@ function clearAll(silent) {
   }
 }
 
+/* Los dos únicos sitios por los que se mueve el cursor. Recortan solos al rango
+   válido, así que quien llama no tiene que comprobar nada. moverCursor devuelve
+   si de verdad se movió, para no repetir el sonido al topar con el borde. */
+function moverCursor(delta) {
+  const antes = cursor;
+  cursor = Math.min(tokens.length, Math.max(0, cursor + delta));
+  if (cursor !== antes) updateDisplay();
+  return cursor !== antes;
+}
+
+function ponerCursor(i) {
+  const antes = cursor;
+  cursor = Math.min(tokens.length, Math.max(0, i));
+  if (cursor !== antes) updateDisplay();
+}
+
+/* La última operación de la cuenta, guardada para poder repetirla: 5+3= da 8, y
+   volver a pulsar = da 11, y otra vez 14. Las calculadoras de bolsillo llevan
+   haciendo esto toda la vida y sirve para ir sumando de tres en tres, o para
+   encadenar descuentos, sin reescribir nada.
+
+   Se busca el último operador que esté FUERA de todo paréntesis: en (1+2)*3 lo
+   que se repite es ×3, no +2. Los tokens de función terminan en '(' —'sqrt(',
+   'sin('— y por eso cuentan como apertura; '^(-1)' trae su paréntesis ya
+   cerrado dentro, así que no descuadra nada. */
+let repetible = null;
+
+function colaRepetible(lista) {
+  const BINARIOS = ['+', '-', '*', '/', '^', 'mod'];
+  let hondo = 0;
+  let corte = -1;
+  for (let i = 0; i < lista.length; i++) {
+    const tk = lista[i];
+    if (tk === ')') hondo--;
+    else if (tk.endsWith('(')) hondo++;
+    // i > 0 deja fuera el menos de "-5", que es signo y no resta
+    else if (hondo === 0 && i > 0 && BINARIOS.indexOf(tk) !== -1) corte = i;
+  }
+  if (corte <= 0 || corte === lista.length - 1) return null;
+  return lista.slice(corte);
+}
+
 function equals() {
   if (errorState) return;
   wakeUp();
   if (quizMode) { checkQuiz(); return; }
+  // Segundo = seguido: repite la última operación sobre el resultado anterior.
+  if (justEvaluated && repetible) {
+    tokens = numberToTokens(ans).concat(repetible);
+    cursor = tokens.length;
+    justEvaluated = false;
+  }
   const raw = rawExpr();
   if (!raw) { updateDisplay(true); return; }
   let v;
   try { v = evaluate(raw); }
   catch (e) { enterError(e.message); return; }
+  repetible = colaRepetible(tokens);
   lastExprRaw = raw;
   ans = v;
   ansFrac = toFraction(v);
   fracMode = false;
   justEvaluated = true;
+  cursor = tokens.length;
   addHistory(raw, v);
   updateDisplay(true);
   celebrate(v);
@@ -574,30 +688,36 @@ function equals() {
 function toggleSign() {
   if (errorState) return;
   wakeUp();
-  if (justEvaluated) { tokens = numberToTokens(-ans); justEvaluated = false; updateDisplay(); return; }
+  if (justEvaluated) { tokens = numberToTokens(-ans); cursor = tokens.length; justEvaluated = false; updateDisplay(); return; }
 
   const esDigito = t => /^[0-9.]$/.test(t);
 
+  /* Trabaja sobre el número que queda JUSTO ANTES del cursor, no sobre el final
+     de la expresión. Con el cursor al final —el caso de siempre— sale lo mismo
+     que antes; con el cursor en medio, niega el número que estás tocando. */
+
   // ¿Ya está negado? Quitarle el envoltorio.
-  if (tokens[tokens.length - 1] === ')') {
-    let i = tokens.length - 2;
+  if (tokens[cursor - 1] === ')') {
+    let i = cursor - 2;
     while (i >= 0 && esDigito(tokens[i])) i--;
-    const hayDigitos = i < tokens.length - 2;
+    const hayDigitos = i < cursor - 2;
     if (hayDigitos && i >= 1 && tokens[i] === '-' && tokens[i - 1] === '(') {
-      tokens.splice(tokens.length - 1, 1);   // el ')' del final
+      tokens.splice(cursor - 1, 1);          // el ')' del final
       tokens.splice(i - 1, 2);               // el '(' y el '-'
+      cursor -= 3;
       updateDisplay();
       return;
     }
   }
 
-  // Si no, envolver el número que esté al final.
-  let e = tokens.length - 1;
+  // Si no, envolver el número que esté justo antes del cursor.
+  let e = cursor - 1;
   while (e >= 0 && esDigito(tokens[e])) e--;
   const s = e + 1;
-  if (s > tokens.length - 1) return;         // no hay número al final
-  tokens.splice(s, 0, '(', '-');
-  tokens.push(')');
+  if (s > cursor - 1) return;                // no hay número que negar
+  tokens.splice(s, 0, '(', '-');             // se cuelan 2 tokens antes del cursor
+  tokens.splice(cursor + 2, 0, ')');         // y el cierre va detrás del número
+  cursor += 3;
   updateDisplay();
 }
 
@@ -828,7 +948,24 @@ function ctx() {
   return audioCtx;
 }
 
+/* ---------- Vibración ----------
+   Va por su cuenta y no colgando del sonido, a propósito: mucha gente lleva el
+   móvil en silencio, y sin sonido ni vibración las teclas se sienten muertas.
+   En escritorio navigator.vibrate no existe, así que esto no hace nada y no
+   hay que preguntar por la plataforma. */
+let vibrarOn = store.get('catculator-vibrar') !== 'off';
+
+function vibrar(ms) {
+  if (!vibrarOn || !navigator.vibrate) return;
+  /* Sin un toque previo de verdad el navegador lo rechaza y escupe un aviso por
+     consola. Preguntando antes, las pruebas automáticas —que pulsan botones por
+     código— dejan de llenar la salida de ruido. */
+  if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return;
+  try { navigator.vibrate(ms); } catch (e) { /* algunos navegadores lo prohíben */ }
+}
+
 function playClick() {
+  vibrar(12);
   if (!soundOn) return;
   const ac = ctx();
   const osc = ac.createOscillator();
@@ -1442,6 +1579,21 @@ btnSound.addEventListener('click', () => {
 });
 refreshSoundBtn();
 
+// ---------- Botón de vibración ----------
+const btnVibrar = document.getElementById('btn-vibrar');
+function refrescarVibrar() {
+  btnVibrar.classList.toggle('active', vibrarOn);
+  btnVibrar.setAttribute('aria-pressed', String(vibrarOn));
+}
+btnVibrar.addEventListener('click', () => {
+  vibrarOn = !vibrarOn;
+  store.set('catculator-vibrar', vibrarOn ? 'on' : 'off');
+  refrescarVibrar();
+  playClick();                               // ya con el ajuste nuevo: se nota al momento
+  say(t(vibrarOn ? 'say.vibrar.on' : 'say.vibrar.off'), 2000);
+});
+refrescarVibrar();
+
 // ---------- Temas ----------
 const themePanel = document.getElementById('theme-panel');
 const btnTheme = document.getElementById('btn-theme');
@@ -1627,7 +1779,139 @@ function copyResult() {
   }
 }
 
-elResult.addEventListener('click', copyResult);
+// ---------- Pegar ----------
+/* Copiar el resultado ya estaba; meter un número desde fuera, no. Y es lo que
+   más falta hace a diario: tienes el precio en el navegador o en un mensaje y
+   tocaba teclearlo a mano mirando.
+
+   Lo pegado puede venir de cualquier parte, así que se limpia a conciencia:
+   símbolos de moneda, espacios, letras. Lo que quede tiene que ser UN número,
+   y si no lo es se dice en vez de inventarse algo. */
+function numeroPegado(texto) {
+  if (typeof texto !== 'string') return null;
+  let s = texto.trim();
+  if (!s || s.length > 40) return null;
+  s = s.replace(/[^\d.,\-+]/g, '');          // "$ 1 234,50" -> "1234,50"
+  if (!s) return null;
+  const negativo = s.startsWith('-');
+  if (negativo || s.startsWith('+')) s = s.slice(1);
+  /* El signo solo vale al principio. Sin esto "12+34" perdía el más y entraba
+     como 1234, que es peor que no pegar nada: un número inventado con pinta de
+     correcto. Lo mismo con "10-3" o con un rango tipo "5-7". */
+  if (/[+\-]/.test(s)) return null;
+  if (!/\d/.test(s)) return null;
+
+  const puntos = (s.match(/\./g) || []).length;
+  const comas  = (s.match(/,/g)  || []).length;
+  let dec = null;                            // cuál de los dos hace de decimal
+  if (puntos && comas) {
+    /* Con los dos presentes manda el último: 1.234,56 y 1,234.56 son el mismo
+       número escrito en dos países distintos. */
+    dec = s.lastIndexOf('.') > s.lastIndexOf(',') ? '.' : ',';
+  } else if (puntos === 1 || comas === 1) {
+    const sep = puntos ? '.' : ',';
+    /* Uno solo es ambiguo: "1.234" son mil doscientos treinta y cuatro en
+       España y uno coma doscientos treinta y cuatro en inglés. Con exactamente
+       tres cifras detrás se toma por millares, pero solo si ese es el
+       separador de millares del idioma en curso. */
+    dec = (s.split(sep)[1].length === 3 && sep === SEP.miles) ? null : sep;
+  }
+
+  let limpio;
+  if (dec === null) {
+    const sep = puntos ? '.' : (comas ? ',' : null);
+    if (sep) {
+      /* Si van de millares, tienen que estar bien puestos. Sin esto "1.2.3"
+         —una fecha, una versión— se colaba como 123. */
+      const grupos = s.split(sep);
+      const bien = grupos[0].length >= 1 && grupos[0].length <= 3 &&
+        grupos.slice(1).every(g => g.length === 3);
+      if (!bien) return null;
+    }
+    limpio = s.replace(/[.,]/g, '');
+  } else {
+    const otro = dec === '.' ? ',' : '.';
+    limpio = s.split(otro).join('').split(dec).join('.');
+  }
+  if (!/^\d*\.?\d+$|^\d+\.?\d*$/.test(limpio)) return null;
+  const v = parseFloat(limpio);
+  if (!isFinite(v)) return null;
+  return negativo ? -v : v;
+}
+
+function pegarTexto(texto) {
+  if (quizMode) return false;
+  const v = numeroPegado(texto);
+  if (v === null) {
+    say(t('say.pegar.no'), 2600);
+    setMood('surprised', 1800);
+    return false;
+  }
+  if (errorState) clearAll(true);
+  if (justEvaluated) { tokens = []; cursor = 0; justEvaluated = false; }
+  insertarTokens(numberToTokens(v));
+  playClick();
+  updateDisplay(true);
+  say(t('say.pegado'), 1800);
+  setMood('happy', 1400);
+  return true;
+}
+
+/* Ctrl+V y el menú "Pegar" del escritorio entran por aquí. */
+document.addEventListener('paste', (e) => {
+  const tag = e.target.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA') return;   // el bloc de notas es suyo
+  const datos = e.clipboardData || window.clipboardData;
+  if (!datos) return;
+  if (pegarTexto(datos.getData('text'))) e.preventDefault();
+});
+
+/* En el móvil no hay evento paste sin un campo de texto donde pegar, así que
+   la vía es la pulsación larga sobre la pantalla — que además es lo que hacen
+   la calculadora de Android y la del iPhone, o sea que ya está en los dedos.
+   Leer el portapapeles pide permiso; si lo niegan se avisa y no pasa nada. */
+function pedirPegar() {
+  if (navigator.clipboard && navigator.clipboard.readText) {
+    navigator.clipboard.readText()
+      .then(pegarTexto)
+      .catch(() => say(t('say.pegar.permiso'), 2800));
+  } else {
+    say(t('say.pegar.permiso'), 2800);
+  }
+}
+
+let tempPulsacion = null;
+let huboPulsacionLarga = false;
+elResult.addEventListener('pointerdown', () => {
+  huboPulsacionLarga = false;
+  clearTimeout(tempPulsacion);
+  tempPulsacion = setTimeout(() => {
+    huboPulsacionLarga = true;                // para que el click de después no haga nada
+    vibrar(18);
+    pedirPegar();
+  }, 550);
+});
+for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) {
+  elResult.addEventListener(ev, () => clearTimeout(tempPulsacion));
+}
+
+/* Un toque corto hace una cosa u otra según lo que haya delante: con un
+   resultado en pantalla lo natural es copiarlo; escribiendo una cuenta, lo
+   natural es llevar el cursor a donde has tocado. */
+elResult.addEventListener('click', (e) => {
+  if (huboPulsacionLarga) { huboPulsacionLarga = false; return; }
+  if (justEvaluated || errorState || quizMode || !tokens.length) { copyResult(); return; }
+  const span = e.target && e.target.closest ? e.target.closest('.tok') : null;
+  if (span) {
+    // Mitad izquierda del token: delante. Mitad derecha: detrás.
+    const i = parseInt(span.dataset.i, 10);
+    const r = span.getBoundingClientRect();
+    ponerCursor(e.clientX < r.left + r.width / 2 ? i : i + 1);
+  } else {
+    const r = elResult.getBoundingClientRect();
+    ponerCursor(e.clientX < r.left + r.width / 2 ? 0 : tokens.length);
+  }
+});
 
 // El resultado también se copia con el teclado: es un div, así que hay que
 // darle el papel de botón a mano (el tabindex vive en el HTML).
@@ -1670,6 +1954,7 @@ function renderHistory() {
       if (quizMode) return;
       justEvaluated = false;
       tokens = numberToTokens(item.v);
+      cursor = tokens.length;
       closePanels();
       updateDisplay(true);
       say(t('say.hist.usado'), 2000);
@@ -1815,6 +2100,7 @@ document.getElementById('btn-conv-use').addEventListener('click', () => {
   if (quizMode) return;
   justEvaluated = false;
   tokens = numberToTokens(lastConv);
+  cursor = tokens.length;
   closePanels();
   updateDisplay(true);
   setMood('happy', 1800);
@@ -1967,6 +2253,7 @@ function useShopValue(v) {
   if (errorState) clearAll(true);
   justEvaluated = false;
   tokens = numberToTokens(v);
+  cursor = tokens.length;
   closePanels();
   updateDisplay(true);
   setMood('happy', 1800);
@@ -2206,11 +2493,13 @@ function checkQuiz() {
   try { v = evaluate(raw); }
   catch (e) {
     tokens = [];
+    cursor = 0;
     updateDisplay();
     say(t('say.quiz.nonumero'), 2200);
     return;
   }
   tokens = [];
+  cursor = 0;
   if (v === quiz.answer) {
     racha++;
     playPurr();
@@ -2241,6 +2530,7 @@ btnQuiz.addEventListener('click', () => {
   btnQuiz.setAttribute('aria-pressed', String(quizMode));
   closePanels();
   tokens = [];
+  cursor = 0;
   errorState = false;
   justEvaluated = false;
   if (quizMode) {
@@ -2360,6 +2650,12 @@ document.addEventListener('keydown', (e) => {
   else if (k === '%') { playClick(); pushToken('%'); }
   else if (k === 'Enter' || k === '=') { e.preventDefault(); playClick(); equals(); flashKey('[data-action="equals"]'); }
   else if (k === 'Backspace') { playClick(); backspace(); flashKey('[data-action="back"]'); }
+  /* Mover el cursor por la cuenta. Con un resultado en pantalla no hay nada que
+     recorrer, así que las flechas se quedan quietas. */
+  else if (k === 'ArrowLeft')  { e.preventDefault(); if (!justEvaluated && moverCursor(-1)) playClick(); }
+  else if (k === 'ArrowRight') { e.preventDefault(); if (!justEvaluated && moverCursor(1)) playClick(); }
+  else if (k === 'Home') { e.preventDefault(); if (!justEvaluated) ponerCursor(0); }
+  else if (k === 'End')  { e.preventDefault(); if (!justEvaluated) ponerCursor(tokens.length); }
   else if (k === 'Escape' || k.toLowerCase() === 'c') { playClick(); clearAll(); flashKey('[data-action="clear"]'); }
 });
 
@@ -2456,5 +2752,53 @@ setTimeout(() => {
   say(t('say.saludo'), 3000);
   setMood('happy', 2200);
 }, 600);
+
+/* ---------- La cuenta a medias ----------
+   Se guardaba ya todo lo demás —tema, felino, atuendo, idioma, historial,
+   notas, lista de compras— menos lo único que de verdad duele perder: la
+   operación a medio escribir. Sales a mirar un precio, vuelves, y la pantalla
+   estaba en blanco.
+
+   Se escribe en cada updateDisplay. Son cuatro campos y localStorage ya se
+   tocaba en cada '=' para el historial, así que no cambia nada en la práctica. */
+/* La clave va escrita a pelo en los dos sitios, como todas las demás de este
+   archivo. Con una const aquí abajo reventaba: updateDisplay llama a
+   guardarSesion mucho antes de que el hilo llegue a esta línea, y una const sin
+   inicializar todavía no se puede ni leer. */
+function guardarSesion() {
+  if (quizMode) return;                      // el modo aprendiz es de usar y tirar
+  store.set('catculator-sesion', JSON.stringify({
+    tokens: tokens,
+    cursor: cursor,
+    ans: ans,
+    expr: lastExprRaw,
+    hecho: justEvaluated
+  }));
+}
+
+/* Al volver, nada de lo guardado es de fiar: localStorage lo puede haber tocado
+   cualquiera y una versión vieja pudo dejar otro formato. Se valida la lista
+   entera contra el propio tokenizador y, si algo no cuadra, se arranca en
+   blanco — que es exactamente lo que pasaba antes de existir esto. */
+function restaurarSesion() {
+  const s = store.json('catculator-sesion', null);
+  if (!s || !Array.isArray(s.tokens)) return;
+  const lista = s.tokens.filter(x => typeof x === 'string');
+  if (lista.length !== s.tokens.length || lista.length > 400) return;
+  try { if (lista.length) tokenize(lista.join('')); }
+  catch (e) { return; }
+  tokens = lista;
+  cursor = (typeof s.cursor === 'number' && s.cursor >= 0 && s.cursor <= tokens.length)
+    ? s.cursor : tokens.length;
+  if (typeof s.ans === 'number' && isFinite(s.ans)) ans = s.ans;
+  if (typeof s.expr === 'string') lastExprRaw = s.expr;
+  /* El estado "ya evaluado" solo se restaura si hay expresión que enseñar
+     encima; si no, saldría un resultado suelto sin su cuenta. */
+  if (s.hecho === true && lastExprRaw) {
+    justEvaluated = true;
+    ansFrac = toFraction(ans);
+  }
+}
+restaurarSesion();
 
 updateDisplay();

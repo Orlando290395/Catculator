@@ -60,7 +60,14 @@ if (r.status !== 0) {
   process.exit(r.status || 1);
 }
 
-const instalador = fs.readdirSync(SALIDA).find(f => /Setup .*\.exe$/.test(f));
+/* El más reciente, no el primero que aparezca: la carpeta guarda los
+   instaladores de versiones anteriores y con find() se anunciaba el viejo.
+   Compilabas la 1.2.0 y el mensaje final decía 1.1.0. */
+const instalador = fs.readdirSync(SALIDA)
+  .filter(f => /Setup .*\.exe$/.test(f))
+  .map(f => ({ f, t: fs.statSync(path.join(SALIDA, f)).mtimeMs }))
+  .sort((a, b) => b.t - a.t)
+  .map(x => x.f)[0];
 if (instalador) {
   const p = path.join(SALIDA, instalador);
   console.log('\nListo: ' + p);
