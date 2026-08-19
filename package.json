@@ -18,7 +18,9 @@
     "capturas:en": "electron build-capturas.js en",
     "capturas:store": "electron microsoft-store/build-capturas.js",
     "capturas:store:en": "electron microsoft-store/build-capturas.js en",
-    "dist:enbruto": "electron-builder --win"
+    "dist:enbruto": "electron-builder --win",
+    "paquetes": "node empaquetar.js",
+    "recoger": "node empaquetar.js --solo-recoger"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.4.2",
