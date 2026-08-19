@@ -76,8 +76,6 @@ const TEXTOS = {
     'atuendo.mago': 'Mago',
     'atuendo.capucha': 'Encapuchado',
 
-    'ajustes.titulo': 'Ajustes ⚙️',
-    'ajustes.vibrar': 'Vibrar al pulsar 📳',
 
     // ---------- Historial ----------
     'hist.titulo': 'Historial 🕘',
@@ -207,8 +205,6 @@ const TEXTOS = {
 
     'say.sonido.on': '¡Miau! Sonido activado 🔊',
     'say.sonido.off': 'Modo sigiloso, como buen gato 🤫',
-    'say.vibrar.on': 'Vibración activada 📳',
-    'say.vibrar.off': 'Sin vibración: patitas suaves 🐾',
     'say.pegado': '¡Pegado! 📋',
     'say.pegar.no': 'Eso no me parece un número 🤔',
     'say.pegar.permiso': 'No me dejan mirar el portapapeles 🙀',
@@ -318,8 +314,6 @@ const TEXTOS = {
     'atuendo.mago': 'Wizard',
     'atuendo.capucha': 'Hooded',
 
-    'ajustes.titulo': 'Settings ⚙️',
-    'ajustes.vibrar': 'Vibrate on tap 📳',
 
     'hist.titulo': 'History 🕘',
     'hist.borrar': 'Clear history 🧽',
@@ -441,8 +435,6 @@ const TEXTOS = {
 
     'say.sonido.on': 'Meow! Sound on 🔊',
     'say.sonido.off': 'Stealth mode, like a proper cat 🤫',
-    'say.vibrar.on': 'Vibration on 📳',
-    'say.vibrar.off': 'No vibration: soft paws 🐾',
     'say.pegado': 'Pasted! 📋',
     'say.pegar.no': "That doesn't look like a number 🤔",
     'say.pegar.permiso': 'They will not let me peek at the clipboard 🙀',

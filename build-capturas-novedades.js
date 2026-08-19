@@ -87,20 +87,8 @@ const TOMAS = [
     }
   },
   {
-    // El interruptor nuevo, con el panel bajado hasta Ajustes.
-    nombre: '4-vibracion', w: 360, h: 640,
-    tema: 'lavanda', pelaje: 'negro', atuendo: 'ninguno', modo: 'basic',
-    guion: async ($, wait) => {
-      for (const k of ['9', '*', '6']) { $(`.key[data-k="${k}"]`).click(); await wait(50); }
-      $('[data-action="equals"]').click(); await wait(200);
-      $('#btn-theme').click(); await wait(500);
-      $('#theme-panel').scrollTop = $('#theme-panel').scrollHeight;
-      await wait(400);
-    }
-  },
-  {
     // Horizontal, dos columnas. 640x360 lógicos = 1920x1080 reales (16:9).
-    nombre: '5-horizontal', w: 640, h: 360,
+    nombre: '4-horizontal', w: 640, h: 360,
     tema: 'atigrado', pelaje: 'leon', atuendo: 'ninguno', modo: 'basic',
     rotulo: { es: 'Gíralo y cabe todo 📱', en: 'Turn it and it all fits 📱' },
     guion: async ($, wait, rotulo) => {
@@ -113,7 +101,7 @@ const TOMAS = [
   },
   {
     // Horizontal con la científica: tres columnas.
-    nombre: '6-horizontal-cientifica', w: 640, h: 360,
+    nombre: '5-horizontal-cientifica', w: 640, h: 360,
     tema: 'noche', pelaje: 'tigre', atuendo: 'ninguno', modo: 'sci',
     guion: async ($, wait) => {
       for (const k of ['sqrt(', '1', '4', '4', ')']) {
@@ -161,7 +149,6 @@ async function run() {
       localStorage.setItem('catculator-outfit', '${t.atuendo}');
       localStorage.setItem('catculator-mode', '${t.modo}');
       localStorage.setItem('catculator-sound', 'on');
-      localStorage.setItem('catculator-vibrar', 'on');
       localStorage.setItem('catculator-idioma', '${IDIOMA}');
       localStorage.removeItem('catculator-history');
       localStorage.removeItem('catculator-sesion');

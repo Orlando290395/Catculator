@@ -790,19 +790,6 @@ body {
    como texto corrido: sin esto los espacios de ' mod ' se colapsaban. */
 .tok { white-space: pre; }
 
-/* Interruptor dentro de un panel: hueco cuando está apagado, macizo cuando no.
-   Se distingue sin depender del color, porque el relleno también cambia. */
-.panel-action.toggle {
-  background: transparent;
-  color: var(--accent);
-  border: 2px solid var(--accent);
-  padding: 6px 8px;
-}
-.panel-action.toggle.active {
-  background: var(--accent);
-  color: #fff;
-}
-
 /* Partes decorativas del gato que no deben robarle el clic al SVG. Vive aquí y
    no en un style="" porque la CSP de la página no permite estilos en línea: los
    descartaba en silencio. */

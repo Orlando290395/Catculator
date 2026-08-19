@@ -948,24 +948,20 @@ function ctx() {
   return audioCtx;
 }
 
-/* ---------- Vibración ----------
-   Va por su cuenta y no colgando del sonido, a propósito: mucha gente lleva el
-   móvil en silencio, y sin sonido ni vibración las teclas se sienten muertas.
-   En escritorio navigator.vibrate no existe, así que esto no hace nada y no
-   hay que preguntar por la plataforma. */
-let vibrarOn = store.get('catculator-vibrar') !== 'off';
+/* Aquí vivía la vibración al pulsar, y se quitó a conciencia el 19-ago-2026.
 
-function vibrar(ms) {
-  if (!vibrarOn || !navigator.vibrate) return;
-  /* Sin un toque previo de verdad el navegador lo rechaza y escupe un aviso por
-     consola. Preguntando antes, las pruebas automáticas —que pulsan botones por
-     código— dejan de llenar la salida de ruido. */
-  if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return;
-  try { navigator.vibrate(ms); } catch (e) { /* algunos navegadores lo prohíben */ }
-}
+   No es que no funcionara: es que en Android NO PUEDE funcionar sin declarar el
+   permiso VIBRATE, y "sin permisos" es uno de los tres ganchos de la ficha
+   —junto a "sin anuncios" y "sin conexión"—, además de una promesa literal de
+   privacidad.html, que es el documento que Play exige.
+
+   Un zumbido de 12 ms no vale lo que cuesta romper eso. Si algún día se
+   reconsidera, la vía que NO gasta el permiso es performHapticFeedback() de
+   Android, que es la que usa el teclado del sistema; pide un plugin nativo
+   propio de unas 30 líneas de Java. La vía web (navigator.vibrate) no sirve:
+   dentro de la app instalada falla en silencio sin el permiso. */
 
 function playClick() {
-  vibrar(12);
   if (!soundOn) return;
   const ac = ctx();
   const osc = ac.createOscillator();
@@ -1579,21 +1575,6 @@ btnSound.addEventListener('click', () => {
 });
 refreshSoundBtn();
 
-// ---------- Botón de vibración ----------
-const btnVibrar = document.getElementById('btn-vibrar');
-function refrescarVibrar() {
-  btnVibrar.classList.toggle('active', vibrarOn);
-  btnVibrar.setAttribute('aria-pressed', String(vibrarOn));
-}
-btnVibrar.addEventListener('click', () => {
-  vibrarOn = !vibrarOn;
-  store.set('catculator-vibrar', vibrarOn ? 'on' : 'off');
-  refrescarVibrar();
-  playClick();                               // ya con el ajuste nuevo: se nota al momento
-  say(t(vibrarOn ? 'say.vibrar.on' : 'say.vibrar.off'), 2000);
-});
-refrescarVibrar();
-
 // ---------- Temas ----------
 const themePanel = document.getElementById('theme-panel');
 const btnTheme = document.getElementById('btn-theme');
@@ -1909,7 +1890,6 @@ elResult.addEventListener('pointerdown', () => {
   clearTimeout(tempPulsacion);
   tempPulsacion = setTimeout(() => {
     huboPulsacionLarga = true;                // para que el click de después no haga nada
-    vibrar(18);
     pedirPegar();
   }, 550);
 });

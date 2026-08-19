@@ -475,24 +475,12 @@ const GUION_COMPORTAMIENTO = `(() => {
   restaurarSesion();
   prueba('y uno que ni es JSON', rawExpr(), '');
 
-  /* ---------- Vibración ----------
-     Va aparte del sonido porque mucha gente lleva el móvil en silencio: sin una
-     cosa ni la otra, las teclas se sienten muertas. */
-  const btnVib = document.getElementById('btn-vibrar');
-  prueba('el interruptor de vibrar existe', !!btnVib, true);
-  prueba('y vive en el panel de personalizar', btnVib.closest('#theme-panel') !== null, true);
-  const vibAntes = vibrarOn;
-  if (!vibrarOn) btnVib.click();
-  prueba('viene encendido de fábrica', vibrarOn, true);
-  prueba('y lo dice para el lector de pantalla', btnVib.getAttribute('aria-pressed'), 'true');
-  btnVib.click();
-  prueba('al pulsarlo se apaga', vibrarOn, false);
-  prueba('y queda guardado', store.get('catculator-vibrar'), 'off');
-  prueba('apagado, vibrar no hace nada', vibrar(10), undefined);
-  btnVib.click();
-  prueba('y vuelve a encenderse', vibrarOn, true);
-  if (vibrarOn !== vibAntes) btnVib.click();
-  store.del('catculator-vibrar');
+  /* Ya no hay vibración ni interruptor: en Android no puede funcionar sin el
+     permiso VIBRATE, y "sin permisos" es un gancho de la ficha y una promesa de
+     privacidad.html. Esta prueba vigila que no vuelva a colarse a medias, con
+     un botón que se enciende y no hace nada. */
+  prueba('no queda interruptor de vibración', !!document.getElementById('btn-vibrar'), false);
+  prueba('ni ajuste guardado', store.get('catculator-vibrar'), null);
 
   /* ---------- Pegar en el móvil ----------
      El WebView de Android NO implementa navigator.clipboard.readText: lo

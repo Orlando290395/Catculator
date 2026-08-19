@@ -21,10 +21,9 @@ const DESTINO = path.join(__dirname, 'paquetes', version);
 
 const TEXTOS = {
   'play-es': { limite: 500, texto:
-`Seis mejoras para el día a día:
+`Cinco mejoras para el día a día:
 
 • PEGAR números de otras apps: Ctrl+V, o mantén pulsada la pantalla.
-• VIBRA al pulsar, con interruptor propio: se nota aunque lleves el móvil en silencio.
 • CORRIGE EN MEDIO: toca donde está el error y arréglalo ahí, sin borrarlo todo.
 • NO SE PIERDE la cuenta a medias al cerrar la app.
 • PULSA = OTRA VEZ y repite la última operación.
@@ -33,10 +32,9 @@ const TEXTOS = {
 ¡Gracias por usar Catculator! 🐱` },
 
   'play-en': { limite: 500, texto:
-`Six everyday improvements:
+`Five everyday improvements:
 
 • PASTE numbers from other apps: Ctrl+V, or press and hold the display.
-• VIBRATES on tap, with its own switch: you feel it even on silent.
 • FIX THE MIDDLE: tap where the mistake is and fix it there, no clearing everything.
 • KEEPS your half-finished sum when you close the app.
 • PRESS = AGAIN to repeat the last operation.
@@ -45,7 +43,7 @@ const TEXTOS = {
 Thanks for using Catculator! 🐱` },
 
   'microsoft-es': { limite: 1500, texto:
-`Catculator 1.2.0 — seis mejoras de uso diario
+`Catculator 1.2.0 — cinco mejoras de uso diario
 
 PEGAR NÚMEROS
 Ya se pueden traer cifras desde otras aplicaciones: Ctrl+V en el teclado, o
@@ -63,9 +61,6 @@ La operación a medias sobrevive a cerrar la aplicación.
 EL = REPITE
 Pulsa = otra vez y repite la última operación: 5+3 da 8, otra vez 11, otra 14.
 
-VIBRACIÓN AL PULSAR
-Con interruptor propio en el panel de personalizar, aparte del sonido.
-
 DISEÑO HORIZONTAL
 Al girar el dispositivo o estirar la ventana, la calculadora se reorganiza en
 dos columnas —y en tres con el teclado científico abierto— en vez de dejar los
@@ -74,7 +69,7 @@ lados vacíos. También aprovecha mejor las pantallas de tableta.
 ¡Gracias por usar Catculator! 🐱` },
 
   'microsoft-en': { limite: 1500, texto:
-`Catculator 1.2.0 — six everyday improvements
+`Catculator 1.2.0 — five everyday improvements
 
 PASTE NUMBERS
 You can now bring figures in from other apps: Ctrl+V, or press and hold the
@@ -91,9 +86,6 @@ Close the app and come back: the calculation you were typing is still there.
 
 PRESS = AGAIN TO REPEAT
 5+3 gives 8, press = again for 11, again for 14.
-
-VIBRATION ON TAP
-With its own switch in the customise panel, separate from the sound.
 
 LANDSCAPE LAYOUT
 Turn the device or widen the window and the calculator rearranges into two
