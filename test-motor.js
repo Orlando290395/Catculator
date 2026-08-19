@@ -494,6 +494,34 @@ const GUION_COMPORTAMIENTO = `(() => {
   if (vibrarOn !== vibAntes) btnVib.click();
   store.del('catculator-vibrar');
 
+  /* ---------- Pegar en el móvil ----------
+     El WebView de Android NO implementa navigator.clipboard.readText: lo
+     rechaza sin preguntar siquiera. La única vía dentro de la app instalada es
+     el plugin nativo de Capacitor, así que hay que probarlo PRIMERO.
+
+     Esta prueba existe porque la primera versión no lo hacía y el fallo era de
+     los malos: en el escritorio funcionaba perfectamente y en el móvil no, que
+     es justo donde más falta hace y donde menos se prueba. Si alguien reordena
+     esos dos bloques, aquí salta.
+
+     El portapapeles falso devuelve algo que no es un número a propósito: así
+     pegarTexto lo rechaza y no deja la calculadora tocada para las pruebas
+     siguientes. */
+  const capAntes = window.Capacitor;
+  let pedidoAlNativo = 0;
+  window.Capacitor = { Plugins: { Clipboard: {
+    read: () => { pedidoAlNativo++; return Promise.resolve({ value: 'ni un número' }); }
+  } } };
+  pedirPegar();
+  prueba('con Capacitor delante, se pide al portapapeles nativo', pedidoAlNativo, 1);
+  if (capAntes === undefined) delete window.Capacitor; else window.Capacitor = capAntes;
+
+  /* Y que lo que devuelve el plugin —un objeto {value}, no una cadena— se
+     desenvuelva bien: pasarle el objeto entero a pegarTexto no debe colar
+     ningún número inventado. */
+  prueba('un objeto no es un número', numeroPegado({ value: '5' }), null);
+  prueba('ni lo es un nulo', numeroPegado(null), null);
+
   // Que las pruebas no le dejen a nadie la calculadora sucia
   clearAll(true);
   store.del('catculator-sesion');

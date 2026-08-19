@@ -1869,15 +1869,37 @@ document.addEventListener('paste', (e) => {
 /* En el móvil no hay evento paste sin un campo de texto donde pegar, así que
    la vía es la pulsación larga sobre la pantalla — que además es lo que hacen
    la calculadora de Android y la del iPhone, o sea que ya está en los dedos.
-   Leer el portapapeles pide permiso; si lo niegan se avisa y no pasa nada. */
+
+   LEER el portapapeles tiene dos caminos, y hay que probarlos en este orden:
+
+   1. El plugin de Capacitor, que en Android baja al ClipboardManager nativo.
+      Es el ÚNICO que funciona dentro de la app instalada: el WebView de
+      Android no implementa navigator.clipboard.readText —ni siquiera lo pide,
+      lo rechaza— así que la vía web fallaba siempre y el gato acababa diciendo
+      que no le dejaban mirar. Escribir sí funciona en los dos sitios, y por eso
+      copyResult no necesita nada de esto.
+   2. navigator.clipboard, para el escritorio y para la PWA en un navegador de
+      verdad, donde sí existe y pide permiso la primera vez.
+
+   En Android 12 y posteriores el sistema enseña un aviso propio ("Catculator ha
+   pegado del portapapeles") cada vez que se lee. Es del sistema operativo, no
+   se puede quitar, y está bien que se vea. */
 function pedirPegar() {
+  const nativo = window.Capacitor && window.Capacitor.Plugins &&
+                 window.Capacitor.Plugins.Clipboard;
+  if (nativo && nativo.read) {
+    nativo.read()
+      .then(r => pegarTexto(r && r.value))
+      .catch(() => say(t('say.pegar.permiso'), 2800));
+    return;
+  }
   if (navigator.clipboard && navigator.clipboard.readText) {
     navigator.clipboard.readText()
       .then(pegarTexto)
       .catch(() => say(t('say.pegar.permiso'), 2800));
-  } else {
-    say(t('say.pegar.permiso'), 2800);
+    return;
   }
+  say(t('say.pegar.permiso'), 2800);
 }
 
 let tempPulsacion = null;

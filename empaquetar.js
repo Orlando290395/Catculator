@@ -1,33 +1,35 @@
-/* Genera TODOS los paquetes de una versión y los deja en un solo sitio.
+/* Prepara UNA PUBLICACIÓN entera y la deja en una sola carpeta.
 
        npm run paquetes                      compila todo y lo recoge
        npm run paquetes -- --solo-recoger    solo copia lo ya compilado
 
-   Existe porque cada paquete acababa en una carpeta distinta, y uno de ellos ni
-   siquiera dentro del proyecto:
-
-       android/app/build/outputs/bundle/release/app-release.aab
-       android/app/build/outputs/apk/release/app-release.apk
-       microsoft-store/dist/Catculator 1.2.0.appx
-       %LOCALAPPDATA%/Catculator-build/Catculator Setup 1.2.0.exe
-
-   Encima los dos de Android se llaman igual en todas las versiones
-   ("app-release.apk"), así que fuera de su carpeta no hay manera de saber cuál
-   es cuál. Aquí salen renombrados con versión y versionCode.
-
-   DÓNDE QUEDAN
+   Sale todo aquí, junto:
 
        <proyecto>\paquetes\<versión>\
+           Catculator-<v>-vc<n>.apk        probar en el móvil
+           Catculator-<v>-vc<n>.aab        subir a Google Play
+           Catculator-<v>.appx             subir a Microsoft Store
+           Catculator-Setup-<v>.exe        instalar en Windows
+           NOVEDADES.txt                   textos de las dos tiendas, medidos
+           capturas/                       capturas de lo nuevo, español
+           capturas-en/                    ídem en inglés
 
-   Dentro del proyecto porque es donde Orlando los busca. Ojo con el matiz que
-   hace falta para que eso funcione: el instalador de Windows NO se puede
-   COMPILAR aquí dentro —el Acceso Controlado a Carpetas de Defender bloquea a
-   NSIS, por eso existe build-win.js y compila en %LOCALAPPDATA%— pero COPIAR el
-   .exe ya hecho sí pasa, porque Node no está en la lista negra de Defender
-   mientras que los binarios de Git Bash sí. O sea: se compila fuera y se trae.
+   POR QUÉ EXISTE
+   Cada pieza acababa en un sitio distinto —el .aab en android/app/build/...,
+   el .appx en microsoft-store/dist/, el instalador fuera del proyecto entero, y
+   las capturas y los textos donde cayera— y encima los dos de Android se llaman
+   "app-release" en todas las versiones, así que fuera de su carpeta no había
+   manera de saber cuál era cuál.
+
+   EL MATIZ DE DEFENDER
+   El instalador de Windows NO se puede COMPILAR dentro del proyecto: el Acceso
+   Controlado a Carpetas de Defender tumba a NSIS, y por eso build-win.js compila
+   en %LOCALAPPDATA%. Pero COPIAR el .exe ya hecho sí pasa, porque Node no está
+   en la lista negra aunque los binarios de Git Bash sí lo estén. O sea: se
+   compila fuera y se trae.
 
    La carpeta paquetes/ está en .gitignore: son 200 MB por versión y se
-   regeneran con un comando. */
+   regeneran con este mismo comando. */
 const { spawnSync } = require('child_process');
 const fs = require('fs');
 const os = require('os');
@@ -35,6 +37,10 @@ const path = require('path');
 
 const RAIZ = __dirname;
 const SOLO_RECOGER = process.argv.includes('--solo-recoger');
+/* Entre comillas y con ruta completa: cmd.exe NO busca ejecutables en el
+   directorio actual, asi que "gradlew.bat" a secas no se encuentra aunque el
+   cwd sea android/. */
+const GRADLEW = '"' + path.join(__dirname, 'android', 'gradlew.bat') + '"';
 
 // ---------- Qué versión es esta ----------
 const version = require('./package.json').version;
@@ -50,11 +56,19 @@ const RESERVA = path.join(process.env.LOCALAPPDATA || os.tmpdir(),
 console.log('Catculator ' + version + '   (Android versionCode ' + vc + ' / ' + vn + ')');
 console.log('Destino: ' + DESTINO + '\n');
 
-/* Lanza un comando y aborta si falla. shell:true es obligatorio en Windows: npx
-   y gradlew son .cmd/.bat, y desde Node 20 spawn ya no los ejecuta solo. */
+/* Lanza un comando y aborta si falla.
+
+   shell:true es obligatorio en Windows: npx y gradlew son .cmd/.bat, y desde
+   Node 20 spawn ya no los ejecuta solo.
+
+   ELECTRON_RUN_AS_NODE se quita a mano: si viene puesta en el entorno, Electron
+   arranca como Node, sin ventana, y las capturas salen en blanco sin decir por
+   qué. */
 function correr(titulo, comando, cwd) {
   console.log('--- ' + titulo + ' ---');
-  const r = spawnSync(comando, { stdio: 'inherit', cwd: cwd || RAIZ, shell: true });
+  const entorno = Object.assign({}, process.env);
+  delete entorno.ELECTRON_RUN_AS_NODE;
+  const r = spawnSync(comando, { stdio: 'inherit', cwd: cwd || RAIZ, shell: true, env: entorno });
   if (r.error) { console.error('\nNo pude lanzarlo: ' + r.error.message); process.exit(1); }
   if (r.status !== 0) { console.error('\nFalló: ' + titulo + ' (código ' + r.status + ')'); process.exit(1); }
   console.log('');
@@ -64,12 +78,16 @@ if (!SOLO_RECOGER) {
   // El orden importa: la PWA alimenta a Android, y cap sync la copia dentro.
   correr('PWA', 'node build-pwa.js');
   correr('Sincronizar Android', 'npx cap sync android');
-  correr('Android: bundle (.aab, es lo que sube a Play)', 'gradlew.bat bundleRelease --console=plain',
+  correr('Android: bundle (.aab, es lo que sube a Play)', GRADLEW + ' bundleRelease --console=plain',
          path.join(RAIZ, 'android'));
-  correr('Android: apk (para probar en el móvil)', 'gradlew.bat assembleRelease --console=plain',
+  correr('Android: apk (para probar en el móvil)', GRADLEW + ' assembleRelease --console=plain',
          path.join(RAIZ, 'android'));
   correr('Windows: instalador', 'node build-win.js');
   correr('Microsoft Store: appx', 'npx electron-builder --config microsoft-store/electron-builder.yml');
+  // Las capturas van DESPUÉS de la PWA: se sacan sirviendo pwa-dist
+  correr('Capturas de novedades (español)', 'npx electron build-capturas-novedades.js');
+  correr('Capturas de novedades (inglés)', 'npx electron build-capturas-novedades.js en');
+  correr('Textos de novedades', 'node build-novedades.js');
 }
 
 // ---------- Recoger ----------
@@ -116,12 +134,31 @@ for (const p of PIEZAS) {
   }
 }
 
+/* Las capturas y los textos ya los escriben sus propios guiones dentro de la
+   carpeta de la versión, así que aquí solo se comprueba que estén. */
+console.log('');
+for (const [sub, que] of [['NOVEDADES.txt', 'textos de las dos tiendas'],
+                          ['capturas', 'capturas de lo nuevo (español)'],
+                          ['capturas-en', 'capturas de lo nuevo (inglés)']]) {
+  const f = path.join(carpeta, sub);
+  if (!fs.existsSync(f)) {
+    faltan++;
+    console.log('  *** FALTA: ' + sub + '   ' + que);
+    continue;
+  }
+  const s = fs.statSync(f);
+  const detalle = s.isDirectory()
+    ? fs.readdirSync(f).filter(x => x.endsWith('.png')).length + ' capturas'
+    : (s.size / 1024).toFixed(1) + ' KB';
+  console.log('  ' + sub.padEnd(32) + detalle.padStart(11) + '   ' + que);
+}
+
 if (faltan) {
-  console.log('\nFaltan ' + faltan + ' por compilar. Con --solo-recoger es normal' +
-              ' si no los habías hecho antes.');
+  console.log('\nFaltan ' + faltan + ' piezas. Con --solo-recoger es normal si no' +
+              ' las habías generado antes.');
 }
 if (bloqueados) {
-  console.log('\n' + bloqueados + ' copias bloqueadas. Mira el registro de eventos de Defender:');
+  console.log('\n' + bloqueados + ' copias bloqueadas. Mira el registro de Defender:');
   console.log("  Get-WinEvent -FilterHashtable @{LogName='Microsoft-Windows-Windows Defender/Operational'; Id=1123,1124} -MaxEvents 10");
 }
 
