@@ -2,6 +2,7 @@ node_modules/
 
 # Salidas de compilación (se regeneran: npm run dist / pwa / icon / capturas / gradlew)
 dist/
+paquetes/
 pwa-dist/
 tienda/
 microsoft-store/build/appx/

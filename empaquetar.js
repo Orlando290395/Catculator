@@ -3,8 +3,8 @@
        npm run paquetes                      compila todo y lo recoge
        npm run paquetes -- --solo-recoger    solo copia lo ya compilado
 
-   Existe porque hasta ahora cada paquete acababa en un sitio distinto, y uno de
-   ellos ni siquiera dentro del proyecto:
+   Existe porque cada paquete acababa en una carpeta distinta, y uno de ellos ni
+   siquiera dentro del proyecto:
 
        android/app/build/outputs/bundle/release/app-release.aab
        android/app/build/outputs/apk/release/app-release.apk
@@ -17,12 +17,17 @@
 
    DÓNDE QUEDAN
 
-       %USERPROFILE%\Catculator-paquetes\<versión>\
+       <proyecto>\paquetes\<versión>\
 
-   Fuera del proyecto a propósito, por dos razones: el instalador de Windows no
-   se puede compilar dentro —el Acceso Controlado a Carpetas de Defender lo
-   bloquea, ver build-win.js— y así los paquetes no engordan la carpeta ni
-   tientan a nadie a commitearlos. */
+   Dentro del proyecto porque es donde Orlando los busca. Ojo con el matiz que
+   hace falta para que eso funcione: el instalador de Windows NO se puede
+   COMPILAR aquí dentro —el Acceso Controlado a Carpetas de Defender bloquea a
+   NSIS, por eso existe build-win.js y compila en %LOCALAPPDATA%— pero COPIAR el
+   .exe ya hecho sí pasa, porque Node no está en la lista negra de Defender
+   mientras que los binarios de Git Bash sí. O sea: se compila fuera y se trae.
+
+   La carpeta paquetes/ está en .gitignore: son 200 MB por versión y se
+   regeneran con un comando. */
 const { spawnSync } = require('child_process');
 const fs = require('fs');
 const os = require('os');
@@ -37,7 +42,9 @@ const gradle = fs.readFileSync(path.join(RAIZ, 'android/app/build.gradle'), 'utf
 const vc = (gradle.match(/versionCode\s+(\d+)/) || [])[1] || '0';
 const vn = (gradle.match(/versionName\s+"([^"]+)"/) || [])[1] || '?';
 
-const DESTINO = path.join(process.env.USERPROFILE || os.homedir(),
+const DESTINO = path.join(RAIZ, 'paquetes', version);
+// Si Defender llegara a bloquear también la copia, al menos que no se pierdan
+const RESERVA = path.join(process.env.LOCALAPPDATA || os.tmpdir(),
   'Catculator-paquetes', version);
 
 console.log('Catculator ' + version + '   (Android versionCode ' + vc + ' / ' + vn + ')');
@@ -68,38 +75,57 @@ if (!SOLO_RECOGER) {
 // ---------- Recoger ----------
 const LOCAL = process.env.LOCALAPPDATA || os.tmpdir();
 const PIEZAS = [
-  { que: 'probar en el móvil',   de: 'android/app/build/outputs/apk/release/app-release.apk',
+  { que: 'probar en el móvil',      de: 'android/app/build/outputs/apk/release/app-release.apk',
     a: 'Catculator-' + version + '-vc' + vc + '.apk' },
-  { que: 'subir a Google Play',  de: 'android/app/build/outputs/bundle/release/app-release.aab',
+  { que: 'subir a Google Play',     de: 'android/app/build/outputs/bundle/release/app-release.aab',
     a: 'Catculator-' + version + '-vc' + vc + '.aab' },
   { que: 'subir a Microsoft Store', de: 'microsoft-store/dist/Catculator ' + version + '.appx',
     a: 'Catculator-' + version + '.appx' },
-  { que: 'instalar en Windows',  de: path.join(LOCAL, 'Catculator-build', 'Catculator Setup ' + version + '.exe'),
+  { que: 'instalar en Windows',     de: path.join(LOCAL, 'Catculator-build', 'Catculator Setup ' + version + '.exe'),
     a: 'Catculator-Setup-' + version + '.exe' }
 ];
 
-fs.mkdirSync(DESTINO, { recursive: true });
+let carpeta = DESTINO;
+try {
+  fs.mkdirSync(DESTINO, { recursive: true });
+} catch (e) {
+  console.log('AVISO: no puedo crear ' + DESTINO);
+  console.log('       (' + e.message + ')');
+  console.log('       Suele ser el Acceso Controlado a Carpetas de Defender.');
+  console.log('       Uso la carpeta de reserva.\n');
+  carpeta = RESERVA;
+  fs.mkdirSync(RESERVA, { recursive: true });
+}
 
-let faltan = 0;
+let faltan = 0, bloqueados = 0;
 console.log('--- Recogiendo ---');
 for (const p of PIEZAS) {
   const origen = path.isAbsolute(p.de) ? p.de : path.join(RAIZ, p.de);
-  try {
-    fs.copyFileSync(origen, path.join(DESTINO, p.a));
-    const mb = (fs.statSync(path.join(DESTINO, p.a)).size / 1048576).toFixed(1);
-    console.log('  ' + p.a.padEnd(32) + mb.padStart(7) + ' MB   ' + p.que);
-  } catch (e) {
+  if (!fs.existsSync(origen)) {
     faltan++;
     console.log('  *** FALTA: ' + p.a + '   (esperaba ' + origen + ')');
+    continue;
+  }
+  try {
+    fs.copyFileSync(origen, path.join(carpeta, p.a));
+    const mb = (fs.statSync(path.join(carpeta, p.a)).size / 1048576).toFixed(1);
+    console.log('  ' + p.a.padEnd(32) + mb.padStart(7) + ' MB   ' + p.que);
+  } catch (e) {
+    bloqueados++;
+    console.log('  *** BLOQUEADO al copiar ' + p.a + ': ' + e.message);
   }
 }
 
 if (faltan) {
-  console.log('\nFaltan ' + faltan + '. Con --solo-recoger es normal si no los' +
-              ' habías compilado antes.');
-  process.exit(1);
+  console.log('\nFaltan ' + faltan + ' por compilar. Con --solo-recoger es normal' +
+              ' si no los habías hecho antes.');
+}
+if (bloqueados) {
+  console.log('\n' + bloqueados + ' copias bloqueadas. Mira el registro de eventos de Defender:');
+  console.log("  Get-WinEvent -FilterHashtable @{LogName='Microsoft-Windows-Windows Defender/Operational'; Id=1123,1124} -MaxEvents 10");
 }
 
-console.log('\nTodo en:  ' + DESTINO);
-console.log('Abrir:    explorer "' + DESTINO + '"');
+console.log('\nTodo en:  ' + carpeta);
+console.log('Abrir:    explorer "' + carpeta + '"');
 console.log('\nEl APK es para probar en el móvil; a Play se sube el AAB. 🐱');
+if (faltan || bloqueados) process.exit(1);
