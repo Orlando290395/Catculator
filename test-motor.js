@@ -494,6 +494,30 @@ const GUION_COMPORTAMIENTO = `(() => {
   }));
   prueba('un evento paste mete el número en la cuenta', rawExpr(), '2500');
 
+  /* El eco del pegado doble. En Windows un Ctrl+V puede llegar por dos caminos
+     a la vez —el acelerador del menú de Electron y el manejo propio de
+     Chromium— y el mismo número entraba dos veces: pegar un "0" dejaba "00" en
+     pantalla. El segundo evento se ignora si trae el mismo texto y llega
+     pegado al primero. */
+  const pegarEvento = (texto) => {
+    const d = new DataTransfer();
+    d.setData('text', texto);
+    document.dispatchEvent(new ClipboardEvent('paste', {
+      clipboardData: d, bubbles: true, cancelable: true
+    }));
+  };
+
+  clearAll(true);
+  pegarEvento('0');
+  pegarEvento('0');
+  prueba('el eco del mismo texto no pega dos veces', rawExpr(), '0');
+
+  // Pero dos números DISTINTOS seguidos sí entran los dos: no es un candado
+  clearAll(true);
+  pegarEvento('12');
+  pegarEvento('34');
+  prueba('dos textos distintos sí entran los dos', rawExpr(), '1234');
+
   /* Y que escribiendo en las notas el pegado sea SUYO: sin esto, pegar dentro
      del bloc metía el número en la calculadora en vez de en el texto. */
   clearAll(true);

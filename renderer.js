@@ -1838,13 +1838,34 @@ function pegarTexto(texto) {
   return true;
 }
 
-/* Ctrl+V y el menú "Pegar" del escritorio entran por aquí. */
+/* Ctrl+V y el menú "Pegar" del escritorio entran por aquí.
+
+   EL PEGADO DOBLE. En el Catculator de Windows un Ctrl+V puede llegar por dos
+   caminos a la vez: el acelerador del menú de Electron, que llama a
+   webContents.paste(), y el manejo que Chromium hace de la tecla por su cuenta.
+   Cuando pasan los dos, el mismo número entra dos veces y "0" se convierte en
+   "00" en pantalla.
+
+   No se arregla quitando uno de los dos caminos —hacen falta los dos, cada uno
+   cubre situaciones distintas— sino ignorando el repetido: si llega el MISMO
+   texto dos veces en menos de un cuarto de segundo, es el eco, no una persona
+   pegando dos veces. A mano no se puede pulsar dos veces tan rápido y encima
+   con el mismo contenido. */
+let ultimoPegado = { texto: null, cuando: 0 };
+
 document.addEventListener('paste', (e) => {
   const tag = e.target.tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA') return;   // el bloc de notas es suyo
   const datos = e.clipboardData || window.clipboardData;
   if (!datos) return;
-  if (pegarTexto(datos.getData('text'))) e.preventDefault();
+  const texto = datos.getData('text');
+  const ahora = Date.now();
+  if (texto === ultimoPegado.texto && ahora - ultimoPegado.cuando < 250) {
+    e.preventDefault();
+    return;
+  }
+  ultimoPegado = { texto: texto, cuando: ahora };
+  if (pegarTexto(texto)) e.preventDefault();
 });
 
 /* En el móvil no hay evento paste sin un campo de texto donde pegar, así que
