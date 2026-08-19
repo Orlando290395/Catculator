@@ -482,6 +482,31 @@ const GUION_COMPORTAMIENTO = `(() => {
   prueba('no queda interruptor de vibración', !!document.getElementById('btn-vibrar'), false);
   prueba('ni ajuste guardado', store.get('catculator-vibrar'), null);
 
+  /* ---------- Ctrl+V en el escritorio ----------
+     El atajo lo sirve el menú de Electron (main.js), pero quien recoge el
+     evento es esta página, y esa mitad sí se puede probar aquí: se fabrica un
+     evento paste igual que el que dispara webContents.paste(). */
+  clearAll(true);
+  const portapapeles = new DataTransfer();
+  portapapeles.setData('text', '2500');
+  document.dispatchEvent(new ClipboardEvent('paste', {
+    clipboardData: portapapeles, bubbles: true, cancelable: true
+  }));
+  prueba('un evento paste mete el número en la cuenta', rawExpr(), '2500');
+
+  /* Y que escribiendo en las notas el pegado sea SUYO: sin esto, pegar dentro
+     del bloc metía el número en la calculadora en vez de en el texto. */
+  clearAll(true);
+  const notas = document.getElementById('notes-text');
+  if (notas) {
+    const p2 = new DataTransfer();
+    p2.setData('text', '77');
+    notas.dispatchEvent(new ClipboardEvent('paste', {
+      clipboardData: p2, bubbles: true, cancelable: true
+    }));
+    prueba('pegar dentro de las notas no toca la calculadora', rawExpr(), '');
+  }
+
   /* ---------- Pegar en el móvil ----------
      El WebView de Android NO implementa navigator.clipboard.readText: lo
      rechaza sin preguntar siquiera. La única vía dentro de la app instalada es
@@ -1008,6 +1033,32 @@ app.whenReady().then(async () => {
   // --- Comportamiento ---
   const conducta = await fase(win, 'comportamiento', GUION_COMPORTAMIENTO);
   for (const [nombre, obtenido, esperado] of conducta) {
+    if (comparar(obtenido, esperado)) pasan++;
+    else { fallan++; fallos.push(`  ${nombre}  esperaba ${JSON.stringify(esperado)}  obtuvo ${JSON.stringify(obtenido)}`); }
+  }
+
+  /* --- El menú de Electron, que es lo que hace funcionar Ctrl+V ---
+     Esta ventana la crea el propio banco de pruebas, así que no puede
+     comprobar el menú de la app de verdad; lo que sí puede es leer main.js y
+     asegurarse de que nadie vuelve a dejarlo en null.
+
+     Por qué importa: en Electron los atajos de portapapeles fuera de un campo
+     de texto los sirve el menú de la aplicación. Con setApplicationMenu(null)
+     —que es como estuvo— Ctrl+V no pegaba nada y no había ni error: el evento
+     paste sencillamente no llegaba nunca a la página. */
+  /* Se le quitan los comentarios antes de mirar: el propio comentario que hoy
+     explica el arreglo menciona setApplicationMenu(null) en prosa, y la prueba
+     se disparaba con el en vez de con codigo de verdad. */
+  const CODIGO = (t) => t.split('/*').map((trozo, i) =>
+    i === 0 ? trozo : trozo.slice(trozo.indexOf('*/') + 2)).join('');
+  const mainJs = CODIGO(require('fs').readFileSync(path.join(__dirname, 'main.js'), 'utf8'));
+  for (const [nombre, obtenido, esperado] of [
+    ['main.js no deja el menú en null', /setApplicationMenu\(\s*null\s*\)/.test(mainJs), false],
+    ['main.js registra el rol paste', /role:\s*'paste'/.test(mainJs), true],
+    ['y también copiar y cortar',
+     /role:\s*'copy'/.test(mainJs) && /role:\s*'cut'/.test(mainJs), true],
+    ['pero esconde la barra de menú', /setMenuBarVisibility\(\s*false\s*\)/.test(mainJs), true]
+  ]) {
     if (comparar(obtenido, esperado)) pasan++;
     else { fallan++; fallos.push(`  ${nombre}  esperaba ${JSON.stringify(esperado)}  obtuvo ${JSON.stringify(obtenido)}`); }
   }
