@@ -32,8 +32,8 @@ const TEXTOS = {
     // ---------- Pantalla ----------
     'frac.title': 'Ver como fracción / decimal',
     'frac.aria': 'Ver como fracción o decimal',
-    'result.title': 'Tocar para copiar · mantener para pegar',
-    'result.desc': 'Resultado. Enter para copiarlo. Con una cuenta a medias, tocar coloca el cursor y las flechas lo mueven.',
+    'result.title': 'Tocar para copiar · mantener o botón derecho para el menú',
+    'result.desc': 'Resultado. Enter para copiarlo. Con una cuenta a medias, tocar coloca el cursor y las flechas lo mueven. Mantener pulsado, o el botón derecho, abre el menú de copiar y pegar.',
     'miau': '¡Miau!',
 
     // ---------- Controles ----------
@@ -207,6 +207,8 @@ const TEXTOS = {
     'say.sonido.off': 'Modo sigiloso, como buen gato 🤫',
     'say.pegado': '¡Pegado! 📋',
     'say.pegar.no': 'Eso no me parece un número 🤔',
+    'clip.copiar': '📋 Copiar',
+    'clip.pegar': '📥 Pegar',
     'say.pegar.permiso': 'No me dejan mirar el portapapeles 🙀',
     'say.mem.borrada': 'Memoria borrada 🧽',
     'say.mem.guardada': 'Guardado en memoria 📥',
@@ -272,8 +274,8 @@ const TEXTOS = {
 
     'frac.title': 'Show as fraction / decimal',
     'frac.aria': 'Show as fraction or decimal',
-    'result.title': 'Tap to copy · hold to paste',
-    'result.desc': 'Result. Press Enter to copy it. While typing a sum, tapping places the cursor and the arrow keys move it.',
+    'result.title': 'Tap to copy · hold or right-click for the menu',
+    'result.desc': 'Result. Press Enter to copy it. While typing a sum, tapping places the cursor and the arrow keys move it. Hold it down, or right-click, for the copy and paste menu.',
     'miau': 'Meow!',
 
     'ctrl.modo': 'Switch mode',
@@ -437,6 +439,8 @@ const TEXTOS = {
     'say.sonido.off': 'Stealth mode, like a proper cat 🤫',
     'say.pegado': 'Pasted! 📋',
     'say.pegar.no': "That doesn't look like a number 🤔",
+    'clip.copiar': '📋 Copy',
+    'clip.pegar': '📥 Paste',
     'say.pegar.permiso': 'They will not let me peek at the clipboard 🙀',
     'say.mem.borrada': 'Memory cleared 🧽',
     'say.mem.guardada': 'Stored in memory 📥',

@@ -958,8 +958,14 @@
     <div class="display">
       <button id="btn-frac" class="frac-chip hidden" data-i18n-title="frac.title" data-i18n-aria="frac.aria" title="Ver como fracción / decimal" aria-label="Ver como fracción o decimal">¼</button>
       <div id="expression" class="expression" aria-live="polite">&nbsp;</div>
-      <div id="result" class="result" data-i18n-title="result.title" data-i18n-desc="result.desc" title="Tocar para copiar" role="status" aria-live="polite" aria-atomic="true"
+      <div id="result" class="result" data-i18n-title="result.title" data-i18n-desc="result.desc" title="Tocar para copiar · mantener o botón derecho para el menú" role="status" aria-live="polite" aria-atomic="true"
            tabindex="0" aria-keyshortcuts="Enter" aria-description="Resultado. Enter para copiarlo.">0</div>
+      <!-- Menú de copiar/pegar. Vive dentro de .display, que es el padre
+           posicionado; abrirMenuClip le pone left/top junto al dedo. -->
+      <div id="clip-menu" class="clip-menu hidden" role="menu" aria-hidden="true">
+        <button id="clip-copy" class="clip-item" role="menuitem" data-i18n="clip.copiar">📋 Copiar</button>
+        <button id="clip-paste" class="clip-item" role="menuitem" data-i18n="clip.pegar">📥 Pegar</button>
+      </div>
     </div>
 
     <!-- Controles. El texto de btn-mode lo pone applyMode: alterna Básica/Científica. -->

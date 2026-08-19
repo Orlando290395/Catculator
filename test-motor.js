@@ -518,6 +518,93 @@ const GUION_COMPORTAMIENTO = `(() => {
   pegarEvento('34');
   prueba('dos textos distintos sí entran los dos', rawExpr(), '1234');
 
+  /* ---------- El menú de copiar y pegar ----------
+     Copiar se había quedado sin gesto: tocar la pantalla a media cuenta coloca
+     el cursor, en el móvil no hay Ctrl+C y el user-select:none del CSS impide
+     marcar el número con el ratón. El menú es la salida. */
+  const menu = document.getElementById('clip-menu');
+  const visor = document.getElementById('result');
+  const menuAbierto = () => !menu.classList.contains('hidden');
+  const derecho = () => {
+    const r = visor.getBoundingClientRect();
+    const ev = new MouseEvent('contextmenu', {
+      bubbles: true, cancelable: true,
+      clientX: r.left + r.width / 2, clientY: r.top + r.height / 2
+    });
+    visor.dispatchEvent(ev);
+    return ev.defaultPrevented;
+  };
+
+  clearAll(true);
+  prueba('el menú arranca escondido', menuAbierto(), false);
+  prueba('el botón derecho lo abre', (derecho(), menuAbierto()), true);
+  prueba('y se traga el menú del sistema', derecho(), true);
+  prueba('tiene las dos opciones',
+         menu.querySelectorAll('.clip-item').length, 2);
+
+  /* Que quepa. En una pantalla estrecha, un menú colocado bajo el dedo se
+     salía por el borde y la mitad quedaba fuera, donde no hay nada que tocar. */
+  const cajaMenu = menu.getBoundingClientRect();
+  const cajaVisor = document.querySelector('.display').getBoundingClientRect();
+  prueba('no se sale por la izquierda', cajaMenu.left >= cajaVisor.left - 1, true);
+  prueba('ni por la derecha', cajaMenu.right <= cajaVisor.right + 1, true);
+
+  document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  prueba('Escape lo cierra', menuAbierto(), false);
+
+  derecho();
+  document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+  prueba('tocar fuera también lo cierra', menuAbierto(), false);
+
+  /* Qué se copia. Escribiendo "12+34" lo útil es el 46 de la vista previa, no
+     la cadena "12+34": esa ni siquiera la acepta esta calculadora al pegarla. */
+  clearAll(true);
+  prueba('con la pantalla vacía se copia el cero', textoParaCopiar(), '0');
+
+  clearAll(true);
+  ['1', '2', '+', '3', '4'].forEach(k => pushToken(k));
+  prueba('a media cuenta se copia la vista previa', textoParaCopiar(), '46');
+
+  equals();
+  prueba('y después del = se copia el resultado', textoParaCopiar(), '46');
+
+  // Con la cuenta a medias no hay vista previa: se copia lo que se ve
+  clearAll(true);
+  ['1', '2', '+'].forEach(k => pushToken(k));
+  prueba('sin vista previa se copia lo que hay', textoParaCopiar(), '12+');
+
+  /* Que el menú SE LEA en los seis temas. Esto no salió de una medida sino de
+     mirar una captura: en Noche el texto quedaba casi negro sobre el panel
+     oscuro, porque .clip-item se ponía su propio color y le ganaba a la regla
+     del tema. Ahora lo hereda del menú, y esto lo vigila. */
+  const canal = (c) => {
+    const v = c / 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  };
+  const luz = (css) => {
+    const [r, g, b] = css.match(/[0-9]+/g).map(Number);
+    return 0.2126 * canal(r) + 0.7152 * canal(g) + 0.0722 * canal(b);
+  };
+  const contraste = (a, b) => {
+    const [x, y] = [luz(a), luz(b)].sort((p, q) => q - p);
+    return (x + 0.05) / (y + 0.05);
+  };
+
+  const temaOriginal = document.documentElement.getAttribute('data-theme');
+  derecho();
+  for (const tema of ['cian', 'rosa', 'menta', 'lavanda', 'atigrado', 'noche']) {
+    applyTheme(tema);
+    const item = menu.querySelector('.clip-item');
+    const c = contraste(getComputedStyle(item).color,
+                        getComputedStyle(menu).backgroundColor);
+    // 4.5 es el mínimo de la norma para texto normal; aquí es negrita de 14 px
+    prueba('el menú se lee en el tema ' + tema, c >= 4.5, true);
+  }
+  applyTheme(temaOriginal || 'cian');
+  cerrarMenuClip();
+
+  clearAll(true);
+
   /* Y que escribiendo en las notas el pegado sea SUYO: sin esto, pegar dentro
      del bloc metía el número en la calculadora en vez de en el texto. */
   clearAll(true);
@@ -977,6 +1064,51 @@ const MEDIR_DISENO = `(() => {
   };
 })()`;
 
+/* ---------- Mantener pulsado ----------
+   El camino de Android, y el único que no cabe en el guion de comportamiento:
+   el menú sale de un temporizador de 550 ms, así que hay que esperar de verdad.
+   Se vigilan las dos mitades, porque la que importa es la segunda: que un
+   toque normal NO abra el menú. Si se abriera, colocar el cursor se volvería
+   imposible. */
+async function fasePulsacionLarga(win) {
+  const espera = (ms) => new Promise(res => setTimeout(res, ms));
+  const js = (s) => win.webContents.executeJavaScript(s);
+  const dedoAbajo = `(() => {
+    const el = document.getElementById('result');
+    const r = el.getBoundingClientRect();
+    el.dispatchEvent(new PointerEvent('pointerdown', {
+      bubbles: true, cancelable: true,
+      clientX: r.left + r.width / 2, clientY: r.top + r.height / 2
+    }));
+    return 'ok';
+  })()`;
+  const dedoArriba = `(() => {
+    document.getElementById('result')
+      .dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+    return 'ok';
+  })()`;
+  const abierto = "!document.getElementById('clip-menu').classList.contains('hidden')";
+
+  const r = [];
+  await js("closePanels(); clearAll(true); cerrarMenuClip(); 'listo';");
+
+  await js(dedoAbajo);
+  await espera(750);
+  r.push(['mantener pulsado abre el menú', await js(abierto), true]);
+  await js(dedoArriba);
+  await js("cerrarMenuClip(); 'listo';");
+
+  // Y un toque normal no: si abriera, no se podría colocar el cursor
+  await js(dedoAbajo);
+  await espera(150);
+  await js(dedoArriba);
+  await espera(600);
+  r.push(['un toque corto no lo abre', await js(abierto), false]);
+
+  await js("cerrarMenuClip(); clearAll(true); 'listo';");
+  return r;
+}
+
 async function faseDiseno(win) {
   const r = [];
   const original = win.getContentSize();
@@ -1090,6 +1222,13 @@ app.whenReady().then(async () => {
   // --- Diseño al girar (redimensiona la ventana de verdad) ---
   const diseno = await faseDiseno(win);
   for (const [nombre, obtenido, esperado] of diseno) {
+    if (comparar(obtenido, esperado)) pasan++;
+    else { fallan++; fallos.push(`  ${nombre}  esperaba ${JSON.stringify(esperado)}  obtuvo ${JSON.stringify(obtenido)}`); }
+  }
+
+  // --- Mantener pulsado (espera de verdad los 550 ms) ---
+  const pulsacion = await fasePulsacionLarga(win);
+  for (const [nombre, obtenido, esperado] of pulsacion) {
     if (comparar(obtenido, esperado)) pasan++;
     else { fallan++; fallos.push(`  ${nombre}  esperaba ${JSON.stringify(esperado)}  obtuvo ${JSON.stringify(obtenido)}`); }
   }

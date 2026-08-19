@@ -1744,10 +1744,28 @@ function fallbackCopy(text) {
   return ok;
 }
 
+/* Qué se copia. Con un resultado en pantalla, ese número. Escribiendo una
+   cuenta a medias, el número de la vista previa —el "= 46" de la línea de
+   arriba— y no el texto "12+34", porque esa cadena no le sirve a nadie: ni
+   siquiera esta calculadora la acepta al pegarla. Si la cuenta está tan a
+   medias que no hay vista previa, se copia lo que se ve y ya. */
+function textoParaCopiar() {
+  if (!justEvaluated && !errorState && !quizMode) {
+    const raw = rawExpr();
+    if (raw) {
+      try {
+        const v = evaluate(raw);
+        if (isFinite(v)) return textoANumeroPlano(formatNumber(v));
+      } catch (e) { /* incompleta: se cae al texto de la pantalla */ }
+    }
+  }
+  return textoANumeroPlano(elResult.textContent);
+}
+
 function copyResult() {
   if (errorState || quizMode) return;
   wakeUp();
-  const text = textoANumeroPlano(elResult.textContent);
+  const text = textoParaCopiar();
   const done = () => {
     playClick();
     setMood('happy', 1600);
@@ -1904,19 +1922,90 @@ function pedirPegar() {
   say(t('say.pegar.permiso'), 2800);
 }
 
+/* ---------- Menú de copiar y pegar ----------
+   Las dos cosas se peleaban por los mismos gestos. Al meter el cursor de
+   edición, tocar la pantalla mientras escribes pasó a colocarlo, y copiar se
+   quedó sin sitio a media cuenta. Y no había plan B: en el móvil no existe
+   Ctrl+C, y en el escritorio el user-select:none del CSS impide marcar el
+   número con el ratón, así que no había ni siquiera algo que copiar.
+
+   La salida es la que ya conoce todo el mundo en las dos plataformas: un menú
+   con las dos opciones, que se abre manteniendo pulsado (Android) o con el
+   botón derecho (Windows). Mantener pulsado ya no pega directamente —ahora
+   pide un toque más— pero a cambio copiar deja de depender del estado. */
+const menuClip = document.getElementById('clip-menu');
+
+function cerrarMenuClip() {
+  menuClip.classList.add('hidden');
+  menuClip.setAttribute('aria-hidden', 'true');
+}
+
+function abrirMenuClip(x, y) {
+  wakeUp();
+  menuClip.classList.remove('hidden');
+  menuClip.setAttribute('aria-hidden', 'false');
+  /* Se coloca respecto a .display, su padre posicionado, y se frena dentro de
+     la caja: fuera del ancho de la pantalla no hay nada que tocar. Las medidas
+     se piden DESPUÉS de quitar la clase hidden, porque un elemento con
+     display:none mide cero. */
+  const caja = (menuClip.offsetParent || elResult).getBoundingClientRect();
+  const ancho = menuClip.offsetWidth;
+  const alto = menuClip.offsetHeight;
+  const izq = Math.max(6, Math.min(x - caja.left - ancho / 2, caja.width - ancho - 6));
+  // Encima del dedo, que si no lo tapa. Si no cabe encima, debajo.
+  let arriba = y - caja.top - alto - 12;
+  if (arriba < 4) arriba = y - caja.top + 18;
+  menuClip.style.left = izq + 'px';
+  menuClip.style.top = arriba + 'px';
+  menuClip.querySelector('.clip-item').focus({ preventScroll: true });
+}
+
 let tempPulsacion = null;
 let huboPulsacionLarga = false;
-elResult.addEventListener('pointerdown', () => {
+elResult.addEventListener('pointerdown', (e) => {
   huboPulsacionLarga = false;
   clearTimeout(tempPulsacion);
+  const x = e.clientX, y = e.clientY;
   tempPulsacion = setTimeout(() => {
     huboPulsacionLarga = true;                // para que el click de después no haga nada
-    pedirPegar();
+    abrirMenuClip(x, y);
   }, 550);
 });
 for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) {
   elResult.addEventListener(ev, () => clearTimeout(tempPulsacion));
 }
+
+/* Botón derecho en el escritorio. En Android el WebView también dispara
+   'contextmenu' al mantener pulsado, así que esto y el temporizador de arriba
+   pueden llegar los dos: si el menú ya está abierto, el segundo no hace nada.
+   El preventDefault quita el menú del sistema, que ahí no pinta nada. */
+elResult.addEventListener('contextmenu', (e) => {
+  e.preventDefault();
+  clearTimeout(tempPulsacion);
+  huboPulsacionLarga = true;
+  if (!menuClip.classList.contains('hidden')) return;
+  abrirMenuClip(e.clientX, e.clientY);
+});
+
+document.getElementById('clip-copy').addEventListener('click', (e) => {
+  e.stopPropagation();
+  cerrarMenuClip();
+  copyResult();
+});
+document.getElementById('clip-paste').addEventListener('click', (e) => {
+  e.stopPropagation();
+  cerrarMenuClip();
+  pedirPegar();
+});
+
+// Se cierra al tocar en otro sitio o con Escape, como los demás paneles
+document.addEventListener('pointerdown', (e) => {
+  if (!menuClip.classList.contains('hidden') && !menuClip.contains(e.target))
+    cerrarMenuClip();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') cerrarMenuClip();
+});
 
 /* Un toque corto hace una cosa u otra según lo que haya delante: con un
    resultado en pantalla lo natural es copiarlo; escribiendo una cuenta, lo

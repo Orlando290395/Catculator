@@ -764,6 +764,49 @@ body {
 .result { cursor: pointer; }
 .copy-helper { position: fixed; left: -9999px; top: 0; }
 
+/* ---------- Menú de copiar/pegar ----------
+   Copiar y pegar se peleaban por los mismos gestos: al meter el cursor de
+   edición, tocar la pantalla pasó a colocarlo y copiar se quedó sin sitio.
+   En el móvil no hay Ctrl+C, y en el escritorio el `user-select: none` de
+   arriba impide marcar el número con el ratón, así que tampoco había nada
+   que copiar. Este menú es la salida nativa de las dos plataformas. */
+.clip-menu {
+  position: absolute;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: 0 10px 30px var(--shadow);
+  color: var(--text);
+  animation: pop-in 0.16s ease;
+}
+.clip-menu.hidden { display: none; }
+:root[data-theme="noche"] .clip-menu { color: #e2f8fd; }
+
+.clip-item {
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  /* Hereda del menu: si lo pone por su cuenta le gana a la regla del tema
+     Noche y el texto se queda negro sobre panel oscuro. */
+  color: inherit;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+  white-space: nowrap;
+  /* Dedo, no ratón: 40 px es el mínimo que se acierta sin mirar */
+  min-height: 40px;
+  padding: 9px 16px;
+  cursor: pointer;
+}
+.clip-item:hover,
+.clip-item:focus-visible { background: var(--accent); color: #fff; }
+.clip-item:active { transform: scale(0.97); }
+
 /* ---------- Cursor de edición ----------
    Es un <span> SIN texto: la raya la pinta el fondo. Importa porque fitResult()
    decide el tamaño de letra midiendo la longitud del contenido, y un cursor
