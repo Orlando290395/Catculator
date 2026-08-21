@@ -12,6 +12,31 @@ const IDIOMA_CAP = process.argv.includes('en') ? 'en' : 'es';
 const OUT = path.join(__dirname, IDIOMA_CAP === 'es' ? 'capturas' : 'capturas-' + IDIOMA_CAP);
 const PORT = 8146;
 const W = 1366, H = 768;
+/* Tamaño con el que abre la ventana de verdad (el de main.js). Las tomas de
+   "ventana normal" se capturan así y luego se montan sobre el lienzo de la
+   tienda: estirar una ventana estrecha hasta 1366 la deformaría. */
+const W_VENTANA = 440, H_VENTANA = 820;
+const TMP = path.join(require('os').tmpdir(), 'catculator-marco');
+
+/* El montaje. La ventana va centrada, con esquinas redondeadas y sombra, para
+   que se lea como una ventana sobre un escritorio y no como una captura
+   estirada. El alto manda: 820 no cabe en 768, así que se escala a 704 y el
+   ancho lo sigue solo. */
+function marcoHTML(fondo) {
+  return `<!doctype html><meta charset="utf-8"><style>
+  html, body { margin: 0; height: 100%; }
+  body {
+    display: flex; align-items: center; justify-content: center;
+    background: ${fondo};
+  }
+  img {
+    height: 704px; width: auto; display: block;
+    border-radius: 18px;
+    box-shadow: 0 24px 60px rgba(15, 30, 50, 0.28),
+                0 4px 14px rgba(15, 30, 50, 0.16);
+  }
+  </style><img src="ventana.png">`;
+}
 
 const log = (...a) => console.log(...a);
 
@@ -116,6 +141,45 @@ const TOMAS = [
       for (const k of ['1', '0', '0']) { $(`.key[data-k="${k}"]`).click(); await wait(50); }
       $('#btn-conv').click(); await wait(500);
     }
+  },
+  {
+    /* La app tal y como abre: ventana estrecha, una columna. Aquí los paneles
+       caen donde tienen que caer, que es lo que no se ve en las tomas de
+       ventana maximizada. */
+    nombre: '9-ventana-normal', tema: 'cian', pelaje: 'naranja', atuendo: 'ninguno', modo: 'basic',
+    ventana: 'normal', fondo: 'linear-gradient(135deg, #dfe9f3 0%, #c6d6e6 100%)',
+    guion: async ($, wait) => {
+      for (const k of ['1', '2', '5', '0', '*', '3']) { $(`.key[data-k="${k}"]`).click(); await wait(50); }
+      $('[data-action="equals"]').click(); await wait(400);
+    }
+  },
+  {
+    /* El bloc de notas, que no salía en ninguna toma de la ficha. Y de paso
+       otra de ventana normal, que es lo que se pidió. */
+    nombre: '10-ventana-notas', tema: 'lavanda', pelaje: 'gris', atuendo: 'ninguno', modo: 'basic',
+    ventana: 'normal', fondo: 'linear-gradient(135deg, #e8e3f5 0%, #cdc4e8 100%)',
+    guion: async ($, wait) => {
+      for (const k of ['2', '4', '0', '0']) { $(`.key[data-k="${k}"]`).click(); await wait(50); }
+      $('[data-action="equals"]').click(); await wait(250);
+      $('#btn-notes').click(); await wait(500);
+      const ta = $('#notes-text');
+      if (ta) {
+        /* El corrector subraya en rojo "Cat food" y "Litter" en la version
+           inglesa. En la app esta bien que corrija; en una captura de tienda
+           parecen faltas de ortografia. */
+        ta.spellcheck = false;
+        ta.value = document.documentElement.lang === 'en'
+          ? 'Shopping\n- Cat food  2400\n- Litter     1800'
+          : 'Compras\n- Comida gato  2400\n- Arena        1800';
+        ta.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      /* El globo del gato sale al abrir el bloc y el panel lo parte por la
+         mitad: media frase asomando por detras se ve a descuido. Aqui no
+         aporta nada, asi que fuera. */
+      const globo = $('.speech');
+      if (globo) globo.classList.add('hidden');
+      await wait(300);
+    }
   }
 ];
 
@@ -140,6 +204,10 @@ async function run() {
   await win.webContents.session.clearStorageData();
 
   for (const t of TOMAS) {
+    // Antes de cargar: las media queries dependen del tamaño, no al revés
+    const normal = t.ventana === 'normal';
+    win.setContentSize(normal ? W_VENTANA : W, normal ? H_VENTANA : H);
+    await new Promise(r => setTimeout(r, 200));
     await win.loadURL(`http://localhost:${PORT}/`);
     await win.webContents.executeJavaScript(`
       localStorage.setItem('catculator-theme', '${t.tema}');
@@ -183,6 +251,23 @@ async function run() {
     await new Promise(r => setTimeout(r, 300));
 
     let img = await win.webContents.capturePage();
+
+    /* Montaje de las tomas de ventana normal. El HTML del marco vive en la
+       carpeta temporal del sistema y no en el proyecto: dentro del proyecto el
+       Acceso Controlado a Carpetas de Defender tumba las escrituras. */
+    if (normal) {
+      fs.mkdirSync(TMP, { recursive: true });
+      fs.writeFileSync(path.join(TMP, 'ventana.png'), img.toPNG());
+      fs.writeFileSync(path.join(TMP, 'marco.html'), marcoHTML(t.fondo));
+      win.setContentSize(W, H);
+      await new Promise(r => setTimeout(r, 200));
+      await win.loadFile(path.join(TMP, 'marco.html'));
+      await new Promise(r => setTimeout(r, 700));
+      win.webContents.invalidate();
+      await new Promise(r => setTimeout(r, 300));
+      img = await win.webContents.capturePage();
+    }
+
     const s = img.getSize();
     if (s.width !== W || s.height !== H) img = img.resize({ width: W, height: H, quality: 'best' });
     const dest = path.join(OUT, t.nombre + '.png');
