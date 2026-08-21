@@ -52,7 +52,33 @@ const TOMAS = [
     }
   },
   {
-    nombre: '3-personaliza-rosa', tema: 'rosa', pelaje: 'negro', atuendo: 'ninguno', modo: 'basic',
+    /* El menú del portapapeles. En el escritorio se abre con el botón derecho;
+       aquí se llama a la función directamente porque un contextmenu sintético
+       no siempre llega igual. Desde el borde de abajo del visor: a media altura
+       el menú roza los dígitos. */
+    nombre: '3-copiar-pegar-cian', tema: 'cian', pelaje: 'nieves', atuendo: 'ninguno', modo: 'basic',
+    guion: async ($, wait) => {
+      pegarTexto(document.documentElement.lang === 'en' ? '1,234.56' : '1.234,56');
+      await wait(400);
+      const r = $('#result').getBoundingClientRect();
+      abrirMenuClip(r.left + r.width * 0.62, r.bottom - 4);
+      await wait(350);
+    }
+  },
+  {
+    /* Corregir en medio de una cuenta larga: el cursor metido entre los
+       dígitos, que es justo lo que antes no se podía hacer. */
+    nombre: '4-cursor-menta', tema: 'menta', pelaje: 'leon', atuendo: 'ninguno', modo: 'basic',
+    guion: async ($, wait) => {
+      for (const k of ['1', '2', '3', '4', '+', '5', '6', '7', '*', '8']) {
+        $(`.key[data-k="${k}"]`).click(); await wait(40);
+      }
+      ponerCursor(3);
+      await wait(300);
+    }
+  },
+  {
+    nombre: '5-personaliza-rosa', tema: 'rosa', pelaje: 'negro', atuendo: 'ninguno', modo: 'basic',
     guion: async ($, wait) => {
       for (const k of ['1', '2', '*', '1', '2']) { $(`.key[data-k="${k}"]`).click(); await wait(50); }
       $('[data-action="equals"]').click(); await wait(250);
@@ -61,7 +87,7 @@ const TOMAS = [
     }
   },
   {
-    nombre: '4-quiz-lavanda', tema: 'lavanda', pelaje: 'negro', atuendo: 'pirata', modo: 'basic',
+    nombre: '6-quiz-lavanda', tema: 'lavanda', pelaje: 'negro', atuendo: 'pirata', modo: 'basic',
     guion: async ($, wait) => {
       $('#btn-quiz').click(); await wait(600);
       // Contesta bien la pregunta que salga: así la toma muestra al gato
@@ -78,14 +104,14 @@ const TOMAS = [
     }
   },
   {
-    nombre: '5-cientifica-noche', tema: 'noche', pelaje: 'carbon', atuendo: 'ninguno', modo: 'sci',
+    nombre: '7-cientifica-noche', tema: 'noche', pelaje: 'carbon', atuendo: 'ninguno', modo: 'sci',
     guion: async ($, wait) => {
       for (const k of ['sqrt(', '2', ')']) { $(`.key[data-k="${k}"], .skey[data-k="${k}"]`).click(); await wait(60); }
       $('[data-action="equals"]').click(); await wait(300);
     }
   },
   {
-    nombre: '6-conversor-atigrado', tema: 'atigrado', pelaje: 'blanco', atuendo: 'ninguno', modo: 'basic',
+    nombre: '8-conversor-atigrado', tema: 'atigrado', pelaje: 'blanco', atuendo: 'ninguno', modo: 'basic',
     guion: async ($, wait) => {
       for (const k of ['1', '0', '0']) { $(`.key[data-k="${k}"]`).click(); await wait(50); }
       $('#btn-conv').click(); await wait(500);
@@ -135,8 +161,11 @@ async function run() {
     // anula la animación y se fuerza el estado final SOLO en los paneles abiertos
     // (el globo de diálogo se esconde con opacity: 0, así que no se toca).
     await win.webContents.insertCSS(
-      '.side-panel, .theme-panel, .speech { animation: none !important; transition: none !important; }' +
-      '.side-panel:not(.hidden), .theme-panel:not(.hidden) { opacity: 1 !important; }');
+      '.side-panel, .theme-panel, .speech, .clip-menu { animation: none !important; transition: none !important; }' +
+      '.side-panel:not(.hidden), .theme-panel:not(.hidden), .clip-menu:not(.hidden) { opacity: 1 !important; }' +
+      /* El cursor parpadea con step-end: la mitad del tiempo es invisible y
+         la captura salía sin él, que es justo lo que se quiere enseñar. */
+      '.caret { animation: none !important; opacity: 1 !important; }');
 
     const guion = `(async () => {
       const $ = s => document.querySelector(s);
