@@ -1123,6 +1123,67 @@ async function faseDiseno(win) {
     const n = t.nombre;
     r.push([n + ': columnas', m.columnas, t.cols]);
     r.push([n + ': no deja nada inalcanzable', m.todoAlcanzable, true]);
+
+    /* El panel abierto no puede comerse el teclado NUMÉRICO. En una sola
+       columna sí lo tapa, y está bien: mientras usas el panel no tecleas. Pero
+       en horizontal la derecha es el teclado, y el panel de compras se lo
+       comía entero — solo asomaban la C, el 7, el 4, el 1 y el ±.
+
+       Las teclas científicas sí se pueden tapar en parte: el panel conserva su
+       ancho para que los importes no salgan cortados, y quien reparte una
+       cuenta no anda buscando el seno.
+
+       Y no basta con que no tape: tiene que LEERSE. Apartarlo a la columna
+       izquierda con un ancho en píxeles lo dejó en 286px en una ventana de 640,
+       y ahí el descuento salía "1.161 (−1…".
+
+       Por eso se prueba con dos precios y en TODOS los tamaños, también en
+       vertical: uno de los de todos los días y uno desmedido. El grande no es
+       un capricho — con cinco cifras ya se cortaba, y en vertical también, así
+       que el recorte no era cosa del diseño horizontal. */
+    for (const precio of ['1290', '999999999']) {
+      await win.webContents.executeJavaScript(`(() => {
+        closePanels(); document.getElementById('btn-shop').click();
+        const p = document.getElementById('shop-price');
+        p.value = '${precio}';
+        p.dispatchEvent(new Event('input', { bubbles: true }));
+        return 'listo';
+      })()`);
+      await new Promise(res => setTimeout(res, 300));
+      const panel = await win.webContents.executeJavaScript(`(() => {
+        const p = document.querySelector('.side-panel:not(.hidden)');
+        const k = document.querySelector('.keypad');
+        if (!p) return { abierto: false };
+        /* El panel entra con pop-in, que arranca en scale(0.95). En una ventana
+           oculta las animaciones no avanzan, así que se medía un panel un 5% más
+           chico que el de verdad — 16px de gracia justo donde se decide si tapa
+           el teclado. Adelantarla al final da la medida que ve el usuario. */
+        p.getAnimations().forEach(an => an.finish());
+        const a = p.getBoundingClientRect(), b = k.getBoundingClientRect();
+        return {
+          abierto: true,
+          libre: a.right <= b.left || a.left >= b.right ||
+                 a.bottom <= b.top || a.top >= b.bottom,
+          cabe: a.left >= -1 && a.right <= innerWidth + 1,
+          cortados: [...p.querySelectorAll('.shop-res')]
+            .filter(e => e.scrollWidth > e.clientWidth + 1)
+            .map(e => e.textContent.trim()).join(' | ')
+        };
+      })()`);
+      const con = n + ' con ' + precio;
+      r.push([con + ': el panel se abre', panel.abierto, true]);
+      r.push([con + ': los importes se leen enteros', panel.cortados, '']);
+      if (t.cols > 0) {
+        r.push([con + ': el panel no tapa el teclado', panel.libre, true]);
+        r.push([con + ': y el panel cabe en pantalla', panel.cabe, true]);
+      }
+    }
+    await win.webContents.executeJavaScript(`(() => {
+      const p = document.getElementById('shop-price');
+      p.value = ''; p.dispatchEvent(new Event('input', { bubbles: true }));
+      closePanels(); return 'listo';
+    })()`);
+    await new Promise(res => setTimeout(res, 150));
     if (t.cols) {
       r.push([n + ': el teclado va a la derecha de la cuenta', m.aLaDerecha, true]);
       r.push([n + ': el teclado cabe entero', m.tecladoCabe, true]);

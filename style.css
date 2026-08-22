@@ -659,8 +659,13 @@ body {
 }
 
 /* ---------- Modo compras ---------- */
+/* La fila envuelve A PROPÓSITO. El importe es la RESPUESTA: si no cabe al lado
+   de la etiqueta, baja a su propia línea y se queda con el ancho entero, en vez
+   de recortarse. Antes se cortaba con puntos suspensivos —"111.110,4 (−12…"— y
+   pasaba con cualquier precio de cinco cifras, también en vertical. */
 .shop-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   margin-bottom: 6px;
@@ -686,7 +691,12 @@ body {
 }
 .shop-pct.wide { width: 84px; }
 .shop-res {
-  flex: 1;
+  /* La base es el contenido, no cero: así el flex sabe cuánto mide el importe
+     de verdad y puede decidir que no cabe y mandarlo a la línea de abajo. Con
+     flex:1 la base era 0, nunca "sobraba" nada y la caja se quedaba con lo que
+     le dejaran, por poco que fuera. El min-width:0 y el recorte de abajo siguen
+     ahí como último recurso: una cifra sin espacios no se puede partir. */
+  flex: 1 1 auto;
   min-width: 0;
   border: none;
   border-radius: 8px;
@@ -698,9 +708,13 @@ body {
   padding: 5px 8px;
   cursor: pointer;
   text-align: right;
+  /* Y si ni con la línea entera cabe —"884,955,751.33 (VAT 115,044,247.67)" en
+     inglés, que es más largo que en español— parte por el espacio y usa dos.
+     El recorte se queda debajo para lo único que no se puede partir: una cifra
+     sola, sin espacios, más ancha que el panel. */
+  white-space: normal;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .shop-res:hover { background: var(--accent); color: #fff; }
 
@@ -1300,6 +1314,35 @@ body {
      que el SVG conserve su proporción. */
   #cat { width: min(132px, 62%); height: auto; }
   .cat-scene { margin-bottom: -14px; }
+
+  /* El bocadillo se centra sobre el gato, y en horizontal su columna es
+     estrecha —con la científica no llega a 200px—, así que un mensaje largo
+     se salía por el BORDE IZQUIERDO de la pantalla: "Yo cazo ratones, tú cazas
+     ofertas" empezaba cortado, y así se coló en una captura de la tienda.
+
+     El tope es la columna, y para poder respetarlo el texto necesita permiso
+     para partir en dos líneas: con nowrap el tope no sirve de nada, la caja se
+     queda chica y las letras se salen igual.
+
+     Y hay que centrarlo de otra manera. Con left:50% el ancho disponible es
+     solo lo que va del centro al borde derecho —media columna—, así que un
+     max-width:100% se quedaba en la mitad y el rótulo partía en dos mucho
+     antes de hacer falta. Con left:0 + right:0 y márgenes automáticos la caja
+     se centra igual pero puede usar la columna ENTERA. El estado oculto lleva
+     su propio transform porque el de base incluía el translateX(-50%) que
+     aquí ya no va. */
+  .speech {
+    left: 0;
+    right: 0;
+    margin-left: auto;
+    margin-right: auto;
+    transform: none;
+    width: max-content;
+    max-width: 100%;
+    white-space: normal;
+    text-align: center;
+  }
+  .speech.hidden { transform: translateY(6px); }
   /* Hueco arriba para las patas, que asoman por el borde de la pantalla */
   .display { padding-top: 26px; }
 
@@ -1321,17 +1364,46 @@ body {
     max-height: 520px;
   }
 
-  /* Los paneles vuelven a abrirse DENTRO de la app. Con la ventana ya en 940px
+  /* Los paneles vuelven a abrirse DENTRO de la app: con la ventana ya en 940px
      no quedan 320px libres al costado, y la regla de min-width:1140px —pensada
-     para la columna estrecha— los mandaba fuera de la pantalla. Y con tope de
-     alto, que es justo lo que aquí escasea. */
+     para la columna estrecha— los mandaba fuera de la pantalla.
+
+     Pero DENTRO no es "a la derecha". En una sola columna da igual dónde caiga
+     el panel, porque mientras lo usas no tecleas. En horizontal la derecha ES
+     el teclado: el panel de compras se comía los números y solo asomaban la C,
+     el 7, el 4, el 1 y el ±. Y mientras tanto la izquierda estaba vacía.
+
+     Así que el panel se queda con la columna izquierda entera. Y el borde
+     derecho se ata a la COLUMNA, no a un ancho en píxeles: la línea de en medio
+     está en el 50% y el canalón mide 18, así que la columna acaba en 50% − 9
+     pase lo que pase con el relleno o con el notch. El primer intento sí puso
+     píxeles —min(320px, 50% − 34px)— y en una ventana de 640 se quedaba en
+     286px: ahí los importes del modo compras salían cortados ("1.161 (−1…"),
+     que es justo lo que este arreglo quería evitar. Atado a la columna son
+     295px y entran enteros. */
   .theme-panel,
   .side-panel {
-    left: auto;
-    right: 18px;
+    left: calc(16px + env(safe-area-inset-left));
+    right: calc(50% + 9px);
+    width: auto;
+    max-width: 320px;
+    top: 62px;
     max-height: calc(100dvh - 80px);
     overflow-y: auto;
   }
+
+  /* Con la científica abierta son TRES columnas y la izquierda baja de 200px.
+     Encajar el panel ahí dentro se probó y se descartó: a 271px los importes
+     salen cortados, y un panel que no se lee es peor que uno que tapa teclas.
+
+     Así que en científica el límite deja de ser la columna y pasa a ser el
+     teclado NUMÉRICO, que es el que se usa mientras el panel está abierto: la
+     tercera columna arranca en el 66,7% y el panel se queda antes. Con eso el
+     tope de 320px vuelve a caber entero desde los 600px de ancho para arriba.
+     Las teclas científicas sí se tapan en parte, y se acepta: quien está
+     repartiendo una cuenta no anda buscando el seno. */
+  #app.sci-on .theme-panel,
+  #app.sci-on .side-panel { right: calc(33.333% + 14px); }
 }
 
 /* Con la científica abierta son diez filas de teclas apiladas en una columna:
