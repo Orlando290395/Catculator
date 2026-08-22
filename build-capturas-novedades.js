@@ -1,4 +1,4 @@
-/* Capturas de lo NUEVO de la 1.2.0, para las fichas de las dos tiendas.
+/* Capturas de lo NUEVO de la versión, para las fichas de las dos tiendas.
 
    Es una copia reducida de build-capturas.js con dos diferencias:
 
@@ -44,77 +44,58 @@ const server = http.createServer((req, res) => {
 
 const TOMAS = [
   {
-    // Lo más difícil de enseñar y lo más útil: el cursor metido en medio de una
-    // cuenta larga, que es justo lo que antes no se podía hacer.
-    nombre: '1-cursor-en-medio', w: 360, h: 640,
+    /* La novedad entera de esta versión, en una imagen: el panel de compras
+       abierto y, al lado, el teclado numérico ENTERO. Antes de la 1.2.1 el
+       panel caía justo encima y del teclado solo asomaba la primera columna.
+
+       Va con un precio escrito porque el panel vacío no enseña nada: lo que
+       hay que ver es que los importes se leen y las teclas también. */
+    nombre: '1-panel-al-lado', w: 640, h: 360,
     tema: 'cian', pelaje: 'naranja', atuendo: 'ninguno', modo: 'basic',
-    rotulo: { es: 'Toca donde quieras y corrige ahí mismo ✏️',
-              en: 'Tap anywhere and fix it right there ✏️' },
+    rotulo: { es: 'El panel ya no tapa el teclado 🛒',
+              en: 'The panel no longer covers the keypad 🛒' },
     guion: async ($, wait, rotulo) => {
-      for (const k of ['1', '2', '3', '4', '+', '5', '6', '7', '*', '8']) {
-        $(`.key[data-k="${k}"]`).click(); await wait(40);
-      }
-      ponerCursor(3);
-      await wait(200);
-      say(rotulo, 6000);
+      for (const k of ['1', '2', '9', '0']) { $(`.key[data-k="${k}"]`).click(); await wait(40); }
+      $('#btn-shop').click();
       await wait(300);
-    }
-  },
-  {
-    // El = repetido: la pantalla enseña 11+3 = 14, o sea la tercera pulsación.
-    nombre: '2-igual-repite', w: 360, h: 640,
-    tema: 'menta', pelaje: 'gris', atuendo: 'ninguno', modo: 'basic',
-    rotulo: { es: 'Pulsa = otra vez y repite la operación 🔁',
-              en: 'Press = again to repeat the operation 🔁' },
-    guion: async ($, wait, rotulo) => {
-      for (const k of ['5', '+', '3']) { $(`.key[data-k="${k}"]`).click(); await wait(50); }
-      for (let i = 0; i < 3; i++) { $('[data-action="equals"]').click(); await wait(300); }
-      say(rotulo, 6000);
-      await wait(300);
-    }
-  },
-  {
-    /* El menú del portapapeles. Enseña las dos cosas en una sola imagen, que
-       es lo que hay que contar: copiar se había quedado sin gesto porque
-       tocar la pantalla ahora coloca el cursor. Se pega antes un precio para
-       que haya un número de verdad detrás del menú. */
-    nombre: '3-copiar-pegar', w: 360, h: 640,
-    tema: 'rosa', pelaje: 'blanco', atuendo: 'ninguno', modo: 'basic',
-    rotulo: { es: 'Mantén pulsado: copiar y pegar 📋',
-              en: 'Press and hold: copy and paste 📋' },
-    guion: async ($, wait, rotulo) => {
-      pegarTexto(document.documentElement.lang === 'en' ? '1,234.56' : '1.234,56');
-      await wait(400);
-      const r = $('#result').getBoundingClientRect();
-      abrirMenuClip(r.left + r.width * 0.62, r.bottom - 4);
+      const precio = $('#shop-price');
+      precio.value = '1290';
+      precio.dispatchEvent(new Event('input', { bubbles: true }));
       await wait(250);
       say(rotulo, 6000);
       await wait(300);
     }
   },
   {
-    // Horizontal, dos columnas. 640x360 lógicos = 1920x1080 reales (16:9).
-    nombre: '4-horizontal', w: 640, h: 360,
-    tema: 'atigrado', pelaje: 'leon', atuendo: 'ninguno', modo: 'basic',
-    rotulo: { es: 'Gíralo y cabe todo 📱', en: 'Turn it and it all fits 📱' },
-    guion: async ($, wait, rotulo) => {
-      for (const k of ['1', '2', '3', '4', '+', '5', '6', '7']) {
-        $(`.key[data-k="${k}"]`).click(); await wait(40);
-      }
-      say(rotulo, 6000);
+    /* Con la científica son tres columnas y el panel tapa parte de las
+       funciones, pero NUNCA los números. Sin rótulo a propósito: el bocadillo
+       del gato se centra sobre su columna, que aquí es estrecha, y se sale por
+       el borde izquierdo. La imagen se explica sola. */
+    nombre: '2-tambien-con-cientifica', w: 640, h: 360,
+    tema: 'noche', pelaje: 'tigre', atuendo: 'ninguno', modo: 'sci',
+    guion: async ($, wait) => {
+      for (const k of ['1', '2', '9', '0']) { $(`.key[data-k="${k}"]`).click(); await wait(40); }
+      $('#btn-shop').click();
       await wait(300);
+      const precio = $('#shop-price');
+      precio.value = '1290';
+      precio.dispatchEvent(new Event('input', { bubbles: true }));
+      await wait(400);
     }
   },
   {
-    // Horizontal con la científica: tres columnas.
-    nombre: '5-horizontal-cientifica', w: 640, h: 360,
-    tema: 'noche', pelaje: 'tigre', atuendo: 'ninguno', modo: 'sci',
-    guion: async ($, wait) => {
-      for (const k of ['sqrt(', '1', '4', '4', ')']) {
-        const b = $(`.skey[data-k="${k}"]`) || $(`.key[data-k="${k}"]`);
-        if (b) { b.click(); await wait(50); }
-      }
-      $('[data-action="equals"]').click(); await wait(300);
+    /* No es cosa solo del modo compras: se mudaron los cuatro paneles. El de
+       temas es el que mejor se lee de un vistazo en una miniatura. */
+    nombre: '3-vale-para-todos', w: 640, h: 360,
+    tema: 'menta', pelaje: 'gris', atuendo: 'ninguno', modo: 'basic',
+    rotulo: { es: 'Vale para todos los paneles 🎨',
+              en: 'Works for every panel 🎨' },
+    guion: async ($, wait, rotulo) => {
+      for (const k of ['4', '2', '0']) { $(`.key[data-k="${k}"]`).click(); await wait(40); }
+      $('#btn-theme').click();
+      await wait(350);
+      say(rotulo, 6000);
+      await wait(300);
     }
   }
 ];
@@ -181,6 +162,20 @@ async function run() {
     })()`;
     const res = await win.webContents.executeJavaScript(guion);
     if (res !== 'ok') log('  aviso en ' + t.nombre + ': ' + res);
+
+    /* El bocadillo del gato se centra sobre su columna, que en horizontal es
+       estrecha, así que un rótulo largo se sale por el borde y la palabra
+       aparece cortada. En inglés pasa antes: casi siempre es más largo. */
+    const globo = await win.webContents.executeJavaScript(`(() => {
+      const g = document.getElementById('speech');
+      if (!g || g.classList.contains('hidden')) return null;
+      const b = g.getBoundingClientRect();
+      return { izq: Math.round(b.left), der: Math.round(b.right), ancho: innerWidth };
+    })()`);
+    if (globo && (globo.izq < 0 || globo.der > globo.ancho)) {
+      log('  *** el rótulo de ' + t.nombre + ' se sale (' + globo.izq + '..' +
+          globo.der + ' en ' + globo.ancho + '): acórtalo');
+    }
     await new Promise(r => setTimeout(r, 700));
     win.webContents.invalidate();
     await new Promise(r => setTimeout(r, 300));

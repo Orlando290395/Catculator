@@ -21,80 +21,96 @@ const DESTINO = path.join(__dirname, 'paquetes', version);
 
 const TEXTOS = {
   'play-es': { limite: 500, texto:
-`Cinco mejoras para el día a día:
+`Tres arreglos:
 
-• COPIAR Y PEGAR: mantén pulsada la pantalla (o botón derecho) y elige.
-• CORRIGE EN MEDIO: toca donde está el error y arréglalo ahí, sin borrarlo todo.
-• NO SE PIERDE la cuenta a medias al cerrar la app.
-• PULSA = OTRA VEZ y repite la última operación.
-• HORIZONTAL: gira el móvil y cabe todo, con la científica al lado.
+• Al girar el móvil o estirar la ventana, los paneles se abrían ENCIMA del
+teclado y tapaban los números. Ahora se abren al lado, en el hueco que quedaba
+libre, y las teclas se ven enteras.
+
+• Los importes largos del modo compras ya no se cortan: cuando no caben al
+lado de su etiqueta, bajan a su propia línea.
+
+• Y el gato ya no habla por fuera del borde: en horizontal sus frases largas
+empezaban cortadas.
 
 ¡Gracias por usar Catculator! 🐱` },
 
   'play-en': { limite: 500, texto:
-`Five everyday improvements:
+`Three fixes:
 
-• COPY AND PASTE: press and hold the display (or right-click) and pick.
-• FIX THE MIDDLE: tap where the mistake is and fix it there, no clearing everything.
-• KEEPS your half-finished sum when you close the app.
-• PRESS = AGAIN to repeat the last operation.
-• LANDSCAPE: turn your phone and it all fits, scientific keys alongside.
+• Turning your phone or widening the window opened the panels ON TOP of the
+keypad, hiding the numbers. They now open beside it, in the space that was
+going to waste, and the keys stay visible.
+
+• Long amounts in shopping mode are no longer cut off: when they don't fit
+beside their label, they drop to their own line.
+
+• And the cat no longer talks off the edge: in landscape its longer lines
+started mid-word.
 
 Thanks for using Catculator! 🐱` },
 
   'microsoft-es': { limite: 1500, texto:
-`Catculator 1.2.0 — cinco mejoras de uso diario
+`Catculator 1.2.1 — tres arreglos
 
-COPIAR Y PEGAR
-Ya se pueden traer cifras desde otras aplicaciones y llevarse el resultado a
-donde haga falta: mantén pulsada la pantalla —o el botón derecho en Windows— y
-elige Copiar o Pegar. Para pegar también vale Ctrl+V. Entiende los dos formatos
-(1.234,56 y 1,234.56) y avisa cuando lo pegado no es un número, en vez de
-inventarse uno.
+LOS PANELES YA NO TAPAN EL TECLADO
+Con la ventana maximizada o el móvil girado, la calculadora se reparte en dos
+columnas: la cuenta a la izquierda y las teclas a la derecha. Los paneles de
+compras, temas, notas y conversor seguían abriéndose pegados a la derecha —que
+en vertical es el sitio natural— y ahí caían justo encima de los números: del
+teclado solo asomaba la primera columna.
 
-CORREGIR EN MEDIO DE LA CUENTA
-Antes solo se podía borrar desde el final: si la errata estaba al principio de
-una operación larga, había que empezar de cero. Ahora hay cursor: toca donde
-esté el error, o muévelo con las flechas, y corrige ahí mismo.
+Ahora se abren en la columna izquierda, que era el espacio que quedaba sin usar.
+El teclado numérico se ve entero mientras el panel está abierto, y el hueco que
+sobraba pasa a tener un uso.
 
-NO SE PIERDE LO QUE ESTABAS ESCRIBIENDO
-La operación a medias sobrevive a cerrar la aplicación.
+Con el teclado científico abierto el panel conserva su ancho para que los
+importes no salgan cortados: en ese caso tapa parte de las teclas científicas,
+pero nunca las numéricas.
 
-EL = REPITE
-Pulsa = otra vez y repite la última operación: 5+3 da 8, otra vez 11, otra 14.
+LOS IMPORTES LARGOS YA NO SE CORTAN
+En el modo compras, un precio de cinco cifras dejaba el descuento en
+"111.110,4 (−12…": la cifra no cabía al lado de su etiqueta y se recortaba con
+puntos suspensivos. Esto no venía del diseño horizontal — pasaba igual con el
+móvil de pie. Ahora, cuando no cabe al lado, el importe baja a su propia línea
+y se lee entero.
 
-DISEÑO HORIZONTAL
-Al girar el dispositivo o estirar la ventana, la calculadora se reorganiza en
-dos columnas —y en tres con el teclado científico abierto— en vez de dejar los
-lados vacíos. También aprovecha mejor las pantallas de tableta.
+Y EL GATO YA NO HABLA POR FUERA DEL BORDE
+Su bocadillo se centra sobre él, y en horizontal le toca una columna estrecha:
+las frases largas empezaban cortadas por el borde izquierdo de la pantalla.
+Ahora se ajustan a la columna y se leen enteras.
 
 ¡Gracias por usar Catculator! 🐱` },
 
   'microsoft-en': { limite: 1500, texto:
-`Catculator 1.2.0 — five everyday improvements
+`Catculator 1.2.1 — three fixes
 
-COPY AND PASTE
-You can now bring figures in from other apps and take the result out again:
-press and hold the display — or right-click on Windows — and pick Copy or
-Paste. Ctrl+V works for pasting too. It understands both formats (1,234.56 and
-1.234,56) and tells you when what you pasted isn't a number, instead of making
-one up.
+PANELS NO LONGER COVER THE KEYPAD
+With the window maximised, or the phone turned sideways, the calculator splits
+into two columns: the sum on the left, the keys on the right. The shopping,
+theme, notepad and converter panels still opened flush right —which is the
+natural spot in portrait— and there they landed straight on top of the numbers:
+only the first column of keys stayed visible.
 
-FIX THE MIDDLE OF A SUM
-Before, you could only delete from the end: if the typo was at the start of a
-long calculation, you had to start over. Now there's a cursor — tap where the
-mistake is, or move it with the arrow keys, and fix it right there.
+They now open in the left column, which was the space going to waste. The number
+keys stay fully visible while a panel is open, and the empty area finally earns
+its keep.
 
-YOUR HALF-FINISHED SUM SURVIVES
-Close the app and come back: the calculation you were typing is still there.
+With the scientific keypad open the panel keeps its width so the amounts don't
+get cut off: it covers part of the scientific keys in that case, but never the
+number keys.
 
-PRESS = AGAIN TO REPEAT
-5+3 gives 8, press = again for 11, again for 14.
+LONG AMOUNTS ARE NO LONGER CUT OFF
+In shopping mode a five-figure price left the discount reading
+"111,110.4 (−12…": the figure didn't fit beside its label and was trimmed with
+an ellipsis. This one wasn't about the landscape layout — it happened in
+portrait too. Now, when it doesn't fit alongside, the amount drops to its own
+line and reads in full.
 
-LANDSCAPE LAYOUT
-Turn the device or widen the window and the calculator rearranges into two
-columns — three with the scientific keypad open — instead of leaving the sides
-empty. Tablet screens are put to better use too.
+AND THE CAT NO LONGER TALKS OFF THE EDGE
+Its speech bubble is centred over the cat, and in landscape the cat gets a
+narrow column: longer lines started mid-word, off the left of the screen. They
+now fit the column and read in full.
 
 Thanks for using Catculator! 🐱` }
 };
